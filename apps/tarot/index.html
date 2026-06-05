@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tarot</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tarot">
+<meta name="theme-color" content="#160c2a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #160c2a;
+    --surface: #1f1338;
+    --surface-2: #271847;
+    --line: #352356;
+    --text: #efe8ff;
+    --muted: #a193c4;
+    --dim: #6b5a92;
+    --accent: #e8c66b;      /* gold */
+    --accent-deep: #b9933f;
+    --accent-soft: #e8c66b1c;
+    --danger: #e8755f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    min-height: 100vh;
+    padding: max(20px, env(safe-area-inset-top)) 18px calc(40px + env(safe-area-inset-bottom));
+    background-image:
+      radial-gradient(120% 60% at 50% -8%, #2c1856 0%, transparent 58%),
+      radial-gradient(circle at 50% 120%, #3a1f5e 0%, transparent 48%);
+    background-attachment: fixed;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; }
+
+  /* ── header ── */
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: .12em;
+    color: var(--accent);
+  }
+  .back-link { color: var(--muted); text-decoration: none; font-size: 16px; font-weight: 500; font-family: 'Cinzel', serif; }
+  .back-link:hover { color: var(--accent); }
+  .tagline { font-size: 16px; color: var(--dim); font-style: italic; margin-bottom: 18px; }
+
+  /* ── tabs ── */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 4px; margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1; border: none; background: transparent; color: var(--muted);
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 13px; letter-spacing: .06em;
+    padding: 10px 6px; border-radius: 9px; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .tab.active { background: var(--accent-soft); color: var(--accent); }
+
+  .view { display: none; animation: fade .4s ease; }
+  .view.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ── draw stage ── */
+  .stage {
+    width: min(64vw, 248px);
+    aspect-ratio: 240 / 360;
+    margin: 6px auto 0;
+    filter: drop-shadow(0 18px 34px #0008);
+  }
+  .stage svg { width: 100%; height: 100%; display: block; }
+  .stage.empty {
+    display: grid; place-items: center;
+    border: 1.5px dashed var(--line); border-radius: 16px;
+    color: var(--dim); font-style: italic; font-size: 18px; text-align: center; padding: 20px;
+    filter: none;
+  }
+  @keyframes deal {
+    0%   { transform: perspective(1000px) rotateY(82deg) scale(.92); opacity: 0; }
+    60%  { opacity: 1; }
+    100% { transform: perspective(1000px) rotateY(0) scale(1); opacity: 1; }
+  }
+  .stage svg.dealt { animation: deal .58s cubic-bezier(.2,.7,.2,1) both; transform-origin: 50% 50%; }
+  @media (prefers-reduced-motion: reduce) { .stage svg.dealt { animation: none; } }
+
+  .reading { max-width: 440px; margin: 18px auto 0; text-align: center; min-height: 40px; }
+  .reading .r-name { font-family: 'Cinzel', serif; font-size: 22px; color: var(--accent); letter-spacing: .04em; }
+  .reading .r-orient {
+    display: inline-block; margin-top: 8px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 20px; border: 1px solid var(--line); color: var(--muted);
+  }
+  .reading .r-orient.rev { color: var(--danger); border-color: #5a2f2a; }
+  .reading .r-mean { font-size: 19px; line-height: 1.5; color: var(--text); margin-top: 14px; }
+
+  .draw-btn {
+    display: block; margin: 26px auto 0;
+    background: linear-gradient(145deg, #e8c66b, #c79a3e);
+    color: #2a1d05;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 17px; letter-spacing: .08em;
+    padding: 14px 38px; border: none; border-radius: 30px; cursor: pointer;
+    box-shadow: 0 8px 22px -6px #e8c66b66;
+    transition: transform .12s, filter .12s;
+  }
+  .draw-btn:hover { filter: brightness(1.06); }
+  .draw-btn:active { transform: scale(.96); }
+
+  /* ── deck grid ── */
+  .deck-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); gap: 10px;
+  }
+  .deck-cell { cursor: pointer; transition: transform .14s; }
+  .deck-cell:hover { transform: translateY(-3px); }
+  .deck-cell svg { width: 100%; height: auto; display: block; border-radius: 7px; }
+  .deck-section {
+    grid-column: 1 / -1;
+    font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dim); margin: 22px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 6px;
+  }
+  .deck-section:first-child { margin-top: 0; }
+
+  /* ── readings list ── */
+  .reading-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 2px; border-bottom: 1px solid var(--line); cursor: pointer;
+  }
+  .reading-row:last-of-type { border-bottom: none; }
+  .reading-row .rr-name { flex: 1; font-family: 'Cinzel', serif; font-size: 16px; color: var(--text); }
+  .reading-row .rr-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .1em; color: var(--muted); }
+  .reading-row .rr-tag.rev { color: var(--danger); }
+  .reading-row .rr-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); white-space: nowrap; }
+
+  .empty { text-align: center; color: var(--dim); font-style: italic; font-size: 18px; padding: 46px 20px; line-height: 1.6; }
+
+  /* ── backup footer ── */
+  .backup {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
+  }
+  .backup .label { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  .backup button {
+    background: none; border: none; color: var(--muted);
+    font-family: 'Cinzel', serif; font-size: 14px; cursor: pointer; padding: 4px 2px;
+    text-decoration: underline; text-underline-offset: 3px; transition: color .15s;
+  }
+  .backup button:hover { color: var(--accent); }
+  .backup-status { text-align: center; font-size: 14px; color: var(--accent); margin-top: 12px; min-height: 18px; opacity: 0; transition: opacity .3s; font-style: italic; }
+  .backup-status.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Tarot</h1>
+    <a class="back-link" href="../../index.html">← Store</a>
+  </header>
+  <div class="tagline">An original deck, drawn in code.</div>
+
+  <div class="tabs">
+    <button class="tab active" data-view="draw">Draw</button>
+    <button class="tab" data-view="deck">The Deck</button>
+    <button class="tab" data-view="readings">Readings</button>
+  </div>
+
+  <!-- DRAW -->
+  <section class="view active" id="view-draw">
+    <div class="stage empty" id="stage">Still the mind,<br>then draw a card.</div>
+    <div class="reading" id="reading"></div>
+    <button class="draw-btn" id="draw">Draw a card</button>
+  </section>
+
+  <!-- DECK -->
+  <section class="view" id="view-deck">
+    <div id="deck-grid" class="deck-grid"></div>
+  </section>
+
+  <!-- READINGS -->
+  <section class="view" id="view-readings">
+    <div id="readings-list"></div>
+    <footer class="backup">
+      <span class="label">Backup</span>
+      <button id="export">Export JSON</button>
+      <button id="import">Import JSON</button>
+      <input type="file" id="file" accept="application/json,.json" hidden>
+    </footer>
+    <div class="backup-status" id="backup-status"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+
+  /* ════════ DECK DATA ════════ */
+  const MAJORS = [
+    { name: 'The Fool',            up: 'New beginnings, innocence, a leap of faith.',      rev: 'Recklessness, hesitation, fear of the unknown.' },
+    { name: 'The Magician',        up: 'Manifestation, skill, focused will.',              rev: 'Manipulation, scattered energy, untapped talent.' },
+    { name: 'The High Priestess',  up: 'Intuition, mystery, inner knowing.',               rev: 'Secrets withheld, ignored instincts.' },
+    { name: 'The Empress',         up: 'Abundance, nurturing, creativity.',                rev: 'Creative block, dependence, neglect.' },
+    { name: 'The Emperor',         up: 'Structure, authority, stability.',                 rev: 'Control, rigidity, domination.' },
+    { name: 'The Hierophant',      up: 'Tradition, guidance, shared belief.',              rev: 'Rebellion, dogma, breaking convention.' },
+    { name: 'The Lovers',          up: 'Union, choice, alignment of values.',              rev: 'Disharmony, misalignment, hard choices.' },
+    { name: 'The Chariot',         up: 'Willpower, drive, victory through control.',       rev: 'Loss of direction, scattered force.' },
+    { name: 'Strength',            up: 'Courage, gentle power, patience.',                 rev: 'Self-doubt, raw emotion, weakness.' },
+    { name: 'The Hermit',          up: 'Solitude, reflection, inner guidance.',            rev: 'Isolation, withdrawal, lost in thought.' },
+    { name: 'Wheel of Fortune',    up: 'Cycles, turning points, fate.',                    rev: 'Setbacks, resistance to change, bad timing.' },
+    { name: 'Justice',             up: 'Fairness, truth, accountability.',                 rev: 'Injustice, bias, avoided consequences.' },
+    { name: 'The Hanged Man',      up: 'Surrender, new perspective, pause.',               rev: 'Stalling, resistance, needless sacrifice.' },
+    { name: 'Death',               up: 'Endings, transformation, release.',                rev: 'Clinging on, stagnation, fear of change.' },
+    { name: 'Temperance',          up: 'Balance, patience, moderation.',                   rev: 'Excess, imbalance, discord.' },
+    { name: 'The Devil',           up: 'Attachment, temptation, the shadow self.',         rev: 'Release, breaking chains, reclaiming power.' },
+    { name: 'The Tower',           up: 'Sudden upheaval, revelation, collapse.',           rev: 'Fear of change, delayed disaster, clinging.' },
+    { name: 'The Star',            up: 'Hope, renewal, serene faith.',                     rev: 'Doubt, despair, lost faith.' },
+    { name: 'The Moon',            up: 'Illusion, intuition, the unknown.',                rev: 'Confusion lifting, hidden truth revealed.' },
+    { name: 'The Sun',             up: 'Joy, vitality, success.',                          rev: 'Temporary gloom, dimmed enthusiasm.' },
+    { name: 'Judgement',           up: 'Awakening, reckoning, renewal.',                   rev: 'Self-doubt, avoiding the call.' },
+    { name: 'The World',           up: 'Completion, wholeness, fulfillment.',              rev: 'Loose ends, delay, near but not yet.' }
+  ];
+
+  const MINOR = {
+    Wands: {
+      1:  ['Spark of inspiration, a new venture.', 'Delays, false starts, low energy.'],
+      2:  ['Planning, vision, first bold steps.', 'Fear of the unknown, indecision.'],
+      3:  ['Expansion, foresight, ventures take off.', 'Delays, limited vision, obstacles.'],
+      4:  ['Celebration, harmony, homecoming.', 'Transition, lack of support, unease.'],
+      5:  ['Competition, conflict, lively struggle.', 'Avoiding conflict, tension released.'],
+      6:  ['Victory, recognition, public success.', 'Egotism, a fall from favor, doubt.'],
+      7:  ['Defiance, standing your ground.', 'Overwhelm, giving up, exhaustion.'],
+      8:  ['Swift movement, momentum, news.', 'Delays, frustration, scattered energy.'],
+      9:  ['Resilience, a last stand, persistence.', 'Burnout, defensiveness, depletion.'],
+      10: ['Burden, responsibility, overload.', 'Releasing the load, delegation.'],
+      11: ['Curiosity, enthusiasm, a free spirit.', 'Aimlessness, impatience, bad news.'],
+      12: ['Bold action, adventure, passion.', 'Recklessness, haste, frustration.'],
+      13: ['Confidence, warmth, a vibrant will.', 'Insecurity, jealousy, burnout.'],
+      14: ['Vision, leadership, bold authority.', 'Impulsiveness, domineering, rashness.']
+    },
+    Cups: {
+      1:  ['New love, an emotional opening.', 'Blocked feelings, emptiness.'],
+      2:  ['Connection, partnership, mutual love.', 'Imbalance, a breakup, tension.'],
+      3:  ['Friendship, celebration, community.', 'Overindulgence, gossip, isolation.'],
+      4:  ['Apathy, contemplation, discontent.', 'New awareness, accepting an offer.'],
+      5:  ['Loss, grief, focus on what is gone.', 'Acceptance, moving on, healing.'],
+      6:  ['Nostalgia, innocence, fond memories.', 'Stuck in the past, leaving home.'],
+      7:  ['Choices, fantasy, wishful thinking.', 'Clarity, decisive action, focus.'],
+      8:  ['Walking away, seeking deeper meaning.', 'Aimlessness, fear of moving on.'],
+      9:  ['Contentment, wishes fulfilled.', 'Smugness, unmet wishes, excess.'],
+      10: ['Harmony, lasting joy, family bliss.', 'Broken harmony, misaligned values.'],
+      11: ['Tender feelings, creativity, a message.', 'Moodiness, emotional immaturity.'],
+      12: ['Romance, charm, following the heart.', 'Moodiness, unrealistic ideals.'],
+      13: ['Compassion, intuition, emotional depth.', 'Over-giving, insecurity, martyrdom.'],
+      14: ['Emotional balance, calm wisdom.', 'Volatility, repression, manipulation.']
+    },
+    Swords: {
+      1:  ['Clarity, breakthrough, sharp truth.', 'Confusion, misused force, brutality.'],
+      2:  ['Stalemate, a hard choice, truce.', 'Indecision broken, information revealed.'],
+      3:  ['Heartbreak, sorrow, painful truth.', 'Healing, releasing grief, forgiveness.'],
+      4:  ['Rest, recovery, quiet contemplation.', 'Restlessness, burnout, re-entry.'],
+      5:  ['Conflict, defeat, a hollow victory.', 'Reconciliation, making amends.'],
+      6:  ['Transition, moving on, calmer waters.', 'Stuck, resistance, unfinished baggage.'],
+      7:  ['Strategy, stealth, acting alone.', 'Confession, conscience, coming clean.'],
+      8:  ['Feeling trapped, self-imposed limits.', 'Freedom, new perspective, release.'],
+      9:  ['Anxiety, worry, sleepless nights.', 'Hope returning, facing your fears.'],
+      10: ['A painful ending, rock bottom.', 'Recovery, the worst is over.'],
+      11: ['Curiosity, vigilance, new ideas.', 'Deception, haste, scattered thoughts.'],
+      12: ['Ambition, drive, swift action.', 'Recklessness, aggression, no follow-through.'],
+      13: ['Clear judgment, honesty, independence.', 'Coldness, harshness, bitterness.'],
+      14: ['Authority, truth, intellectual power.', 'Tyranny, manipulation, cold logic.']
+    },
+    Pentacles: {
+      1:  ['Opportunity, prosperity, a new resource.', 'A missed chance, insecurity, greed.'],
+      2:  ['Balance, adaptability, juggling priorities.', 'Overwhelm, disorganization.'],
+      3:  ['Teamwork, skill, building together.', 'Discord, poor quality, misalignment.'],
+      4:  ['Security, saving, holding on.', 'Greed, control, or letting go of fear.'],
+      5:  ['Hardship, lack, feeling left out.', 'Recovery, support found, hope.'],
+      6:  ['Generosity, giving and receiving.', 'Strings attached, inequality, debt.'],
+      7:  ['Patience, assessment, the long view.', 'Impatience, poor return, wasted effort.'],
+      8:  ['Diligence, mastery, craftsmanship.', 'Perfectionism, dull repetition.'],
+      9:  ['Abundance, self-reliance, luxury.', 'Overwork, hollow success, dependence.'],
+      10: ['Legacy, wealth, lasting foundations.', 'Instability, family friction, fleeting gain.'],
+      11: ['Ambition, study, a new opportunity.', 'Lack of focus, procrastination.'],
+      12: ['Diligence, routine, steady progress.', 'Stagnation, boredom, laziness.'],
+      13: ['Nurturing, practical, abundant care.', 'Smothering, imbalance, self-neglect.'],
+      14: ['Prosperity, security, grounded leadership.', 'Greed, materialism, stubbornness.']
+    }
+  };
+
+  const SUITS = ['Wands', 'Cups', 'Swords', 'Pentacles'];
+  const RANKLABEL = { 1:'Ace', 2:'Two', 3:'Three', 4:'Four', 5:'Five', 6:'Six', 7:'Seven', 8:'Eight', 9:'Nine', 10:'Ten', 11:'Page', 12:'Knight', 13:'Queen', 14:'King' };
+  const ROMAN = ['0','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI'];
+
+  const DECK = [];
+  MAJORS.forEach((m, i) => DECK.push({ id: 'M' + i, type: 'major', num: i, name: m.name, up: m.up, rev: m.rev }));
+  SUITS.forEach(su => {
+    for (let r = 1; r <= 14; r++) {
+      DECK.push({ id: su[0] + r, type: 'minor', suit: su, rank: r, name: RANKLABEL[r] + ' of ' + su, up: MINOR[su][r][0], rev: MINOR[su][r][1] });
+    }
+  });
+  const BY_ID = {}; DECK.forEach(c => BY_ID[c.id] = c);
+
+  /* ════════ ART ENGINE ════════ */
+  const GOLD = '#e8c66b', GOLDD = '#b9933f';
+  const SUIT_PAL = {
+    Wands:     { bg0:'#3a140c', bg1:'#160604', ink:'#ff8f43', ink2:'#ffd58a', line:'#e0612f' },
+    Cups:      { bg0:'#0a2b36', bg1:'#04141a', ink:'#54d2e2', ink2:'#bdeef5', line:'#39a8c2' },
+    Swords:    { bg0:'#141d36', bg1:'#080c18', ink:'#aebbe8', ink2:'#e7edff', line:'#7488c4' },
+    Pentacles: { bg0:'#11281a', bg1:'#07130b', ink:'#d8b15a', ink2:'#bfe39a', line:'#86a35a' }
+  };
+  const M = { bg0:'#2e1a52', bg1:'#130a26', ink:'#e8c66b', ink2:'#f3e3a8', line:'#b9933f', violet:'#9a7bd0' };
+  let UIDC = 0;
+
+  function starPoints(cx, cy, spikes, oR, iR, rotDeg) {
+    rotDeg = rotDeg == null ? -90 : rotDeg;
+    let p = [], rot = rotDeg * Math.PI / 180;
+    for (let i = 0; i < spikes * 2; i++) {
+      const r = (i % 2) ? iR : oR, a = rot + Math.PI * i / spikes;
+      p.push((cx + Math.cos(a) * r).toFixed(1) + ',' + (cy + Math.sin(a) * r).toFixed(1));
+    }
+    return p.join(' ');
+  }
+  const poly = (pts, attrs) => `<polygon points="${pts}" ${attrs}/>`;
+  function rays(cx, cy, n, r0, r1, attrs) {
+    let s = '';
+    for (let i = 0; i < n; i++) {
+      const a = Math.PI * 2 * i / n;
+      s += `<line x1="${(cx+Math.cos(a)*r0).toFixed(1)}" y1="${(cy+Math.sin(a)*r0).toFixed(1)}" x2="${(cx+Math.cos(a)*r1).toFixed(1)}" y2="${(cy+Math.sin(a)*r1).toFixed(1)}" ${attrs}/>`;
+    }
+    return s;
+  }
+
+  /* ── suit motif (the signature glyph of each suit) ── */
+  function motif(suit, x, y, s) {
+    const p = SUIT_PAL[suit];
+    if (suit === 'Wands')
+      return `<path d="M${x} ${y-11*s} C ${x-7*s} ${y-4*s} ${x-5*s} ${y+6*s} ${x} ${y+9*s} C ${x+5*s} ${y+6*s} ${x+7*s} ${y-4*s} ${x} ${y-11*s} Z" fill="${p.ink}"/>`
+           + `<path d="M${x} ${y-5*s} C ${x-3*s} ${y-1*s} ${x-2*s} ${y+4*s} ${x} ${y+6*s} C ${x+2*s} ${y+4*s} ${x+3*s} ${y-1*s} ${x} ${y-5*s} Z" fill="${p.ink2}"/>`;
+    if (suit === 'Cups')
+      return `<path d="M${x-7*s} ${y-7*s} Q ${x} ${y+5*s} ${x+7*s} ${y-7*s} Z" fill="${p.ink}"/>`
+           + `<rect x="${x-1.3*s}" y="${y+1*s}" width="${2.6*s}" height="${5*s}" fill="${p.ink}"/>`
+           + `<ellipse cx="${x}" cy="${y+7*s}" rx="${5*s}" ry="${1.6*s}" fill="${p.ink}"/>`
+           + `<path d="M${x-4.4*s} ${y-5.6*s} Q ${x} ${y+1.4*s} ${x+4.4*s} ${y-5.6*s}" fill="none" stroke="${p.ink2}" stroke-width="${1.1*s}"/>`;
+    if (suit === 'Swords')
+      return poly(`${x},${y-10*s} ${x+2.4*s},${y} ${x},${y+10*s} ${x-2.4*s},${y}`, `fill="${p.ink2}" stroke="${p.line}" stroke-width="0.8"`)
+           + `<line x1="${x-5*s}" y1="${y+5*s}" x2="${x+5*s}" y2="${y+5*s}" stroke="${p.ink}" stroke-width="${1.6*s}" stroke-linecap="round"/>`
+           + `<circle cx="${x}" cy="${y+9*s}" r="${1.5*s}" fill="${p.ink}"/>`;
+    // Pentacles
+    return `<circle cx="${x}" cy="${y}" r="${8*s}" fill="none" stroke="${p.ink}" stroke-width="1.6"/>`
+         + poly(starPoints(x, y, 5, 6.6*s, 2.7*s, -90), `fill="none" stroke="${p.ink2}" stroke-width="1.1"`)
+         + `<circle cx="${x}" cy="${y}" r="${1.4*s}" fill="${p.ink2}"/>`;
+  }
+
+  const PIPS = {
+    2:  [[120,130],[120,235]],
+    3:  [[120,115],[120,182],[120,249]],
+    4:  [[96,130],[144,130],[96,235],[144,235]],
+    5:  [[96,125],[144,125],[120,182],[96,240],[144,240]],
+    6:  [[96,120],[144,120],[96,182],[144,182],[96,244],[144,244]],
+    7:  [[96,118],[144,118],[120,150],[96,188],[144,188],[96,250],[144,250]],
+    8:  [[96,112],[144,112],[96,162],[144,162],[96,212],[144,212],[96,262],[144,262]],
+    9:  [[96,110],[144,110],[120,142],[96,176],[144,176],[120,208],[96,244],[144,244],[120,276]],
+    10: [[95,106],[145,106],[120,134],[95,160],[145,160],[95,206],[145,206],[120,232],[95,260],[145,260]]
+  };
+
+  function ace(suit) {
+    const p = SUIT_PAL[suit];
+    return `<circle cx="120" cy="178" r="40" fill="none" stroke="${p.line}" stroke-width="1" opacity="0.5"/>`
+         + rays(120, 178, 12, 44, 56, `stroke="${p.ink}" stroke-width="1" opacity="0.5"`)
+         + motif(suit, 120, 178, 3.4);
+  }
+
+  function court(suit, rank) {
+    const p = SUIT_PAL[suit], r = rank - 10;
+    let s = `<path d="M120 72 Q 74 76 74 165 Q 74 252 120 286 Q 166 252 166 165 Q 166 76 120 72 Z" fill="${p.bg0}" stroke="${p.ink}" stroke-width="1.4" opacity="0.9"/>`;
+    for (let i = 0; i < r; i++) s += poly(starPoints(120 + (i - (r - 1) / 2) * 16, 104, 5, 5, 2, -90), `fill="${p.ink2}"`);
+    s += motif(suit, 120, 184, 2.3);
+    return s;
+  }
+
+  function minorArt(card) {
+    const r = card.rank;
+    if (r === 1) return ace(card.suit);
+    if (r >= 11) return court(card.suit, r);
+    const s = (r <= 2 ? 1.25 : r === 3 ? 1.12 : r <= 5 ? 1.0 : r <= 7 ? 0.86 : 0.74);
+    return PIPS[r].map(xy => motif(card.suit, xy[0], xy[1], s)).join('');
+  }
+
+  /* ── 22 bespoke major arcana compositions ── */
+  const MAJOR_ART = {
+    0: () => rays(95,95,12,8,16,`stroke="${M.ink}" stroke-width="1"`) + `<circle cx="95" cy="95" r="9" fill="${M.ink}"/>`
+       + `<path d="M44 252 Q120 234 196 258" fill="none" stroke="${M.ink}" stroke-width="1.4" stroke-dasharray="2 7" stroke-linecap="round"/>`
+       + poly(`120,150 133,198 107,198`, `fill="${M.violet}" stroke="${M.ink}" stroke-width="1.2"`)
+       + `<circle cx="120" cy="150" r="6" fill="${M.ink2}"/>` + poly(starPoints(158,150,4,8,3,-90), `fill="${M.ink2}"`),
+    1: () => `<ellipse cx="108" cy="108" rx="13" ry="9" fill="none" stroke="${M.ink}" stroke-width="2"/><ellipse cx="132" cy="108" rx="13" ry="9" fill="none" stroke="${M.ink}" stroke-width="2"/>`
+       + `<line x1="120" y1="132" x2="120" y2="252" stroke="${M.ink2}" stroke-width="3.4" stroke-linecap="round"/><circle cx="120" cy="132" r="5" fill="${M.ink2}"/><circle cx="120" cy="252" r="5" fill="${M.ink2}"/>`
+       + `<circle cx="90" cy="206" r="4.5" fill="${M.ink}"/>` + poly(`110,201 116,211 104,211`, `fill="${M.ink}"`)
+       + poly(`130,200 137,206 130,212 123,206`, `fill="${M.ink}"`) + poly(starPoints(150,206,5,5,2,-90), `fill="${M.ink}"`),
+    2: () => `<rect x="78" y="120" width="9" height="150" rx="3" fill="${M.violet}" stroke="${M.ink}" stroke-width="1"/><rect x="153" y="120" width="9" height="150" rx="3" fill="${M.violet}" stroke="${M.ink}" stroke-width="1"/>`
+       + `<path d="M120 146 a28 28 0 1 0 0 56 a21 21 0 1 1 0 -56 Z" fill="${M.ink2}"/>`
+       + `<line x1="100" y1="138" x2="100" y2="260" stroke="${M.ink}" stroke-width="0.7" opacity="0.5"/><line x1="120" y1="216" x2="120" y2="260" stroke="${M.ink}" stroke-width="0.7" opacity="0.5"/><line x1="140" y1="138" x2="140" y2="260" stroke="${M.ink}" stroke-width="0.7" opacity="0.5"/>`,
+    3: () => `<circle cx="120" cy="150" r="22" fill="none" stroke="${M.ink2}" stroke-width="3"/><line x1="120" y1="172" x2="120" y2="220" stroke="${M.ink2}" stroke-width="3"/><line x1="103" y1="196" x2="137" y2="196" stroke="${M.ink2}" stroke-width="3"/>`
+       + rays(120,150,12,26,34,`stroke="${M.ink}" stroke-width="1.2"`)
+       + `<circle cx="92" cy="250" r="3" fill="${M.ink}"/><circle cx="120" cy="256" r="3" fill="${M.ink}"/><circle cx="148" cy="250" r="3" fill="${M.ink}"/>`,
+    4: () => `<rect x="90" y="150" width="60" height="74" rx="5" fill="${M.violet}" stroke="${M.ink}" stroke-width="1.5"/>`
+       + `<path d="M96 150 q-12 -10 -4 -24 q6 -8 12 -2" fill="none" stroke="${M.ink}" stroke-width="2.4"/><path d="M144 150 q12 -10 4 -24 q-6 -8 -12 -2" fill="none" stroke="${M.ink}" stroke-width="2.4"/>`
+       + `<circle cx="120" cy="180" r="9" fill="none" stroke="${M.ink2}" stroke-width="2"/><line x1="120" y1="189" x2="120" y2="206" stroke="${M.ink2}" stroke-width="2"/>`,
+    5: () => `<path d="M104 120 h32 l-4 12 h-24 Z" fill="${M.ink}"/><path d="M100 134 h40 l-5 13 h-30 Z" fill="${M.ink}" opacity="0.85"/><path d="M96 149 h48 l-6 14 h-36 Z" fill="${M.ink}" opacity="0.7"/>`
+       + `<rect x="86" y="172" width="8" height="90" fill="${M.violet}" stroke="${M.ink}" stroke-width="0.8"/><rect x="146" y="172" width="8" height="90" fill="${M.violet}" stroke="${M.ink}" stroke-width="0.8"/>`
+       + `<line x1="110" y1="202" x2="132" y2="242" stroke="${M.ink2}" stroke-width="2.2"/><line x1="130" y1="202" x2="108" y2="242" stroke="${M.ink2}" stroke-width="2.2"/><circle cx="110" cy="202" r="4" fill="${M.ink2}"/><circle cx="130" cy="202" r="4" fill="${M.ink2}"/>`,
+    6: () => `<circle cx="104" cy="192" r="32" fill="none" stroke="${M.ink}" stroke-width="2"/><circle cx="136" cy="192" r="32" fill="none" stroke="${M.ink2}" stroke-width="2"/>`
+       + poly(`120,110 140,150 100,150`, `fill="none" stroke="${M.ink}" stroke-width="2"`) + rays(120,130,9,6,16,`stroke="${M.ink}" stroke-width="1"`),
+    7: () => `<rect x="86" y="188" width="68" height="42" rx="6" fill="${M.violet}" stroke="${M.ink}" stroke-width="1.5"/>`
+       + `<circle cx="98" cy="238" r="12" fill="none" stroke="${M.ink}" stroke-width="2.5"/><circle cx="142" cy="238" r="12" fill="none" stroke="${M.ink}" stroke-width="2.5"/>`
+       + `<path d="M84 188 q36 -40 72 0" fill="none" stroke="${M.ink}" stroke-width="1.5"/>`
+       + poly(starPoints(104,168,4,5,2,-90),`fill="${M.ink2}"`) + poly(starPoints(120,160,4,5,2,-90),`fill="${M.ink2}"`) + poly(starPoints(136,168,4,5,2,-90),`fill="${M.ink2}"`),
+    8: () => `<ellipse cx="108" cy="120" rx="13" ry="9" fill="none" stroke="${M.ink}" stroke-width="2.4"/><ellipse cx="132" cy="120" rx="13" ry="9" fill="none" stroke="${M.ink}" stroke-width="2.4"/>`
+       + `<circle cx="120" cy="192" r="30" fill="none" stroke="${M.ink2}" stroke-width="2"/><path d="M104 198 q16 18 32 0" fill="none" stroke="${M.ink}" stroke-width="2.2" stroke-linecap="round"/>`
+       + rays(120,192,12,33,41,`stroke="${M.ink}" stroke-width="1"`),
+    9: () => poly(`120,140 150,170 120,200 90,170`, `fill="none" stroke="${M.ink}" stroke-width="2"`) + poly(starPoints(120,170,6,11,5,-90), `fill="${M.ink2}"`)
+       + `<line x1="156" y1="150" x2="156" y2="252" stroke="${M.ink}" stroke-width="2.4" stroke-linecap="round"/><path d="M104 230 l16 14 l16 -14" fill="none" stroke="${M.ink}" stroke-width="1.6"/>`,
+    10: () => `<circle cx="120" cy="182" r="44" fill="none" stroke="${M.ink}" stroke-width="2"/><circle cx="120" cy="182" r="28" fill="none" stroke="${M.ink2}" stroke-width="1.4"/><circle cx="120" cy="182" r="10" fill="${M.violet}" stroke="${M.ink}" stroke-width="1.2"/>`
+       + rays(120,182,8,10,44,`stroke="${M.ink}" stroke-width="1.4"`)
+       + poly(`60,120 70,120 65,130`,`fill="${M.ink}"`) + poly(`170,120 180,120 175,130`,`fill="${M.ink}"`) + poly(`60,244 70,244 65,234`,`fill="${M.ink}"`) + poly(`170,244 180,244 175,234`,`fill="${M.ink}"`),
+    11: () => `<line x1="120" y1="120" x2="120" y2="252" stroke="${M.ink2}" stroke-width="3" stroke-linecap="round"/>` + poly(`120,108 126,124 114,124`, `fill="${M.ink2}"`)
+       + `<line x1="78" y1="150" x2="162" y2="150" stroke="${M.ink}" stroke-width="2.4"/>`
+       + `<path d="M78 150 l-11 26 a15 7 0 0 0 22 0 Z" fill="none" stroke="${M.ink}" stroke-width="1.6"/><path d="M162 150 l-11 26 a15 7 0 0 0 22 0 Z" fill="none" stroke="${M.ink}" stroke-width="1.6"/>`,
+    12: () => `<line x1="74" y1="112" x2="166" y2="112" stroke="${M.ink}" stroke-width="3"/><line x1="120" y1="112" x2="120" y2="150" stroke="${M.ink2}" stroke-width="2"/>`
+       + poly(`120,150 146,198 94,198`, `fill="${M.violet}" stroke="${M.ink2}" stroke-width="2"`)
+       + `<circle cx="120" cy="220" r="16" fill="none" stroke="${M.ink}" stroke-width="1.2" opacity="0.8"/>` + rays(120,220,12,17,24,`stroke="${M.ink}" stroke-width="0.9"`),
+    13: () => `<rect x="84" y="152" width="8" height="110" fill="${M.violet}" stroke="${M.ink}" stroke-width="0.8"/><rect x="148" y="152" width="8" height="110" fill="${M.violet}" stroke="${M.ink}" stroke-width="0.8"/>`
+       + `<line x1="158" y1="132" x2="158" y2="242" stroke="${M.ink}" stroke-width="2.4"/><path d="M158 132 q-42 0 -46 36" fill="none" stroke="${M.ink2}" stroke-width="3" stroke-linecap="round"/>`
+       + poly(starPoints(120,240,8,12,5,-90), `fill="${M.ink2}"`) + `<circle cx="120" cy="240" r="3" fill="${M.violet}"/>`,
+    14: () => `<rect x="106" y="112" width="28" height="28" fill="none" stroke="${M.ink}" stroke-width="1.4"/>` + poly(`120,116 132,136 108,136`, `fill="none" stroke="${M.ink2}" stroke-width="1.6"`)
+       + `<circle cx="102" cy="180" r="15" fill="none" stroke="${M.ink2}" stroke-width="2"/><circle cx="138" cy="234" r="15" fill="none" stroke="${M.ink2}" stroke-width="2"/><path d="M110 190 q26 16 22 44" fill="none" stroke="${M.ink}" stroke-width="2.4" stroke-linecap="round"/>`,
+    15: () => poly(starPoints(120,172,5,34,14,90), `fill="none" stroke="${M.ink}" stroke-width="2"`)
+       + `<path d="M104 134 q-10 -16 4 -24" fill="none" stroke="${M.ink2}" stroke-width="2.4"/><path d="M136 134 q10 -16 -4 -24" fill="none" stroke="${M.ink2}" stroke-width="2.4"/>`
+       + `<ellipse cx="104" cy="244" rx="6" ry="9" fill="none" stroke="${M.ink}" stroke-width="1.6"/><ellipse cx="120" cy="256" rx="6" ry="9" fill="none" stroke="${M.ink}" stroke-width="1.6"/><ellipse cx="136" cy="244" rx="6" ry="9" fill="none" stroke="${M.ink}" stroke-width="1.6"/>`,
+    16: () => `<rect x="106" y="130" width="28" height="128" fill="${M.violet}" stroke="${M.ink}" stroke-width="1.4"/><path d="M104 130 l8 -14 l8 10 l8 -12 l8 16 Z" fill="${M.ink}"/>`
+       + `<path d="M150 98 l-22 40 l10 4 l-16 30" fill="none" stroke="${M.ink2}" stroke-width="2.6" stroke-linecap="round"/>`
+       + poly(`96,212 104,224 92,226`,`fill="${M.ink}"`) + poly(`148,202 156,214 144,216`,`fill="${M.ink}"`) + motif('Wands',112,250,0.6) + motif('Wands',130,252,0.6),
+    17: () => poly(starPoints(120,150,8,30,12,-90), `fill="${M.ink2}"`) + poly(starPoints(120,150,8,14,6,-90), `fill="${M.violet}"`)
+       + poly(starPoints(86,124,5,7,3,-90),`fill="${M.ink}"`) + poly(starPoints(156,120,5,6,2.5,-90),`fill="${M.ink}"`) + poly(starPoints(150,168,5,5,2,-90),`fill="${M.ink}"`) + poly(starPoints(90,170,5,5,2,-90),`fill="${M.ink}"`)
+       + `<path d="M80 232 q20 -10 40 0 t40 0" fill="none" stroke="${M.ink}" stroke-width="1.6"/><path d="M80 248 q20 -10 40 0 t40 0" fill="none" stroke="${M.ink}" stroke-width="1.6" opacity="0.7"/>`
+       + `<line x1="112" y1="186" x2="104" y2="226" stroke="${M.ink2}" stroke-width="1.6"/><line x1="128" y1="186" x2="136" y2="226" stroke="${M.ink2}" stroke-width="1.6"/>`,
+    18: () => `<path d="M120 96 a30 30 0 1 0 0 60 a22 22 0 1 1 0 -60 Z" fill="${M.ink2}"/>` + rays(120,126,10,32,40,`stroke="${M.ink}" stroke-width="0.9" opacity="0.7"`)
+       + `<rect x="76" y="172" width="16" height="70" fill="${M.violet}" stroke="${M.ink}" stroke-width="1"/><rect x="148" y="172" width="16" height="70" fill="${M.violet}" stroke="${M.ink}" stroke-width="1"/>`
+       + `<path d="M120 270 q-18 -24 0 -48 q18 -24 0 -48" fill="none" stroke="${M.ink}" stroke-width="2" stroke-linecap="round"/>`
+       + `<circle cx="100" cy="150" r="2.4" fill="${M.ink}"/><circle cx="142" cy="150" r="2.4" fill="${M.ink}"/><circle cx="120" cy="138" r="2.4" fill="${M.ink}"/>`,
+    19: () => rays(120,150,16,28,46,`stroke="${M.ink}" stroke-width="2" stroke-linecap="round"`) + `<circle cx="120" cy="150" r="26" fill="${M.ink}" stroke="${M.ink2}" stroke-width="2"/>`
+       + `<rect x="80" y="250" width="80" height="14" fill="${M.violet}" stroke="${M.ink}" stroke-width="1"/>` + poly(starPoints(120,150,5,8,3,-90), `fill="${M.bg1}"`),
+    20: () => poly(`120,118 152,180 88,180`, `fill="none" stroke="${M.ink}" stroke-width="2.2"`) + rays(120,108,7,4,16,`stroke="${M.ink}" stroke-width="1.2"`)
+       + `<line x1="120" y1="140" x2="120" y2="180" stroke="${M.ink2}" stroke-width="2"/>`
+       + `<path d="M92 238 a16 16 0 0 1 32 0" fill="none" stroke="${M.ink2}" stroke-width="2"/><path d="M124 238 a16 16 0 0 1 32 0" fill="none" stroke="${M.ink2}" stroke-width="2" opacity="0.7"/><path d="M108 252 a16 16 0 0 1 32 0" fill="none" stroke="${M.ink2}" stroke-width="2"/>`,
+    21: () => `<ellipse cx="120" cy="180" rx="46" ry="78" fill="none" stroke="${M.ink}" stroke-width="2.4" stroke-dasharray="3 5"/>` + poly(starPoints(120,180,5,16,7,-90), `fill="none" stroke="${M.ink2}" stroke-width="1.8"`)
+       + `<circle cx="120" cy="180" r="5" fill="${M.ink2}"/><rect x="66" y="96" width="12" height="12" fill="${M.ink}"/>`
+       + poly(`168,96 180,96 174,108`, `fill="${M.ink}"`) + poly(starPoints(72,256,5,7,3,-90), `fill="${M.ink}"`) + `<circle cx="174" cy="258" r="6" fill="none" stroke="${M.ink}" stroke-width="2"/>`
+  };
+
+  /* ── frame + composition ── */
+  function corners() {
+    return [[20,18],[220,18],[20,342],[220,342]]
+      .map(c => poly(`${c[0]},${c[1]-4} ${c[0]+4},${c[1]} ${c[0]},${c[1]+4} ${c[0]-4},${c[1]}`, `fill="${GOLD}"`)).join('');
+  }
+
+  function renderCard(card, reversed, extraClass) {
+    const isMaj = card.type === 'major';
+    const pal = isMaj ? M : SUIT_PAL[card.suit];
+    const u = ++UIDC;
+    const art = isMaj ? MAJOR_ART[card.num]() : minorArt(card);
+    const topLabel = isMaj
+      ? `<text x="120" y="35" text-anchor="middle" font-family="Cinzel" font-size="13" fill="${GOLD}" letter-spacing="2">${ROMAN[card.num]}</text>`
+      : motif(card.suit, 120, 30, 0.72);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 360" class="tcard${extraClass ? ' ' + extraClass : ''}">`
+      + `<defs><linearGradient id="bg${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${pal.bg0}"/><stop offset="1" stop-color="${pal.bg1}"/></linearGradient></defs>`
+      + `<rect x="0" y="0" width="240" height="360" rx="16" fill="url(#bg${u})"/>`
+      + `<g transform="${reversed ? 'rotate(180 120 180)' : ''}">${art}</g>`
+      + (reversed ? `<rect x="0" y="0" width="240" height="360" rx="16" fill="#05030a" opacity="0.26"/>` : '')
+      + `<rect x="7" y="7" width="226" height="346" rx="12" fill="none" stroke="${GOLD}" stroke-width="1.6"/>`
+      + `<rect x="12" y="12" width="216" height="336" rx="9" fill="none" stroke="${GOLDD}" stroke-width="0.8" opacity="0.7"/>`
+      + corners()
+      + topLabel
+      + `<text x="120" y="336" text-anchor="middle" font-family="Cinzel" font-size="${card.name.length > 15 ? 12 : 14}" fill="${GOLD}" letter-spacing="1.2" textLength="200" lengthAdjust="spacingAndGlyphs">${card.name.toUpperCase()}</text>`
+      + `</svg>`;
+  }
+
+  /* ════════ STATE / HISTORY ════════ */
+  const HKEY = 'tarot.v1.history';
+  function loadHist() { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch (e) { return []; } }
+  function saveHist(h) { try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch (e) {} }
+  let history = loadHist();
+
+  /* ════════ DRAW ════════ */
+  function showCard(card, reversed, log) {
+    const stage = $('stage');
+    stage.classList.remove('empty');
+    stage.innerHTML = renderCard(card, reversed, 'dealt');
+    const meaning = reversed ? card.rev : card.up;
+    $('reading').innerHTML =
+      `<div class="r-name">${card.name}</div>`
+      + `<div class="r-orient${reversed ? ' rev' : ''}">${reversed ? 'Reversed' : 'Upright'}</div>`
+      + `<div class="r-mean">${meaning}</div>`;
+    if (log) {
+      history.push({ id: card.id, name: card.name, reversed: reversed, ts: Date.now() });
+      saveHist(history);
+    }
+  }
+
+  function drawCard() {
+    const card = DECK[Math.floor(Math.random() * DECK.length)];
+    const reversed = Math.random() < 0.5;
+    showCard(card, reversed, true);
+  }
+
+  $('draw').addEventListener('click', drawCard);
+  $('stage').addEventListener('click', () => { if ($('stage').classList.contains('empty') || $('stage').querySelector('svg')) drawCard(); });
+
+  /* ════════ DECK BROWSE ════════ */
+  function renderDeck() {
+    const grid = $('deck-grid');
+    if (grid.dataset.built) return;
+    let html = '<div class="deck-section">Major Arcana</div>';
+    DECK.filter(c => c.type === 'major').forEach(c => {
+      html += `<div class="deck-cell" data-id="${c.id}">${renderCard(c, false)}</div>`;
+    });
+    SUITS.forEach(su => {
+      html += `<div class="deck-section">${su}</div>`;
+      DECK.filter(c => c.type === 'minor' && c.suit === su).forEach(c => {
+        html += `<div class="deck-cell" data-id="${c.id}">${renderCard(c, false)}</div>`;
+      });
+    });
+    grid.innerHTML = html;
+    grid.dataset.built = '1';
+    grid.querySelectorAll('.deck-cell').forEach(cell => {
+      cell.addEventListener('click', () => { showCard(BY_ID[cell.dataset.id], false, false); switchView('draw'); });
+    });
+  }
+
+  /* ════════ READINGS ════════ */
+  function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' + new Date(ts).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
+  function renderReadings() {
+    const box = $('readings-list');
+    if (!history.length) { box.innerHTML = '<div class="empty">No readings yet.<br>Draw a card to begin your record.</div>'; return; }
+    box.innerHTML = '';
+    history.slice().reverse().forEach(h => {
+      const row = document.createElement('div');
+      row.className = 'reading-row';
+      row.innerHTML = `<span class="rr-name">${h.name}</span><span class="rr-tag${h.reversed ? ' rev' : ''}">${h.reversed ? 'REVERSED' : 'UPRIGHT'}</span><span class="rr-date">${fmtDate(h.ts)}</span>`;
+      row.addEventListener('click', () => { if (BY_ID[h.id]) { showCard(BY_ID[h.id], h.reversed, false); switchView('draw'); } });
+      box.appendChild(row);
+    });
+  }
+
+  /* ════════ EXPORT / IMPORT ════════ */
+  function status(msg, isErr) {
+    const el = $('backup-status');
+    el.textContent = msg; el.style.color = isErr ? 'var(--danger)' : 'var(--accent)';
+    el.classList.add('show'); clearTimeout(status._t);
+    status._t = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+  function exportJSON() {
+    if (!history.length) { status('No readings to export yet.', true); return; }
+    const data = history.map(h => ({ id: h.id, name: h.name, reversed: !!h.reversed, ts: h.ts }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'tarot-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status('Exported ' + history.length + ' reading' + (history.length === 1 ? '' : 's') + '.');
+  }
+  function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let incoming;
+      try { incoming = JSON.parse(reader.result); } catch (e) { status('Could not read that file.', true); return; }
+      if (!Array.isArray(incoming)) { status('That file is not a Tarot backup.', true); return; }
+      const seen = new Set(history.map(h => h.ts));
+      let added = 0;
+      incoming.forEach(item => {
+        if (!item) return;
+        const ts = typeof item.ts === 'number' ? item.ts : Date.parse(item.ts);
+        if (!ts || seen.has(ts) || !BY_ID[item.id]) return;
+        seen.add(ts);
+        history.push({ id: item.id, name: BY_ID[item.id].name, reversed: !!item.reversed, ts: ts });
+        added++;
+      });
+      if (added) { history.sort((a, b) => a.ts - b.ts); saveHist(history); renderReadings(); }
+      status(added ? ('Imported ' + added + ' reading' + (added === 1 ? '' : 's') + '.') : 'No new readings to import.');
+    };
+    reader.onerror = () => status('Could not read that file.', true);
+    reader.readAsText(file);
+  }
+  $('export').addEventListener('click', exportJSON);
+  $('import').addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', ev => { const f = ev.target.files && ev.target.files[0]; if (f) importJSON(f); ev.target.value = ''; });
+
+  /* ════════ TABS ════════ */
+  function switchView(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+    if (name === 'deck') renderDeck();
+    if (name === 'readings') renderReadings();
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchView(t.dataset.view)));
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
