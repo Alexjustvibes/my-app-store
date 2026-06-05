@@ -1,7 +1,7 @@
 /* Minimal offline cache for the store shell.
    Bump CACHE when you change index.html so devices pull the new version. */
-const CACHE = 'store-v1';
-const ASSETS = ['index.html', 'manifest.json'];
+const CACHE = 'store-v2';
+const ASSETS = ['index.html', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
