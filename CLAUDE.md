@@ -13,13 +13,17 @@ static files via GitHub Pages.
 index.html          ← The store. Edit REGISTRY here.
 manifest.json       ← Makes the store itself installable
 sw.js               ← Store service worker
+apple-touch-icon.png  icon-192.png  icon-512.png   ← store's own home-screen icons
+tools/
+  gen_icons.py      ← Regenerates every icon (see "Home-screen icons")
 icons/
-  store-icon.png
+  store-icon.png    ← legacy shared icon (kept; no longer referenced)
 apps/
   notes/            ← Template app — copy this for every new app
     index.html
     manifest.json
     sw.js
+    apple-touch-icon.png  icon-192.png  icon-512.png
 ```
 
 ## Adding a new app — two steps, always both
@@ -39,11 +43,12 @@ apps/
 }
 ```
 
-**Step 2 — `apps/<id>/` folder with three files:**
+**Step 2 — `apps/<id>/` folder with three files (plus icons):**
 
 - `index.html` — the app UI (use `apps/notes/index.html` as the starting template)
 - `manifest.json` — PWA manifest (copy from `apps/notes/manifest.json`, update fields)
 - `sw.js` — service worker (copy from `apps/notes/sw.js`, update `CACHE` constant name)
+- icons — add a spec to `tools/gen_icons.py` and run it (see "Home-screen icons")
 
 Both steps are required. An entry without a folder 404s; a folder without an entry is invisible.
 
@@ -82,6 +87,46 @@ Every app's `<head>` must include:
 
 Without these, "Add to Home Screen" on iOS will open in Safari instead of launching
 standalone.
+
+## Home-screen icons
+
+Every installable target — the root store **and** each app — has its own distinct
+home-screen icon so they don't collapse to a generic glyph when saved to an iPhone.
+
+**Each target ships three PNGs, stored next to the `index.html` that references them**
+(root for the store, `apps/<id>/` for each app), keeping paths relative and offline-safe:
+
+| File | Size | Used by |
+|------|------|---------|
+| `apple-touch-icon.png` | 180×180 | iOS Add to Home Screen |
+| `icon-192.png` | 192×192 | manifest (small) |
+| `icon-512.png` | 512×512 | manifest (large) |
+
+Wire them up per target:
+
+- In `<head>`: `<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">`
+- In `manifest.json`: two `icons` entries pointing at `icon-192.png` and `icon-512.png`
+
+Icons are **opaque PNGs with no rounded corners** — iOS applies its own squircle mask,
+so the source must be a full-bleed square. Each icon is the app's CSS gradient (the same
+`bg` as its REGISTRY entry) with the app's emoji centered on top, so the icon matches the
+app's identity (e.g. 🔥 on coral for Courage). Keep the emoji within the centered ~70% so
+it survives Android's maskable crop.
+
+### Generating / regenerating icons
+
+Icons are rendered by `tools/gen_icons.py` (Pillow + numpy; renders color emoji from
+`C:\Windows\Fonts\seguiemj.ttf`). The committed PNGs are static — you only rerun this when
+an emoji or gradient changes, or when adding an app:
+
+```bash
+pip install Pillow            # one-time; numpy is already present
+python tools/gen_icons.py     # run from the repo root
+```
+
+To add an app's icons, append a spec to the `SPECS` list in `tools/gen_icons.py`
+(`dir`, `emoji`, `c0`/`c1` gradient stops matching the REGISTRY `bg`) and rerun.
+Then bump that app's service-worker `CACHE` (the icon files are listed in `ASSETS`).
 
 ## Service worker cache
 
