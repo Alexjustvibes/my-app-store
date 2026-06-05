@@ -1,0 +1,11 @@
+{
+  "name": "Daily Courage",
+  "short_name": "Courage",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#100806",
+  "theme_color": "#1a0a08",
+  "icons": [
+    { "src": "../../icons/store-icon.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}
