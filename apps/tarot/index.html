@@ -65,8 +65,8 @@
   }
   .tab {
     flex: 1; border: none; background: transparent; color: var(--muted);
-    font-family: 'Cinzel', serif; font-weight: 600; font-size: 13px; letter-spacing: .06em;
-    padding: 10px 6px; border-radius: 9px; cursor: pointer; transition: background .15s, color .15s;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px; letter-spacing: .02em;
+    padding: 10px 3px; border-radius: 9px; cursor: pointer; transition: background .15s, color .15s;
   }
   .tab.active { background: var(--accent-soft); color: var(--accent); }
 
@@ -159,6 +159,73 @@
   .backup button:hover { color: var(--accent); }
   .backup-status { text-align: center; font-size: 14px; color: var(--accent); margin-top: 12px; min-height: 18px; opacity: 0; transition: opacity .3s; font-style: italic; }
   .backup-status.show { opacity: 1; }
+
+  /* ── journal ── */
+  .j-new-btn {
+    display: block; width: 100%; margin-bottom: 20px;
+    background: linear-gradient(145deg, #e8c66b, #c79a3e); color: #2a1d05;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 15px; letter-spacing: .06em;
+    padding: 13px; border: none; border-radius: 12px; cursor: pointer; transition: filter .12s, transform .12s;
+  }
+  .j-new-btn:hover { filter: brightness(1.06); }
+  .j-new-btn:active { transform: scale(.98); }
+
+  .j-entry { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color .15s; }
+  .j-entry:hover { border-color: var(--accent-deep); }
+  .j-entry-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .j-entry-title { font-family: 'Cinzel', serif; font-size: 17px; color: var(--accent); }
+  .j-entry-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); white-space: nowrap; }
+  .j-entry-prev { font-size: 17px; line-height: 1.45; color: var(--text); margin-top: 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .j-entry-cards { display: flex; align-items: center; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .j-entry-nocards { font-size: 14px; color: var(--dim); font-style: italic; margin-top: 10px; }
+  .j-mini { width: 44px; flex: 0 0 auto; }
+  .j-mini svg { width: 100%; height: auto; display: block; border-radius: 5px; }
+  .j-more { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  .j-back { background: none; border: none; color: var(--muted); font-family: 'Cinzel', serif; font-size: 14px; cursor: pointer; padding: 0; margin-bottom: 16px; }
+  .j-back:hover { color: var(--accent); }
+  .j-title, .j-date, .j-text {
+    width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    color: var(--text); font-family: 'Cormorant Garamond', serif; outline: none; transition: border-color .15s;
+  }
+  .j-title:focus, .j-date:focus, .j-text:focus { border-color: var(--accent); }
+  .j-title { font-size: 20px; padding: 11px 13px; margin-bottom: 12px; }
+  .j-title::placeholder, .j-text::placeholder { color: var(--dim); }
+  .j-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .j-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .j-date { width: auto; font-family: 'JetBrains Mono', monospace; font-size: 14px; padding: 9px 11px; color-scheme: dark; }
+  .j-text { font-size: 18px; line-height: 1.5; padding: 13px; min-height: 140px; resize: vertical; margin-bottom: 18px; }
+  .j-cards-label { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 12px; }
+  .j-cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+  .j-cards-empty { font-size: 15px; color: var(--dim); font-style: italic; }
+  .j-card-chip { position: relative; width: 74px; }
+  .j-chip-art svg { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .j-chip-meta { margin-top: 5px; text-align: center; }
+  .j-chip-name { font-family: 'Cinzel', serif; font-size: 10px; color: var(--text); line-height: 1.2; }
+  .j-chip-or { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+  .j-chip-or.rev { color: var(--danger); }
+  .j-chip-x { position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font-size: 11px; line-height: 1; cursor: pointer; }
+  .j-chip-x:hover { color: var(--danger); border-color: var(--danger); }
+  .j-attach { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+  .j-btn { font-family: 'Cinzel', serif; font-weight: 600; font-size: 14px; padding: 11px 18px; border-radius: 10px; border: 1px solid var(--accent-deep); background: var(--accent-soft); color: var(--accent); cursor: pointer; transition: filter .12s, transform .12s; }
+  .j-btn:active { transform: scale(.97); }
+  .j-btn.ghost { background: transparent; border-color: var(--line); color: var(--muted); }
+  .j-btn.ghost:hover { color: var(--accent); border-color: var(--accent-deep); }
+  .j-actions { display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding-top: 18px; }
+  .j-btn.save { flex: 1; background: linear-gradient(145deg, #e8c66b, #c79a3e); color: #2a1d05; border: none; font-weight: 700; padding: 13px; }
+  .j-btn.danger { background: transparent; border-color: #5a2f2a; color: var(--danger); }
+  .j-btn.danger.armed { background: #3a1d18; }
+
+  .j-picker { position: fixed; inset: 0; background: #0a0618cc; display: flex; align-items: flex-end; justify-content: center; z-index: 50; }
+  .j-picker[hidden] { display: none; }
+  .j-picker-box { width: 100%; max-width: 620px; max-height: 74vh; background: var(--bg); border: 1px solid var(--line); border-radius: 18px 18px 0 0; padding: 18px calc(18px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left)); overflow: auto; }
+  .j-picker-head { display: flex; align-items: center; justify-content: space-between; font-family: 'Cinzel', serif; font-size: 16px; color: var(--accent); margin-bottom: 12px; }
+  .j-picker-head button { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+  .j-pick-row { display: flex; width: 100%; align-items: center; gap: 12px; padding: 12px 4px; border: none; border-bottom: 1px solid var(--line); background: none; cursor: pointer; text-align: left; }
+  .j-pick-row .rr-name { flex: 1; font-family: 'Cinzel', serif; font-size: 15px; color: var(--text); }
+  .j-pick-row .rr-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .1em; color: var(--muted); }
+  .j-pick-row .rr-tag.rev { color: var(--danger); }
+  .j-pick-row .rr-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--dim); }
 </style>
 </head>
 <body>
@@ -171,8 +238,9 @@
 
   <div class="tabs">
     <button class="tab active" data-view="draw">Draw</button>
-    <button class="tab" data-view="deck">The Deck</button>
+    <button class="tab" data-view="deck">Deck</button>
     <button class="tab" data-view="readings">Readings</button>
+    <button class="tab" data-view="journal">Journal</button>
   </div>
 
   <!-- DRAW -->
@@ -198,6 +266,41 @@
     </footer>
     <div class="backup-status" id="backup-status"></div>
   </section>
+
+  <!-- JOURNAL -->
+  <section class="view" id="view-journal">
+    <div id="j-list-mode">
+      <button class="j-new-btn" id="j-new">✦ &nbsp;New entry</button>
+      <div id="journal-list"></div>
+    </div>
+    <div id="j-edit-mode" style="display:none">
+      <button class="j-back" id="j-back">← All entries</button>
+      <input class="j-title" id="j-title" type="text" placeholder="Title (optional)">
+      <div class="j-row">
+        <label class="j-label" for="j-date">Date</label>
+        <input class="j-date" id="j-date" type="date">
+      </div>
+      <textarea class="j-text" id="j-text" placeholder="What did this reading mean for you?"></textarea>
+      <div class="j-cards-label">Attached cards</div>
+      <div id="j-cards" class="j-cards"></div>
+      <div class="j-attach">
+        <button class="j-btn" id="j-pull">✦ Pull a card</button>
+        <button class="j-btn ghost" id="j-from-hist">Attach from history</button>
+      </div>
+      <div class="j-actions">
+        <button class="j-btn save" id="j-save">Save entry</button>
+        <button class="j-btn danger" id="j-delete">Delete</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- attach-from-history picker -->
+<div class="j-picker" id="j-picker" hidden>
+  <div class="j-picker-box">
+    <div class="j-picker-head"><span>Attach from history</span><button id="j-picker-close" aria-label="Close">✕</button></div>
+    <div id="j-picker-list"></div>
+  </div>
 </div>
 
 <script>
@@ -569,34 +672,71 @@
     status._t = setTimeout(() => el.classList.remove('show'), 2800);
   }
   function exportJSON() {
-    if (!history.length) { status('No readings to export yet.', true); return; }
-    const data = history.map(h => ({ id: h.id, name: h.name, reversed: !!h.reversed, ts: h.ts }));
+    if (!history.length && !journal.length) { status('Nothing to export yet.', true); return; }
+    const data = {
+      version: 1,
+      history: history.map(h => ({ id: h.id, name: h.name, reversed: !!h.reversed, ts: h.ts })),
+      journal: journal.map(e => ({ id: e.id, title: e.title, text: e.text, ts: e.ts, cards: e.cards.map(c => ({ id: c.id, name: c.name, reversed: !!c.reversed })) }))
+    };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'tarot-' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    status('Exported ' + history.length + ' reading' + (history.length === 1 ? '' : 's') + '.');
+    const parts = [];
+    if (history.length) parts.push(history.length + ' reading' + (history.length === 1 ? '' : 's'));
+    if (journal.length) parts.push(journal.length + ' entr' + (journal.length === 1 ? 'y' : 'ies'));
+    status('Exported ' + parts.join(' and ') + '.');
   }
   function importJSON(file) {
     const reader = new FileReader();
     reader.onload = () => {
       let incoming;
       try { incoming = JSON.parse(reader.result); } catch (e) { status('Could not read that file.', true); return; }
-      if (!Array.isArray(incoming)) { status('That file is not a Tarot backup.', true); return; }
-      const seen = new Set(history.map(h => h.ts));
-      let added = 0;
-      incoming.forEach(item => {
+      // Accept both the legacy array (readings-only) and the new {history, journal} object.
+      let incHist = [], incJour = [];
+      if (Array.isArray(incoming)) { incHist = incoming; }
+      else if (incoming && typeof incoming === 'object') { incHist = Array.isArray(incoming.history) ? incoming.history : []; incJour = Array.isArray(incoming.journal) ? incoming.journal : []; }
+      else { status('That file is not a Tarot backup.', true); return; }
+
+      // readings — dedupe by timestamp
+      const seenTs = new Set(history.map(h => h.ts));
+      let addedH = 0;
+      incHist.forEach(item => {
         if (!item) return;
         const ts = typeof item.ts === 'number' ? item.ts : Date.parse(item.ts);
-        if (!ts || seen.has(ts) || !BY_ID[item.id]) return;
-        seen.add(ts);
+        if (!ts || seenTs.has(ts) || !BY_ID[item.id]) return;
+        seenTs.add(ts);
         history.push({ id: item.id, name: BY_ID[item.id].name, reversed: !!item.reversed, ts: ts });
-        added++;
+        addedH++;
       });
-      if (added) { history.sort((a, b) => a.ts - b.ts); saveHist(history); renderReadings(); }
-      status(added ? ('Imported ' + added + ' reading' + (added === 1 ? '' : 's') + '.') : 'No new readings to import.');
+      if (addedH) { history.sort((a, b) => a.ts - b.ts); saveHist(history); renderReadings(); }
+
+      // journal — dedupe by entry id and timestamp; keep only valid card refs
+      const seenIds = new Set(journal.map(e => e.id));
+      const seenJTs = new Set(journal.map(e => e.ts));
+      let addedJ = 0;
+      incJour.forEach(item => {
+        if (!item || typeof item !== 'object') return;
+        let ts = typeof item.ts === 'number' ? item.ts : Date.parse(item.ts);
+        if (!ts) ts = Date.now();
+        let id = (typeof item.id === 'string' && item.id) ? item.id : uid();
+        if (seenIds.has(id) || seenJTs.has(ts)) return;
+        const cards = Array.isArray(item.cards)
+          ? item.cards.filter(c => c && BY_ID[c.id]).map(c => ({ id: c.id, name: BY_ID[c.id].name, reversed: !!c.reversed }))
+          : [];
+        seenIds.add(id); seenJTs.add(ts);
+        journal.push({ id: id, title: typeof item.title === 'string' ? item.title : '', text: typeof item.text === 'string' ? item.text : '', ts: ts, cards: cards });
+        addedJ++;
+      });
+      if (addedJ) { saveJournal(journal); renderJournalList(); }
+
+      if (!addedH && !addedJ) { status('Nothing new to import.'); return; }
+      const parts = [];
+      if (addedH) parts.push(addedH + ' reading' + (addedH === 1 ? '' : 's'));
+      if (addedJ) parts.push(addedJ + ' entr' + (addedJ === 1 ? 'y' : 'ies'));
+      status('Imported ' + parts.join(' and ') + '.');
     };
     reader.onerror = () => status('Could not read that file.', true);
     reader.readAsText(file);
@@ -605,12 +745,134 @@
   $('import').addEventListener('click', () => $('file').click());
   $('file').addEventListener('change', ev => { const f = ev.target.files && ev.target.files[0]; if (f) importJSON(f); ev.target.value = ''; });
 
+  /* ════════ JOURNAL ════════ */
+  const JKEY = 'tarot.journal.v1';
+  function loadJournal() { try { return JSON.parse(localStorage.getItem(JKEY)) || []; } catch (e) { return []; } }
+  function saveJournal(j) { try { localStorage.setItem(JKEY, JSON.stringify(j)); } catch (e) {} }
+  let journal = loadJournal();
+  let editing = null;
+
+  function uid() { return 'j' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function toDateInput(ts) { const d = new Date(ts), z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+
+  /* ── list view ── */
+  function renderJournalList() {
+    const box = $('journal-list');
+    if (!journal.length) { box.innerHTML = '<div class="empty">Your journal is empty.<br>Begin an entry to reflect on a reading.</div>'; return; }
+    box.innerHTML = '';
+    journal.slice().sort((a, b) => b.ts - a.ts).forEach(e => {
+      const card = document.createElement('div');
+      card.className = 'j-entry';
+      const title = e.title ? esc(e.title) : 'Untitled entry';
+      let mini = '';
+      e.cards.slice(0, 6).forEach(c => { if (BY_ID[c.id]) mini += `<div class="j-mini">${renderCard(BY_ID[c.id], c.reversed)}</div>`; });
+      const more = e.cards.length > 6 ? `<span class="j-more">+${e.cards.length - 6}</span>` : '';
+      card.innerHTML =
+        `<div class="j-entry-head"><span class="j-entry-title">${title}</span><span class="j-entry-date">${fmtDate(e.ts)}</span></div>`
+        + (e.text ? `<div class="j-entry-prev">${esc(e.text)}</div>` : '')
+        + (e.cards.length ? `<div class="j-entry-cards">${mini}${more}</div>` : '<div class="j-entry-nocards">No cards attached</div>');
+      card.addEventListener('click', () => openEditor(e));
+      box.appendChild(card);
+    });
+  }
+
+  /* ── editor ── */
+  function openEditor(entry) {
+    editing = entry
+      ? { id: entry.id, title: entry.title, text: entry.text, ts: entry.ts, cards: entry.cards.map(c => ({ id: c.id, name: c.name, reversed: !!c.reversed })), isNew: false }
+      : { id: uid(), title: '', text: '', ts: Date.now(), cards: [], isNew: true };
+    $('j-title').value = editing.title;
+    $('j-text').value = editing.text;
+    $('j-date').value = toDateInput(editing.ts);
+    const del = $('j-delete');
+    del.style.display = editing.isNew ? 'none' : '';
+    del.classList.remove('armed'); del.textContent = 'Delete';
+    renderEditingCards();
+    $('j-list-mode').style.display = 'none';
+    $('j-edit-mode').style.display = '';
+    window.scrollTo(0, 0);
+  }
+  function closeEditor() {
+    $('j-edit-mode').style.display = 'none';
+    $('j-list-mode').style.display = '';
+    editing = null;
+  }
+  function renderEditingCards() {
+    const box = $('j-cards');
+    if (!editing.cards.length) { box.innerHTML = '<div class="j-cards-empty">No cards attached yet — pull one or attach from history.</div>'; return; }
+    box.innerHTML = '';
+    editing.cards.forEach((c, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'j-card-chip';
+      chip.innerHTML =
+        `<div class="j-chip-art">${renderCard(BY_ID[c.id], c.reversed)}</div>`
+        + `<div class="j-chip-meta"><div class="j-chip-name">${esc(c.name)}</div><div class="j-chip-or${c.reversed ? ' rev' : ''}">${c.reversed ? 'Reversed' : 'Upright'}</div></div>`
+        + `<button class="j-chip-x" data-i="${i}" aria-label="Remove card">✕</button>`;
+      box.appendChild(chip);
+    });
+    box.querySelectorAll('.j-chip-x').forEach(b => b.addEventListener('click', () => { editing.cards.splice(+b.dataset.i, 1); renderEditingCards(); }));
+  }
+  function pullIntoEntry() {
+    const card = DECK[Math.floor(Math.random() * DECK.length)];
+    const reversed = Math.random() < 0.5;
+    history.push({ id: card.id, name: card.name, reversed: reversed, ts: Date.now() });   // reuse draw logic: log it
+    saveHist(history); renderReadings();
+    editing.cards.push({ id: card.id, name: card.name, reversed: reversed });
+    renderEditingCards();
+  }
+  function saveEntry() {
+    editing.title = $('j-title').value.trim();
+    editing.text = $('j-text').value;
+    const v = $('j-date').value;
+    if (v) { const p = v.split('-').map(Number); const d = new Date(editing.ts); d.setFullYear(p[0], p[1] - 1, p[2]); editing.ts = d.getTime(); }
+    const rec = { id: editing.id, title: editing.title, text: editing.text, ts: editing.ts, cards: editing.cards };
+    const idx = journal.findIndex(e => e.id === editing.id);
+    if (idx >= 0) journal[idx] = rec; else journal.push(rec);
+    saveJournal(journal);
+    closeEditor(); renderJournalList();
+  }
+  function deleteEntry() {
+    const del = $('j-delete');
+    if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = 'Tap again to delete'; setTimeout(() => { del.classList.remove('armed'); del.textContent = 'Delete'; }, 3000); return; }
+    journal = journal.filter(e => e.id !== editing.id);
+    saveJournal(journal); closeEditor(); renderJournalList();
+  }
+
+  /* ── attach-from-history picker ── */
+  function openPicker() {
+    const list = $('j-picker-list');
+    if (!history.length) { list.innerHTML = '<div class="empty" style="padding:30px 10px">No past draws yet.<br>Pull a card instead.</div>'; }
+    else {
+      list.innerHTML = '';
+      history.slice().reverse().forEach(h => {
+        const row = document.createElement('button');
+        row.className = 'j-pick-row';
+        row.innerHTML = `<span class="rr-name">${h.name}</span><span class="rr-tag${h.reversed ? ' rev' : ''}">${h.reversed ? 'REVERSED' : 'UPRIGHT'}</span><span class="rr-date">${fmtDate(h.ts)}</span>`;
+        row.addEventListener('click', () => { editing.cards.push({ id: h.id, name: h.name, reversed: !!h.reversed }); renderEditingCards(); closePicker(); });
+        list.appendChild(row);
+      });
+    }
+    $('j-picker').hidden = false;
+  }
+  function closePicker() { $('j-picker').hidden = true; }
+
+  $('j-new').addEventListener('click', () => openEditor(null));
+  $('j-back').addEventListener('click', closeEditor);
+  $('j-pull').addEventListener('click', pullIntoEntry);
+  $('j-from-hist').addEventListener('click', openPicker);
+  $('j-save').addEventListener('click', saveEntry);
+  $('j-delete').addEventListener('click', deleteEntry);
+  $('j-picker-close').addEventListener('click', closePicker);
+  $('j-picker').addEventListener('click', e => { if (e.target === $('j-picker')) closePicker(); });
+
   /* ════════ TABS ════════ */
   function switchView(name) {
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
     if (name === 'deck') renderDeck();
     if (name === 'readings') renderReadings();
+    if (name === 'journal') { closeEditor(); renderJournalList(); }
   }
   document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchView(t.dataset.view)));
 
