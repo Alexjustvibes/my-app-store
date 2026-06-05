@@ -264,6 +264,49 @@
     border-radius: 30px;
     cursor: pointer;
   }
+
+  /* ── backup (quiet footer) ── */
+  .backup {
+    margin-top: 44px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .backup .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .backup button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'Spline Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 2px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color .15s;
+  }
+  .backup button:hover { color: var(--accent); }
+  .backup-status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--accent);
+    margin-top: 12px;
+    min-height: 16px;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .backup-status.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -299,6 +342,15 @@
   <section class="view" id="view-all">
     <div id="all-list"></div>
   </section>
+
+  <!-- BACKUP (durable export/import) -->
+  <footer class="backup">
+    <span class="label">Backup</span>
+    <button id="export">Export JSON</button>
+    <button id="import">Import JSON</button>
+    <input type="file" id="file" accept="application/json,.json" hidden>
+  </footer>
+  <div class="backup-status" id="backup-status"></div>
 </div>
 
 <script>
@@ -467,6 +519,72 @@
   }
   document.querySelectorAll('.tab').forEach(t =>
     t.addEventListener('click', () => switchView(t.dataset.view)));
+
+  /* ── backup: export / import (durability against localStorage eviction) ── */
+  function status(msg, isError) {
+    const el = $('backup-status');
+    el.textContent = msg;
+    el.style.color = isError ? 'var(--danger)' : 'var(--accent)';
+    el.classList.add('show');
+    clearTimeout(status._t);
+    status._t = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  function exportJSON() {
+    if (!entries.length) { status('Nothing to export yet.', true); return; }
+    const data = entries.map(e => ({ text: e.text, source: e.source || '', ts: e.ts }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'commonplace-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status('Exported ' + entries.length + ' snippet' + (entries.length === 1 ? '' : 's') + '.');
+  }
+
+  function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let incoming;
+      try { incoming = JSON.parse(reader.result); }
+      catch (e) { status('Could not read that file.', true); return; }
+      if (!Array.isArray(incoming)) { status('That file is not a Commonplace backup.', true); return; }
+
+      const seen = new Set(entries.map(e => e.ts));   // dedupe by timestamp
+      let added = 0;
+      incoming.forEach(item => {
+        if (!item || typeof item.text !== 'string' || !item.text.trim()) return;
+        const ts = typeof item.ts === 'number' ? item.ts : Date.parse(item.ts);
+        if (!ts || seen.has(ts)) return;
+        seen.add(ts);
+        entries.push({ id: uid(), text: item.text, source: typeof item.source === 'string' ? item.source : '', ts });
+        added++;
+      });
+
+      if (added) {
+        entries.sort((a, b) => a.ts - b.ts);          // keep chronological order
+        save(entries);
+        renderCount();
+        renderSurface();
+        renderAll();
+      }
+      status(added ? ('Imported ' + added + ' new snippet' + (added === 1 ? '' : 's') + '.')
+                   : 'No new snippets — already in your book.');
+    };
+    reader.onerror = () => status('Could not read that file.', true);
+    reader.readAsText(file);
+  }
+
+  $('export').addEventListener('click', exportJSON);
+  $('import').addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', ev => {
+    const f = ev.target.files && ev.target.files[0];
+    if (f) importJSON(f);
+    ev.target.value = '';                              // allow re-importing the same file
+  });
 
   /* ── init ── */
   renderCount();
