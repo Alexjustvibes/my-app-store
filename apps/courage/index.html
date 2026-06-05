@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Courage</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Courage">
+<meta name="theme-color" content="#1a0a08">
+<link rel="manifest" href="manifest.json">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Spline+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #100806;
+    --surface: #1c0f0b;
+    --surface-2: #261510;
+    --line: #2e1a14;
+    --text: #f5ece8;
+    --muted: #8a6a62;
+    --accent: #e8523a;      /* warm coral-red */
+    --accent-soft: #e8523a22;
+    --accent-glow: #e8523a44;
+    --dim: #5c3830;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Spline Sans', sans-serif;
+    min-height: 100vh;
+    padding: max(20px, env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));
+    background-image:
+      radial-gradient(ellipse 120% 60% at 50% -5%, #2a0e08 0%, transparent 60%),
+      radial-gradient(circle at 80% 100%, var(--accent-soft) 0%, transparent 40%);
+    background-attachment: fixed;
+  }
+
+  /* ── header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0 24px;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -.02em;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .back-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color .15s;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  /* ── streak pill ── */
+  .streak-row {
+    max-width: 520px;
+    margin: 0 auto 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 30px;
+    padding: 6px 14px 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .streak-badge .fire { font-size: 16px; line-height: 1; }
+  .streak-label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* ── challenge card ── */
+  .card {
+    max-width: 520px;
+    margin: 0 auto 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 26px 24px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), #ff8a3d);
+    border-radius: 18px 18px 0 0;
+  }
+  .tier-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-glow);
+    border-radius: 6px;
+    padding: 3px 8px;
+    margin-bottom: 14px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .challenge-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+  .swap-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--muted);
+    font-family: 'Spline Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color .15s;
+  }
+  .swap-link:hover { color: var(--accent); }
+
+  /* ── did-it button ── */
+  .did-it-btn {
+    display: block;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto 14px;
+    background: var(--accent);
+    color: #1a0808;
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -.01em;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+    box-shadow: 0 4px 24px var(--accent-glow);
+  }
+  .did-it-btn:active { transform: scale(.97); }
+  .did-it-btn:hover { filter: brightness(1.08); }
+  .did-it-btn:disabled {
+    background: var(--surface-2);
+    color: var(--dim);
+    box-shadow: none;
+    cursor: default;
+    filter: none;
+    transform: none;
+  }
+  .done-label {
+    max-width: 520px;
+    margin: 0 auto 14px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── nerve picker ── */
+  .nerve-panel {
+    max-width: 520px;
+    margin: 0 auto 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    display: none;
+  }
+  .nerve-panel.visible { display: block; }
+  .nerve-label {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .nerve-grid {
+    display: flex;
+    gap: 8px;
+  }
+  .nerve-btn {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: border-color .12s, background .12s;
+  }
+  .nerve-btn:hover { border-color: var(--accent); }
+  .nerve-btn .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .nerve-btn .desc {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  /* ── section headers ── */
+  .section-title {
+    max-width: 520px;
+    margin: 32px auto 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  /* ── trend chart ── */
+  .chart-wrap {
+    max-width: 520px;
+    margin: 0 auto 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 16px 12px;
+  }
+  .chart-wrap svg { display: block; width: 100%; overflow: visible; }
+  .trend-note {
+    max-width: 520px;
+    margin: 8px auto 0;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    min-height: 18px;
+  }
+  .trend-note.good { color: #6bcf8a; }
+  .trend-note.neutral { color: var(--muted); }
+
+  /* ── history log ── */
+  .history-list {
+    max-width: 520px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .history-item .h-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+    flex: 1;
+  }
+  .history-item .h-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    text-align: right;
+    flex: 0 0 auto;
+  }
+  .history-item .h-nerve {
+    color: var(--accent);
+    font-weight: 700;
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ── empty state ── */
+  .empty {
+    max-width: 520px;
+    margin: 0 auto;
+    text-align: center;
+    color: var(--dim);
+    font-size: 14px;
+    padding: 30px 0;
+  }
+
+  @keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .card, .nerve-panel, .did-it-btn { animation: fadein .35s ease backwards; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Daily Courage</h1>
+  <a class="back-link" href="../../index.html">← Store</a>
+</header>
+
+<div class="streak-row">
+  <div class="streak-badge">
+    <span class="fire">🔥</span>
+    <span id="streak-num">0</span>
+  </div>
+  <span class="streak-label" id="streak-label">day streak — keep going</span>
+</div>
+
+<div class="card" id="challenge-card">
+  <div class="tier-tag" id="tier-tag">Tier 1 · Warmup</div>
+  <div class="challenge-text" id="challenge-text">Loading today's challenge…</div>
+  <button class="swap-link" id="swap-btn">give me a different one</button>
+</div>
+
+<button class="did-it-btn" id="did-it-btn">I did it</button>
+<div class="done-label" id="done-label" style="display:none"></div>
+
+<div class="nerve-panel" id="nerve-panel">
+  <div class="nerve-label">How nervous were you?</div>
+  <div class="nerve-grid">
+    <button class="nerve-btn" data-n="1"><span class="num">1</span><span class="desc">barely felt it</span></button>
+    <button class="nerve-btn" data-n="2"><span class="num">2</span><span class="desc">slight edge</span></button>
+    <button class="nerve-btn" data-n="3"><span class="num">3</span><span class="desc">real jitters</span></button>
+    <button class="nerve-btn" data-n="4"><span class="num">4</span><span class="desc">heart racing</span></button>
+    <button class="nerve-btn" data-n="5"><span class="num">5</span><span class="desc">terrified &amp; did it</span></button>
+  </div>
+</div>
+
+<div class="section-title">Nerve trend</div>
+<div class="chart-wrap" id="chart-wrap">
+  <svg id="chart-svg" height="80" viewBox="0 0 400 80" preserveAspectRatio="none"></svg>
+</div>
+<div class="trend-note" id="trend-note"></div>
+
+<div class="section-title">History</div>
+<div class="history-list" id="history-list"></div>
+
+<script>
+(function () {
+  /* ── challenge bank ── */
+  const BANK = {
+    1: [
+      "Make eye contact with someone you pass on the street and hold it for a beat — then smile.",
+      "Say hello to the cashier or barista by name (check their name tag).",
+      "Give a genuine compliment to a stranger: one sentence, then leave.",
+      "Ask someone nearby how their day is going — and actually listen to the answer.",
+      "Hold the door open for someone and start a brief exchange while they walk through.",
+      "Sit next to a stranger instead of the empty corner and see what happens.",
+      "At a coffee shop, ask the person next to you what they're working on.",
+      "Nod and smile at three people today as you walk past them.",
+      "Ask a store employee for a recommendation on something.",
+      "Instead of texting a friend, call them — even if it feels awkward to dial.",
+    ],
+    2: [
+      "Start a conversation with someone you've noticed but never spoken to.",
+      "Introduce yourself to a neighbor you don't yet know by name.",
+      "Speak up in a group setting — add one sentence to a conversation you'd normally stay silent in.",
+      "Disagree (politely but clearly) with something someone says in a group.",
+      "Reconnect with someone you've been meaning to reach out to but kept putting off.",
+      "Ask a colleague or classmate something personal — not work/school-related.",
+      "Go to a public event alone and talk to at least one person there.",
+      "Ask for what you want clearly, without softening it into a question about whether it's okay.",
+      "Share a genuine opinion about something, even if you're not sure it'll land.",
+      "Strike up a conversation with the person next to you on public transit.",
+    ],
+    3: [
+      "Tell someone you care about something you've been holding back — something true.",
+      "Be the first to say something vulnerable in a group conversation.",
+      "Apologize to someone you've owed an apology to.",
+      "Ask a mentor, manager, or elder for honest feedback on something important.",
+      "Lead a conversation — introduce a topic, ask real questions, make it go somewhere.",
+      "Tell a friend something they probably need to hear, with care and directness.",
+      "Share something you made or believe in with a group, without downplaying it.",
+      "Ask someone you admire to spend time with you — lunch, a walk, a call.",
+      "Express how you actually feel about something happening in your life, to someone who matters.",
+      "Start something in public — a conversation, a toast, a question to a room.",
+    ],
+  };
+
+  const TIER_NAMES = { 1: 'Tier 1 · Warmup', 2: 'Tier 2 · Opener', 3: 'Tier 3 · Connection' };
+  const NS = 'courage.v1';
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  /* ── storage helpers ── */
+  function load(key, fallback) {
+    try { const v = localStorage.getItem(NS + '.' + key); return v === null ? fallback : JSON.parse(v); }
+    catch (e) { return fallback; }
+  }
+  function save(key, val) {
+    try { localStorage.setItem(NS + '.' + key, JSON.stringify(val)); } catch (e) {}
+  }
+
+  /* ── state ── */
+  let completions = load('completions', []); // [{date, challenge, nerve, tier}]
+  let todayState  = load('today', null);     // {date, challengeIndex, tier, swapCount} | null
+  let nervePanel  = false;
+
+  /* ── derived ── */
+  function getStreak() {
+    if (!completions.length) return 0;
+    let streak = 0;
+    const d = new Date();
+    for (let i = 0; i < 365; i++) {
+      const ds = d.toISOString().slice(0, 10);
+      if (completions.some(c => c.date === ds)) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      } else {
+        if (i === 0) { d.setDate(d.getDate() - 1); continue; } // today not done yet
+        break;
+      }
+    }
+    return streak;
+  }
+
+  function getTier(streak) {
+    if (streak >= 7) return 3;
+    if (streak >= 3) return 2;
+    return 1;
+  }
+
+  /* ── pick or restore today's challenge ── */
+  function initToday(streak) {
+    const t = today();
+    if (todayState && todayState.date === t) return; // already set for today
+    const tier = getTier(streak);
+    todayState = { date: t, challengeIndex: randomIndex(tier, -1), tier, swapCount: 0 };
+    save('today', todayState);
+  }
+
+  function randomIndex(tier, exclude) {
+    const arr = BANK[tier];
+    let idx;
+    let tries = 0;
+    do { idx = Math.floor(Math.random() * arr.length); tries++; }
+    while (idx === exclude && tries < 20);
+    return idx;
+  }
+
+  /* ── check if today is already done ── */
+  function isTodayDone() {
+    return completions.some(c => c.date === today());
+  }
+
+  /* ── render ── */
+  function renderAll() {
+    const streak = getStreak();
+    initToday(streak);
+
+    // streak badge
+    document.getElementById('streak-num').textContent = streak;
+    document.getElementById('streak-label').textContent =
+      streak === 0 ? 'day streak — start today' :
+      streak === 1 ? 'day streak — nice start' :
+      streak < 7  ? `day streak — you're building something` :
+                    `day streak — this is real now`;
+
+    // challenge card
+    const tier = todayState.tier;
+    const challenge = BANK[tier][todayState.challengeIndex];
+    document.getElementById('tier-tag').textContent = TIER_NAMES[tier];
+    document.getElementById('challenge-text').textContent = challenge;
+
+    // swap button visibility
+    document.getElementById('swap-btn').style.display = isTodayDone() ? 'none' : '';
+
+    // did-it button
+    const btn = document.getElementById('did-it-btn');
+    const doneLabel = document.getElementById('done-label');
+    if (isTodayDone()) {
+      btn.style.display = 'none';
+      doneLabel.style.display = '';
+      doneLabel.textContent = '✓ Done for today. Come back tomorrow.';
+    } else {
+      btn.style.display = '';
+      btn.disabled = false;
+      doneLabel.style.display = 'none';
+    }
+
+    renderChart();
+    renderHistory();
+  }
+
+  /* ── trend chart ── */
+  function renderChart() {
+    const svg = document.getElementById('chart-svg');
+    const note = document.getElementById('trend-note');
+    const recent = completions.slice(-20);
+
+    svg.innerHTML = '';
+    if (recent.length < 2) {
+      note.textContent = recent.length === 0 ? 'Complete your first challenge to see your nerve trend.' : 'One down — keep going to see your trend.';
+      note.className = 'trend-note neutral';
+      return;
+    }
+
+    const W = 400, H = 80, PAD = 6;
+    const xs = recent.map((_, i) => PAD + (i / (recent.length - 1)) * (W - PAD * 2));
+    const ys = recent.map(c => PAD + ((5 - c.nerve) / 4) * (H - PAD * 2));
+
+    // area fill
+    const areaPoints = [`M ${xs[0]} ${H}`];
+    xs.forEach((x, i) => areaPoints.push(`L ${x} ${ys[i]}`));
+    areaPoints.push(`L ${xs[xs.length - 1]} ${H} Z`);
+    const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    area.setAttribute('d', areaPoints.join(' '));
+    area.setAttribute('fill', 'url(#chartGrad)');
+    area.setAttribute('opacity', '0.35');
+
+    // gradient def
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    defs.innerHTML = `
+      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#e8523a"/>
+        <stop offset="100%" stop-color="#e8523a" stop-opacity="0"/>
+      </linearGradient>`;
+    svg.appendChild(defs);
+    svg.appendChild(area);
+
+    // grid lines (y = 1,3,5)
+    [1, 3, 5].forEach(v => {
+      const y = PAD + ((5 - v) / 4) * (H - PAD * 2);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', 0); line.setAttribute('x2', W);
+      line.setAttribute('y1', y); line.setAttribute('y2', y);
+      line.setAttribute('stroke', '#2e1a14'); line.setAttribute('stroke-width', '1');
+      svg.appendChild(line);
+    });
+
+    // polyline
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    poly.setAttribute('points', xs.map((x, i) => `${x},${ys[i]}`).join(' '));
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', '#e8523a');
+    poly.setAttribute('stroke-width', '2');
+    poly.setAttribute('stroke-linejoin', 'round');
+    poly.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(poly);
+
+    // dots
+    xs.forEach((x, i) => {
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', x); circle.setAttribute('cy', ys[i]);
+      circle.setAttribute('r', '3');
+      circle.setAttribute('fill', '#e8523a');
+      svg.appendChild(circle);
+    });
+
+    // trend note
+    if (recent.length >= 5) {
+      const half = Math.floor(recent.length / 2);
+      const early = recent.slice(0, half).reduce((s, c) => s + c.nerve, 0) / half;
+      const late  = recent.slice(-half).reduce((s, c) => s + c.nerve, 0) / half;
+      const diff = early - late;
+      if (diff >= 0.5) {
+        note.textContent = `Nerves down ${diff.toFixed(1)} pts on average — it's working.`;
+        note.className = 'trend-note good';
+      } else if (diff <= -0.5) {
+        note.textContent = `Nerves up lately — you might be leveling up the difficulty.`;
+        note.className = 'trend-note neutral';
+      } else {
+        note.textContent = `Holding steady. Keep showing up.`;
+        note.className = 'trend-note neutral';
+      }
+    } else {
+      note.textContent = `${5 - recent.length} more to see your trend.`;
+      note.className = 'trend-note neutral';
+    }
+  }
+
+  /* ── history ── */
+  function renderHistory() {
+    const el = document.getElementById('history-list');
+    el.innerHTML = '';
+    if (!completions.length) {
+      el.innerHTML = '<div class="empty">No completions yet.</div>';
+      return;
+    }
+    const sorted = [...completions].reverse().slice(0, 30);
+    sorted.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      const dateStr = new Date(c.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      item.innerHTML = `
+        <div class="h-text">${esc(c.challenge)}</div>
+        <div class="h-meta">${dateStr}<span class="h-nerve">nerve ${c.nerve}</span></div>`;
+      el.appendChild(item);
+    });
+  }
+
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── event handlers ── */
+  document.getElementById('swap-btn').addEventListener('click', () => {
+    if (isTodayDone()) return;
+    const tier = todayState.tier;
+    todayState.challengeIndex = randomIndex(tier, todayState.challengeIndex);
+    todayState.swapCount = (todayState.swapCount || 0) + 1;
+    save('today', todayState);
+    document.getElementById('challenge-text').textContent = BANK[tier][todayState.challengeIndex];
+  });
+
+  document.getElementById('did-it-btn').addEventListener('click', () => {
+    document.getElementById('nerve-panel').classList.add('visible');
+    document.getElementById('did-it-btn').disabled = true;
+  });
+
+  document.querySelectorAll('.nerve-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const nerve = parseInt(btn.dataset.n, 10);
+      const tier = todayState.tier;
+      const challenge = BANK[tier][todayState.challengeIndex];
+      completions.push({ date: today(), challenge, nerve, tier });
+      save('completions', completions);
+      document.getElementById('nerve-panel').classList.remove('visible');
+      renderAll();
+    });
+  });
+
+  /* ── service worker ── */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  /* ── init ── */
+  renderAll();
+})();
+</script>
+</body>
+</html>
