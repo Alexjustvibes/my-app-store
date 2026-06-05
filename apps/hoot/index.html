@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hoot</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hoot">
+<meta name="theme-color" content="#14102b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0d0a1a;
+    --text: #ece7ff;
+    --muted: #8479b3;
+    --accent: #b79bff;        /* moonlit purple */
+    --accent-deep: #3a2d7a;
+    --accent-mid: #7b5cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Fredoka', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    padding: max(14px, env(safe-area-inset-top)) 16px calc(14px + env(safe-area-inset-bottom));
+    background-image:
+      radial-gradient(120% 70% at 50% -10%, #241a52 0%, transparent 55%),
+      radial-gradient(circle at 50% 120%, #2a1d66 0%, transparent 45%);
+    background-attachment: fixed;
+  }
+
+  /* ── top bar ── */
+  .topbar {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 0 0 auto;
+  }
+  .title {
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: .02em;
+    background: linear-gradient(120deg, var(--text), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .back-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Fredoka', sans-serif;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  /* ── stage ── */
+  .stage {
+    flex: 1 1 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+  }
+
+  /* ── the button ── */
+  .hoot-btn {
+    position: relative;
+    width: min(78vw, 78vh, 420px);
+    height: min(78vw, 78vh, 420px);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    background:
+      radial-gradient(circle at 38% 30%, #a98bff 0%, var(--accent-mid) 42%, var(--accent-deep) 100%);
+    box-shadow:
+      0 0 0 2px #ffffff14 inset,
+      0 18px 50px -8px #6a4dffaa,
+      0 0 80px -10px #7b5cff66;
+    display: grid;
+    place-items: center;
+    transition: transform .12s cubic-bezier(.2,.7,.2,1), filter .12s ease;
+    font-family: inherit;
+  }
+  .hoot-btn:active { transform: scale(.97); filter: brightness(1.06); }
+  .hoot-btn .owl {
+    font-size: min(34vw, 34vh, 190px);
+    line-height: 1;
+    filter: drop-shadow(0 8px 14px #1a0f4066);
+    transform-origin: 50% 70%;
+  }
+  .hoot-btn .hint {
+    position: absolute;
+    bottom: 13%;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #ffffffcc;
+    text-shadow: 0 2px 8px #2a1d6688;
+  }
+
+  /* expanding rings on tap */
+  .ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ── counter ── */
+  .counter {
+    flex: 0 0 auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--muted);
+    text-align: center;
+    min-height: 20px;
+  }
+  .counter b { color: var(--accent); font-weight: 500; }
+
+  /* ── animations ── */
+  @keyframes bounce {
+    0%   { transform: scale(1); }
+    28%  { transform: scale(.9); }
+    55%  { transform: scale(1.05); }
+    78%  { transform: scale(.98); }
+    100% { transform: scale(1); }
+  }
+  @keyframes wiggle {
+    0%   { transform: rotate(0deg); }
+    20%  { transform: rotate(-14deg); }
+    45%  { transform: rotate(11deg); }
+    68%  { transform: rotate(-7deg); }
+    85%  { transform: rotate(3deg); }
+    100% { transform: rotate(0deg); }
+  }
+  @keyframes ring-out {
+    0%   { opacity: .55; transform: scale(.85); }
+    100% { opacity: 0;   transform: scale(1.35); }
+  }
+  .hoot-btn.hooting { animation: bounce .5s cubic-bezier(.2,.7,.2,1); }
+  .hoot-btn.hooting .owl { animation: wiggle .55s ease; }
+  .ring.go { animation: ring-out .55s ease-out forwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hoot-btn.hooting, .hoot-btn.hooting .owl, .ring.go { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="title">Hoot</span>
+  <a class="back-link" href="../../index.html">← Store</a>
+</div>
+
+<div class="stage">
+  <button class="hoot-btn" id="btn" aria-label="Hoot">
+    <span class="ring" id="ring"></span>
+    <span class="owl" id="owl">🦉</span>
+    <span class="hint">Hoot</span>
+  </button>
+</div>
+
+<div class="counter" id="counter"></div>
+
+<script>
+(function () {
+  const KEY = 'hoot.v1.count';
+  const btn = document.getElementById('btn');
+  const owl = document.getElementById('owl');
+  const ring = document.getElementById('ring');
+  const counterEl = document.getElementById('counter');
+
+  /* ── counter ── */
+  let count = 0;
+  try { count = parseInt(localStorage.getItem(KEY) || '0', 10) || 0; } catch (e) {}
+  function renderCount() {
+    counterEl.innerHTML = count === 0
+      ? 'never hooted &mdash; give it a tap'
+      : `hooted <b>${count}</b> ${count === 1 ? 'time' : 'times'}`;
+  }
+  renderCount();
+
+  /* ── Web Audio: warm two-note "hoo-hoo" ── */
+  let ctx = null;
+  function audio() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) ctx = new AC();
+    }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  // One soft owl "hoo": sine near `freq`, gentle envelope, lowpass for warmth,
+  // a touch of vibrato and a slight downward pitch bend so it sounds alive.
+  function hootNote(ac, start, freq, dur) {
+    const osc = ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * 1.05, start);
+    osc.frequency.exponentialRampToValueAtTime(freq, start + dur * 0.45);
+
+    // vibrato
+    const lfo = ac.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 6;
+    const lfoGain = ac.createGain();
+    lfoGain.gain.value = freq * 0.012;
+    lfo.connect(lfoGain).connect(osc.frequency);
+
+    // warmth
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1100;
+
+    // gentle envelope (soft attack, round release)
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.linearRampToValueAtTime(0.5, start + 0.05);
+    g.gain.setValueAtTime(0.5, start + dur * 0.55);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+
+    osc.connect(lp).connect(g).connect(ac.destination);
+    osc.start(start);
+    osc.stop(start + dur + 0.05);
+    lfo.start(start);
+    lfo.stop(start + dur + 0.05);
+  }
+
+  function playHoot() {
+    const ac = audio();
+    if (!ac) return;
+    const t = ac.currentTime + 0.02;
+    hootNote(ac, t,        404, 0.30);   // hoo
+    hootNote(ac, t + 0.40, 372, 0.42);   // hoo (lower, longer)
+  }
+
+  /* ── visual feedback ── */
+  function animate() {
+    btn.classList.remove('hooting');
+    ring.classList.remove('go');
+    void btn.offsetWidth;        // reflow so the animation can retrigger
+    btn.classList.add('hooting');
+    ring.classList.add('go');
+  }
+
+  /* ── tap ── */
+  function hoot() {
+    playHoot();
+    animate();
+    count++;
+    try { localStorage.setItem(KEY, String(count)); } catch (e) {}
+    renderCount();
+  }
+
+  btn.addEventListener('click', hoot);
+
+  /* ── service worker ── */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
