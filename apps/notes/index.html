@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quick Notes</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Notes">
+<meta name="theme-color" content="#ff7a00">
+<link rel="manifest" href="manifest.json">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{ --bg:#0f0b07; --text:#fdf6ee; --muted:#9a8a76; --accent:#ff8a3d; }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Spline Sans',sans-serif;
+    display:flex;flex-direction:column;
+    padding:max(16px,env(safe-area-inset-top)) 0 env(safe-area-inset-bottom);
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 20px 14px;border-bottom:1px solid #2a2118;
+  }
+  header h1{font-size:20px;font-weight:600;}
+  header a{color:var(--accent);text-decoration:none;font-size:14px;font-weight:500;}
+  .saved{font-size:12px;color:var(--muted);opacity:0;transition:opacity .3s;}
+  .saved.show{opacity:1;}
+  textarea{
+    flex:1;width:100%;resize:none;border:none;outline:none;
+    background:transparent;color:var(--text);
+    font-family:'Spline Sans',sans-serif;font-size:17px;line-height:1.6;
+    padding:20px;
+  }
+  textarea::placeholder{color:#5c5040;}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Quick Notes</h1>
+    <span class="saved" id="saved">saved</span>
+    <a href="../../index.html">Store</a>
+  </header>
+  <textarea id="pad" placeholder="Start typing — it saves itself."></textarea>
+
+<script>
+  const pad = document.getElementById('pad');
+  const saved = document.getElementById('saved');
+  const KEY = 'quicknotes.text';
+
+  // load
+  try { pad.value = localStorage.getItem(KEY) || ''; } catch(e){}
+
+  // save (debounced)
+  let t;
+  pad.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      try { localStorage.setItem(KEY, pad.value); } catch(e){}
+      saved.classList.add('show');
+      setTimeout(() => saved.classList.remove('show'), 900);
+    }, 300);
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+</script>
+</body>
+</html>
