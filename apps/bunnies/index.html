@@ -95,10 +95,11 @@
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 0;
     background: radial-gradient(60% 50% at 50% 42%, #fff7ef 0%, transparent 70%);
     pointer-events: none;
   }
-  .stage svg { position: relative; width: 100%; height: 100%; display: block; }
+  .stage svg { position: relative; z-index: 1; width: 100%; height: 100%; display: block; }
 
   .caption {
     font-family: 'Baloo 2', cursive;
