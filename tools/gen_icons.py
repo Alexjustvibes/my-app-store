@@ -39,6 +39,7 @@ SPECS = [
     {"dir": "apps/hoot",    "emoji": "\U0001F989", "c0": "#7b5cff", "c1": "#3a2d7a"},  # hoot
     {"dir": "apps/commonplace", "emoji": "\U0001F4D6", "c0": "#10b981", "c1": "#064e3b"},  # commonplace
     {"dir": "apps/bunnies",  "emoji": "\U0001F430", "c0": "#ffb3c6", "c1": "#ffd6a8"},  # bunnies
+    {"dir": "apps/tarot",    "emoji": "\U0001F52E", "c0": "#4a2a7a", "c1": "#1b1233"},  # tarot
 ]
 ANGLE = 145  # CSS linear-gradient angle used throughout the REGISTRY
 
