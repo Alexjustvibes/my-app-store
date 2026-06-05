@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Commonplace</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Commonplace">
+<meta name="theme-color" content="#0a0f0d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Spline+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0f0d;
+    --surface: #11201a;
+    --surface-2: #16271f;
+    --line: #1f342a;
+    --text: #eaf3ee;
+    --muted: #7f9d8f;
+    --dim: #4f6b5e;
+    --accent: #34d399;      /* jade green */
+    --accent-deep: #065f46;
+    --accent-soft: #34d39918;
+    --danger: #e8755f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Spline Sans', sans-serif;
+    min-height: 100vh;
+    padding: max(20px, env(safe-area-inset-top)) 18px calc(40px + env(safe-area-inset-bottom));
+    background-image:
+      radial-gradient(110% 60% at 50% -8%, #0f2019 0%, transparent 58%),
+      radial-gradient(circle at 50% 110%, var(--accent-soft) 0%, transparent 45%);
+    background-attachment: fixed;
+  }
+  .wrap { max-width: 600px; margin: 0 auto; }
+
+  /* ── header ── */
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  header h1 {
+    font-family: 'Newsreader', serif;
+    font-weight: 500;
+    font-size: 28px;
+    letter-spacing: -.01em;
+  }
+  .back-link { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .back-link:hover { color: var(--accent); }
+  .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--dim);
+    margin-bottom: 20px;
+  }
+
+  /* ── tabs ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 26px;
+  }
+  .tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 9px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tab.active { background: var(--accent-soft); color: var(--accent); }
+
+  .view { display: none; animation: fade .35s ease; }
+  .view.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* ── surface (hero) ── */
+  .snip {
+    padding: 22px 4px 26px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .snip:last-child { border-bottom: none; }
+  .snip::before {
+    content: '\201C';
+    font-family: 'Newsreader', serif;
+    font-size: 40px;
+    line-height: 0;
+    color: var(--accent);
+    opacity: .5;
+    position: absolute;
+    top: 26px;
+    left: -2px;
+  }
+  .snip-text {
+    font-family: 'Newsreader', serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.55;
+    color: var(--text);
+    padding-left: 22px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .snip-source {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 12px;
+    padding-left: 22px;
+  }
+
+  .shuffle-btn {
+    display: block;
+    margin: 26px auto 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--accent);
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px 24px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: border-color .15s, transform .12s;
+  }
+  .shuffle-btn:hover { border-color: var(--accent); }
+  .shuffle-btn:active { transform: scale(.96); }
+
+  /* ── capture form ── */
+  .field-label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 8px;
+    display: block;
+  }
+  textarea, input.src {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'Newsreader', serif;
+    font-size: 18px;
+    line-height: 1.5;
+    padding: 14px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  textarea { resize: vertical; min-height: 140px; margin-bottom: 18px; }
+  textarea:focus, input.src:focus { border-color: var(--accent); }
+  textarea::placeholder, input.src::placeholder { color: var(--dim); }
+  input.src { font-size: 16px; margin-bottom: 20px; }
+  .save-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #04130d;
+    font-family: 'Spline Sans', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform .12s, filter .12s;
+  }
+  .save-btn:hover { filter: brightness(1.08); }
+  .save-btn:active { transform: scale(.98); }
+  .save-btn:disabled { background: var(--surface-2); color: var(--dim); cursor: default; filter: none; transform: none; }
+  .saved-toast {
+    text-align: center;
+    font-size: 13px;
+    color: var(--accent);
+    margin-top: 14px;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .saved-toast.show { opacity: 1; }
+
+  /* ── all list ── */
+  .row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .row:last-child { border-bottom: none; }
+  .row-body { flex: 1; min-width: 0; }
+  .row-text {
+    font-family: 'Newsreader', serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .row-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 6px;
+  }
+  .row-meta .src { color: var(--muted); }
+  .del-btn {
+    flex: 0 0 auto;
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--dim);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    transition: color .15s, border-color .15s;
+  }
+  .del-btn:hover, .del-btn.armed { color: var(--danger); border-color: var(--danger); }
+  .del-btn.armed { width: auto; padding: 0 10px; font-family: 'Spline Sans',sans-serif; font-size: 12px; font-weight: 600; }
+
+  /* ── empty ── */
+  .empty {
+    text-align: center;
+    color: var(--dim);
+    padding: 50px 20px;
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  .empty button {
+    display: block;
+    margin: 18px auto 0;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-deep);
+    color: var(--accent);
+    font-family: 'Spline Sans', sans-serif;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 9px 20px;
+    border-radius: 30px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Commonplace</h1>
+    <a class="back-link" href="../../index.html">← Store</a>
+  </header>
+  <div class="count" id="count">0 collected</div>
+
+  <div class="tabs">
+    <button class="tab active" data-view="surface">Surface</button>
+    <button class="tab" data-view="add">Add</button>
+    <button class="tab" data-view="all">All</button>
+  </div>
+
+  <!-- SURFACE -->
+  <section class="view active" id="view-surface">
+    <div id="surface-list"></div>
+  </section>
+
+  <!-- ADD -->
+  <section class="view" id="view-add">
+    <label class="field-label" for="text">Snippet</label>
+    <textarea id="text" placeholder="A quote, an idea, something you read…"></textarea>
+    <label class="field-label" for="source">Source <span style="text-transform:none;letter-spacing:0">(optional)</span></label>
+    <input class="src" id="source" type="text" placeholder="Book, author, or URL">
+    <button class="save-btn" id="save">Save to book</button>
+    <div class="saved-toast" id="toast">Kept. ✓</div>
+  </section>
+
+  <!-- ALL -->
+  <section class="view" id="view-all">
+    <div id="all-list"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const KEY = 'commonplace.v1.entries';
+  const $ = id => document.getElementById(id);
+
+  /* ── storage ── */
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function save(list) {
+    try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  let entries = load();
+
+  /* ── helpers ── */
+  function uid() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7); }
+  function fmtDate(ts) {
+    return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function renderCount() {
+    const n = entries.length;
+    $('count').textContent = n + (n === 1 ? ' snippet collected' : ' collected');
+  }
+
+  /* ── surface (random resurfacing) ── */
+  function pickRandom() {
+    const n = entries.length;
+    if (n === 0) return [];
+    const want = n < 3 ? n : 3 + Math.floor(Math.random() * 3);   // all if <3, else 3–5
+    const pool = entries.slice();
+    for (let i = pool.length - 1; i > 0; i--) {                    // Fisher–Yates
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, Math.min(want, n));
+  }
+
+  function renderSurface() {
+    const box = $('surface-list');
+    box.innerHTML = '';
+    if (!entries.length) {
+      box.appendChild(emptyState('Nothing to resurface yet.', 'Capture your first snippet', 'add'));
+      return;
+    }
+    pickRandom().forEach(e => {
+      const snip = document.createElement('div');
+      snip.className = 'snip';
+      const t = document.createElement('div');
+      t.className = 'snip-text';
+      t.textContent = e.text;
+      snip.appendChild(t);
+      if (e.source) {
+        const s = document.createElement('div');
+        s.className = 'snip-source';
+        s.textContent = '— ' + e.source;
+        snip.appendChild(s);
+      }
+      box.appendChild(snip);
+    });
+    const shuffle = document.createElement('button');
+    shuffle.className = 'shuffle-btn';
+    shuffle.textContent = '↻ Shuffle';
+    shuffle.addEventListener('click', renderSurface);
+    box.appendChild(shuffle);
+  }
+
+  /* ── all (manage / prune) ── */
+  function renderAll() {
+    const box = $('all-list');
+    box.innerHTML = '';
+    if (!entries.length) {
+      box.appendChild(emptyState('Your book is empty.', 'Add a snippet', 'add'));
+      return;
+    }
+    entries.slice().reverse().forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const body = document.createElement('div');
+      body.className = 'row-body';
+      const text = document.createElement('div');
+      text.className = 'row-text';
+      text.textContent = e.text;
+      const meta = document.createElement('div');
+      meta.className = 'row-meta';
+      if (e.source) {
+        const src = document.createElement('span');
+        src.className = 'src';
+        src.textContent = e.source;
+        meta.appendChild(src);
+        meta.appendChild(document.createTextNode(' · ' + fmtDate(e.ts)));
+      } else {
+        meta.textContent = fmtDate(e.ts);
+      }
+      body.appendChild(text);
+      body.appendChild(meta);
+
+      const del = document.createElement('button');
+      del.className = 'del-btn';
+      del.textContent = '✕';
+      del.setAttribute('aria-label', 'Delete snippet');
+      del.addEventListener('click', () => {
+        if (del.classList.contains('armed')) {
+          entries = entries.filter(x => x.id !== e.id);
+          save(entries);
+          renderCount();
+          renderAll();
+        } else {
+          document.querySelectorAll('.del-btn.armed').forEach(b => {
+            b.classList.remove('armed'); b.textContent = '✕';
+          });
+          del.classList.add('armed');
+          del.textContent = 'Remove?';
+        }
+      });
+
+      row.appendChild(body);
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  function emptyState(line, btnLabel, targetView) {
+    const wrap = document.createElement('div');
+    wrap.className = 'empty';
+    wrap.appendChild(document.createTextNode(line));
+    const b = document.createElement('button');
+    b.textContent = btnLabel;
+    b.addEventListener('click', () => switchView(targetView));
+    wrap.appendChild(b);
+    return wrap;
+  }
+
+  /* ── capture ── */
+  const saveBtn = $('save');
+  const textEl = $('text');
+  function refreshSaveState() { saveBtn.disabled = textEl.value.trim().length === 0; }
+  textEl.addEventListener('input', refreshSaveState);
+  refreshSaveState();
+
+  saveBtn.addEventListener('click', () => {
+    const text = textEl.value.trim();
+    if (!text) return;
+    entries.push({ id: uid(), text, source: $('source').value.trim(), ts: Date.now() });
+    save(entries);
+    textEl.value = '';
+    $('source').value = '';
+    refreshSaveState();
+    renderCount();
+    renderSurface();   // fold the new one into the resurfacing pool
+    const toast = $('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1400);
+  });
+
+  /* ── tabs ── */
+  function switchView(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+    if (name === 'surface') renderSurface();
+    if (name === 'all') renderAll();
+    if (name === 'add') setTimeout(() => textEl.focus(), 50);
+  }
+  document.querySelectorAll('.tab').forEach(t =>
+    t.addEventListener('click', () => switchView(t.dataset.view)));
+
+  /* ── init ── */
+  renderCount();
+  renderSurface();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
