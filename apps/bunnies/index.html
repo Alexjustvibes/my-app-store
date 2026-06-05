@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bunnies</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bunnies">
+<meta name="theme-color" content="#ffdfe7">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --text: #6b4f54;
+    --muted: #b08b93;
+    --accent: #ff6f91;       /* rose */
+    --accent-deep: #e84d75;
+    --card: #fffafc;
+    --card-line: #ffe1ea;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: max(16px, env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom));
+    background:
+      radial-gradient(120% 70% at 50% -10%, #ffe3ec 0%, transparent 55%),
+      radial-gradient(110% 80% at 50% 120%, #fff0d9 0%, transparent 50%),
+      linear-gradient(160deg, #ffeef3 0%, #fff4e6 100%);
+    background-attachment: fixed;
+  }
+
+  /* ── header ── */
+  .topbar {
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 0 0 auto;
+  }
+  .title {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 700;
+    font-size: 26px;
+    color: var(--accent-deep);
+    letter-spacing: .01em;
+  }
+  .back-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: 'Baloo 2', cursive;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  /* ── stage ── */
+  .stage-wrap {
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+  .stage {
+    position: relative;
+    width: min(82vw, 360px);
+    aspect-ratio: 300 / 320;
+    background: var(--card);
+    border: 2px solid var(--card-line);
+    border-radius: 32px;
+    box-shadow: 0 18px 50px -16px #ff9bb540, inset 0 2px 0 #ffffff;
+    cursor: pointer;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+  }
+  .stage::after {     /* soft spotlight behind bunny */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 50% at 50% 42%, #fff7ef 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .stage svg { position: relative; width: 100%; height: 100%; display: block; }
+
+  .caption {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--muted);
+    min-height: 18px;
+  }
+
+  /* ── controls ── */
+  .controls {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+  }
+  button.act {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 600;
+    font-size: 17px;
+    border: none;
+    border-radius: 18px;
+    padding: 15px;
+    cursor: pointer;
+    transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+  }
+  button.act:active { transform: scale(.96); }
+  .new-btn {
+    flex: 1 1 auto;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 8px 20px -6px var(--accent);
+  }
+  .new-btn:hover { filter: brightness(1.05); }
+  .save-btn {
+    flex: 0 0 auto;
+    background: #fff;
+    color: var(--accent-deep);
+    border: 2px solid var(--card-line) !important;
+    padding: 13px 18px;
+  }
+  .save-btn:hover { border-color: var(--accent) !important; }
+
+  /* ── entrance spring ── */
+  @keyframes pop {
+    0%   { transform: scale(.2) translateY(34px); opacity: 0; }
+    55%  { transform: scale(1.08) translateY(-6px); opacity: 1; }
+    72%  { transform: scale(.95) translateY(2px); }
+    86%  { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+  svg.bunny { animation: pop .62s cubic-bezier(.2,.8,.3,1.2) both; transform-origin: 50% 86%; }
+  @media (prefers-reduced-motion: reduce) {
+    svg.bunny { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="title">Bunnies</span>
+  <a class="back-link" href="../../index.html">← Store</a>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage" aria-label="Tap for a new bunny"></div>
+  <div class="caption" id="caption"></div>
+</div>
+
+<div class="controls">
+  <button class="act new-btn" id="new">✨ New bunny</button>
+  <button class="act save-btn" id="save" title="Download as SVG">Save</button>
+</div>
+
+<script>
+(function () {
+  const stage = document.getElementById('stage');
+  const caption = document.getElementById('caption');
+  const COUNT_KEY = 'bunnies.v1.count';
+
+  /* ── random helpers ── */
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const randInt = (a, b) => Math.floor(rand(a, b + 1));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const chance = p => Math.random() < p;
+
+  /* ── curated palette (pastels + a few bolder) ── */
+  const PALETTE = [
+    '#f3a6c0', '#f7c6d9', '#cdb4f6', '#a8d8ea', '#b8e0d2', '#ffdac1',
+    '#fbe7a1', '#f6b9c2', '#c9b6e4', '#9ad0c2', '#ffc8a2', '#d6a2e8',
+    '#8ecae6', '#ffb5a7', '#bdb2ff'
+  ];
+  const BOLD = ['#ff6f91', '#ffc75f', '#845ec2', '#00c9a7', '#ff9671', '#ff5d8f'];
+
+  /* ── color math ── */
+  function hexRgb(h) { h = h.replace('#', ''); return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]; }
+  function rgbHex(r,g,b){ const c=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0'); return '#'+c(r)+c(g)+c(b); }
+  function mix(hex, target, t){ const a=hexRgb(hex), b=hexRgb(target); return rgbHex(a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t); }
+
+  /* ── build one randomized bunny as an SVG string ── */
+  function buildBunny() {
+    const base = pick(PALETTE);
+    const outline = mix(base, '#5a4040', 0.34);
+    const innerEar = '#ffb9cb';
+    const belly = mix(base, '#ffffff', 0.5);
+    const spotCol = mix(base, '#5a4040', 0.14);
+    const earTipCol = mix(base, '#5a4040', 0.18);
+    const nose = '#e36a86';
+
+    const chonk = rand(0.9, 1.18);
+    const headS = rand(0.94, 1.08);
+    const earLen = rand(46, 82);
+    const earW = rand(15, 26);
+    const flop = rand(0, 1);                 // 0 upright → 1 droopy
+    const earAngle = 8 + flop * 44;
+    const eyeStyle = pick(['dot', 'sleepy', 'sparkle']);
+
+    const hasBelly = chance(0.55);
+    const hasSpots = chance(0.30);
+    const hasEarTip = chance(0.35);
+    const hasCheeks = chance(0.6);
+    const accessory = chance(0.12) ? pick(['bow', 'flower']) : null;
+
+    const headCx = 150, headCy = 128;
+    const headRx = 56 * headS, headRy = 52 * headS;
+    const bodyCx = 150, bodyCy = 216;
+    const bodyRx = 72 * chonk, bodyRy = 64 * chonk;
+
+    // ── ears ──
+    function ear(side) {
+      const baseX = 150 + side * 24 * headS;
+      const baseY = headCy - headRy * 0.78;
+      const cy = baseY - earLen * 0.5;
+      const ang = side * (earAngle + rand(-4, 4));
+      let s = `<g transform="rotate(${ang.toFixed(1)} ${baseX.toFixed(1)} ${baseY.toFixed(1)})">`;
+      s += `<ellipse cx="${baseX.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${earW.toFixed(1)}" ry="${(earLen*0.5).toFixed(1)}" fill="${base}" stroke="${outline}" stroke-width="3"/>`;
+      if (hasEarTip)
+        s += `<ellipse cx="${baseX.toFixed(1)}" cy="${(baseY - earLen*0.84).toFixed(1)}" rx="${(earW*0.9).toFixed(1)}" ry="${(earLen*0.16).toFixed(1)}" fill="${earTipCol}"/>`;
+      s += `<ellipse cx="${baseX.toFixed(1)}" cy="${(baseY - earLen*0.52).toFixed(1)}" rx="${(earW*0.52).toFixed(1)}" ry="${(earLen*0.4).toFixed(1)}" fill="${innerEar}"/>`;
+      s += `</g>`;
+      return s;
+    }
+
+    // ── eyes ──
+    function eyes() {
+      const ey = headCy - 2, dx = 19 * headS;
+      const lx = 150 - dx, rx = 150 + dx;
+      if (eyeStyle === 'sleepy') {
+        const p = x => `<path d="M${(x-8).toFixed(1)} ${(ey-1).toFixed(1)} q 8 9 16 0" fill="none" stroke="${outline}" stroke-width="3.2" stroke-linecap="round"/>`;
+        return p(lx) + p(rx);
+      }
+      if (eyeStyle === 'sparkle') {
+        const e = x =>
+          `<circle cx="${x.toFixed(1)}" cy="${ey.toFixed(1)}" r="8.2" fill="#3c2e30"/>` +
+          `<circle cx="${(x-2.6).toFixed(1)}" cy="${(ey-2.8).toFixed(1)}" r="2.8" fill="#fff"/>` +
+          `<circle cx="${(x+2.4).toFixed(1)}" cy="${(ey+2.6).toFixed(1)}" r="1.3" fill="#fff" opacity=".8"/>`;
+        return e(lx) + e(rx);
+      }
+      const e = x => `<circle cx="${x.toFixed(1)}" cy="${ey.toFixed(1)}" r="7" fill="#3c2e30"/>`;
+      return e(lx) + e(rx);
+    }
+
+    // ── spots (clipped to body) ──
+    function spots() {
+      if (!hasSpots) return '';
+      let s = '';
+      const n = randInt(2, 4);
+      for (let i = 0; i < n; i++) {
+        const px = 150 + rand(-1, 1) * 44 * chonk;
+        const py = 214 + rand(-1, 1) * 40 * chonk;
+        s += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${rand(6,11).toFixed(1)}" fill="${spotCol}" opacity="0.7"/>`;
+      }
+      return s;
+    }
+
+    // ── accessory ──
+    function accessorySvg() {
+      if (!accessory) return '';
+      const col = pick(BOLD);
+      const ax = 150 + 24 * headS + 6, ay = headCy - headRy * 0.74;
+      if (accessory === 'bow') {
+        return `<g transform="translate(${ax.toFixed(1)} ${ay.toFixed(1)})">` +
+          `<path d="M0 0 L-22 -13 L-22 13 Z" fill="${col}" stroke="${mix(col,'#000',0.18)}" stroke-width="2" stroke-linejoin="round"/>` +
+          `<path d="M0 0 L22 -13 L22 13 Z" fill="${col}" stroke="${mix(col,'#000',0.18)}" stroke-width="2" stroke-linejoin="round"/>` +
+          `<circle cx="0" cy="0" r="7" fill="${mix(col,'#fff',0.18)}" stroke="${mix(col,'#000',0.18)}" stroke-width="2"/></g>`;
+      }
+      // flower
+      let f = `<g transform="translate(${ax.toFixed(1)} ${ay.toFixed(1)})">`;
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2;
+        f += `<circle cx="${(Math.cos(a)*9).toFixed(1)}" cy="${(Math.sin(a)*9).toFixed(1)}" r="6.5" fill="${col}"/>`;
+      }
+      f += `<circle cx="0" cy="0" r="5.5" fill="#ffd56b"/></g>`;
+      return f;
+    }
+
+    const cheeks = hasCheeks
+      ? `<ellipse cx="${(150-33*headS).toFixed(1)}" cy="146" rx="10" ry="6.5" fill="#ff8fae" opacity="0.38"/>` +
+        `<ellipse cx="${(150+33*headS).toFixed(1)}" cy="146" rx="10" ry="6.5" fill="#ff8fae" opacity="0.38"/>`
+      : '';
+
+    const bellySvg = hasBelly
+      ? `<ellipse cx="150" cy="234" rx="${(40*chonk).toFixed(1)}" ry="${(44*chonk).toFixed(1)}" fill="${belly}"/>`
+      : '';
+
+    // feet
+    const feet =
+      `<ellipse cx="${(150-40*chonk).toFixed(1)}" cy="270" rx="21" ry="13" fill="${base}" stroke="${outline}" stroke-width="3"/>` +
+      `<ellipse cx="${(150+40*chonk).toFixed(1)}" cy="270" rx="21" ry="13" fill="${base}" stroke="${outline}" stroke-width="3"/>`;
+
+    const noseMouth =
+      `<ellipse cx="150" cy="140" rx="5.5" ry="4" fill="${nose}"/>` +
+      `<path d="M150 144 v3 M150 147 q -6 5 -11 1 M150 147 q 6 5 11 1" fill="none" stroke="${outline}" stroke-width="2.4" stroke-linecap="round"/>`;
+
+    const body =
+      ear(-1) + ear(1) +
+      `<ellipse cx="${bodyCx}" cy="${bodyCy}" rx="${bodyRx.toFixed(1)}" ry="${bodyRy.toFixed(1)}" fill="${base}" stroke="${outline}" stroke-width="3"/>` +
+      `<g clip-path="url(#bodyClip)">${bellySvg}${spots()}</g>` +
+      feet +
+      `<ellipse cx="${headCx}" cy="${headCy}" rx="${headRx.toFixed(1)}" ry="${headRy.toFixed(1)}" fill="${base}" stroke="${outline}" stroke-width="3"/>` +
+      cheeks + eyes() + noseMouth + accessorySvg();
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 320" width="300" height="320" class="bunny">` +
+      `<defs>` +
+        `<clipPath id="bodyClip"><ellipse cx="${bodyCx}" cy="${bodyCy}" rx="${bodyRx.toFixed(1)}" ry="${bodyRy.toFixed(1)}"/></clipPath>` +
+        `<filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#a86b7a" flood-opacity="0.30"/></filter>` +
+      `</defs>` +
+      `<ellipse cx="150" cy="298" rx="${(74*chonk).toFixed(1)}" ry="12" fill="#000" opacity="0.08"/>` +
+      `<g filter="url(#soft)">${body}</g>` +
+      `</svg>`;
+  }
+
+  /* ── render ── */
+  function newBunny() {
+    stage.innerHTML = buildBunny();
+    let n = 0;
+    try { n = (parseInt(localStorage.getItem(COUNT_KEY) || '0', 10) || 0) + 1; localStorage.setItem(COUNT_KEY, String(n)); } catch (e) { n = 0; }
+    caption.textContent = n ? 'bunny #' + n : '';
+  }
+
+  /* ── save current bunny as SVG ── */
+  function saveBunny() {
+    const svg = stage.querySelector('svg');
+    if (!svg) return;
+    const clone = svg.cloneNode(true);
+    clone.removeAttribute('class');                       // strip animation
+    const data = '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(clone);
+    const blob = new Blob([data], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (caption.textContent || 'bunny').replace(/[^a-z0-9]+/gi, '-') + '.svg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  document.getElementById('new').addEventListener('click', newBunny);
+  document.getElementById('save').addEventListener('click', e => { e.stopPropagation(); saveBunny(); });
+  stage.addEventListener('click', newBunny);
+
+  newBunny();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
