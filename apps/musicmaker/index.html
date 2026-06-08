@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Music Maker</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Music Maker">
+<meta name="theme-color" content="#0b1622">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <h1>MUSIC<span>MAKER</span></h1>
+  <a class="back-link" href="../../index.html">← Store</a>
+</header>
+
+<!-- TRANSPORT -->
+<section class="bar transport">
+  <button id="playBtn" class="play">▶ Play</button>
+  <label class="ctl">BPM
+    <input id="bpm" type="number" min="60" max="200" value="120">
+    <span id="bpmVal" class="mono">120</span>
+  </label>
+  <label class="ctl">Swing
+    <input id="swing" type="range" min="0" max="0.6" step="0.05" value="0">
+  </label>
+  <label class="ctl">Master
+    <input id="masterVol" type="range" min="0" max="1" step="0.01" value="0.9">
+  </label>
+</section>
+
+<!-- DRUMS -->
+<section class="panel">
+  <div class="panel-head">
+    <h2>Beat</h2>
+    <label class="ctl small">Drums
+      <input id="drumVol" type="range" min="0" max="1" step="0.01" value="0.9">
+    </label>
+  </div>
+  <div id="grid" class="grid"></div>
+</section>
+
+<!-- SAMPLER -->
+<section class="panel">
+  <div class="panel-head">
+    <h2>Sampler</h2>
+    <label class="ctl small">Voice
+      <input id="sampVol" type="range" min="0" max="1" step="0.01" value="0.9">
+    </label>
+  </div>
+
+  <div class="samp-controls">
+    <label class="btn file">Load clip
+      <input id="fileInput" type="file" accept="audio/*" hidden>
+    </label>
+    <button id="recBtn" class="btn">● Rec</button>
+    <button id="previewBtn" class="btn">Preview</button>
+    <button id="modeBtn" class="btn">Mode: One-shot</button>
+    <button id="revBtn" class="btn">Reverse</button>
+    <label class="ctl small">Root
+      <select id="rootSel" class="mono"></select>
+    </label>
+    <span id="status" class="status mono">no clip loaded</span>
+  </div>
+
+  <div id="waveWrap" class="wave-wrap">
+    <canvas id="wave"></canvas>
+    <div id="hStart" class="handle" style="display:none"></div>
+    <div id="hEnd" class="handle" style="display:none"></div>
+  </div>
+
+  <div class="oct-row">
+    <span class="mono dim">octave</span>
+    <button id="octDown" class="btn tiny">– z</button>
+    <span id="octLabel" class="mono oct">C4</span>
+    <button id="octUp" class="btn tiny">x +</button>
+    <span class="mono dim hint">keys: a w s e d f t g y h u j k</span>
+  </div>
+
+  <div id="keys" class="keys"></div>
+</section>
+
+<footer class="foot mono">one clock · two instruments · play live</footer>
+
+<script type="module" src="js/ui.js"></script>
+</body>
+</html>
