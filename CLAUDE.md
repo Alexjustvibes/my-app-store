@@ -176,11 +176,17 @@ link reference), so no `core.symlinks` config is needed. `/J` junctions don't re
 admin terminal; `/D` symlinks would (and would store a broken reference instead — don't
 use them here).
 
-`tools/sync-notes.ps1` is the unattended sync: it commits changes under `notes/` with a
-timestamped message and pushes only when the branch is ahead of `origin/main`, no-ops when
-nothing changed, and fails quietly when offline (next run retries). It's registered in
-**Task Scheduler** ("Sync LLM Wiki", every 5 min, run only when logged on) so the push
-uses the logged-in user's stored GitHub credential.
+`tools/sync-notes.ps1` is the unattended sync: it rebuilds `apps/wiki/notes-index.json`
+from the notes, commits changes under `notes/` (and that index) with a timestamped message,
+pushes only when the branch is ahead of `origin/main`, no-ops when nothing changed, and
+fails quietly when offline (next run retries). It's registered in **Task Scheduler**
+("Sync LLM Wiki", every 5 min, run only when logged on) so the push uses the logged-in
+user's stored GitHub credential.
+
+The **Wiki app** (`apps/wiki/`) is the in-store reader: a read-only markdown browser that
+fetches `notes-index.json` for the list and the live `../../notes/<path>` files for each
+note (rendered by a small inline markdown function — no libraries). The index is generated
+data, not hand-edited; `[]` until the first sync runs.
 
 **This repo is public** — everything under `notes/` is published to GitHub and the Pages
 site. **Junction footgun:** never `Remove-Item -Recurse notes`, delete it in Explorer, or
