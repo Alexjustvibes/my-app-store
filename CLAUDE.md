@@ -161,6 +161,32 @@ significant complexity, pin a specific version URL (not `@latest`).
 Push to `main` → GitHub Pages auto-deploys. No CI step needed. After pushing, allow
 ~30 s for Pages to update before testing on device.
 
+## Notes sync (`notes/`)
+
+`notes/` at the repo root is **not a normal folder** — it's a Windows directory
+**junction** to a wiki kept outside the repo (`C:\Users\andre\LLM Wiki`), which must
+stay where it is. Created with:
+
+```bat
+mklink /J "C:\Users\andre\Documents\my-app-store\notes" "C:\Users\andre\LLM Wiki"
+```
+
+Git follows the junction like a real folder and commits the actual note **files** (not a
+link reference), so no `core.symlinks` config is needed. `/J` junctions don't require an
+admin terminal; `/D` symlinks would (and would store a broken reference instead — don't
+use them here).
+
+`tools/sync-notes.ps1` is the unattended sync: it commits changes under `notes/` with a
+timestamped message and pushes only when the branch is ahead of `origin/main`, no-ops when
+nothing changed, and fails quietly when offline (next run retries). It's registered in
+**Task Scheduler** ("Sync LLM Wiki", every 5 min, run only when logged on) so the push
+uses the logged-in user's stored GitHub credential.
+
+**This repo is public** — everything under `notes/` is published to GitHub and the Pages
+site. **Junction footgun:** never `Remove-Item -Recurse notes`, delete it in Explorer, or
+`git clean -fdx` here — those can reach through the junction and delete the real wiki. To
+drop the link safely: `rmdir notes` (cmd), which leaves the target untouched.
+
 ## Scope discipline
 
 When building a new app, ship a focused v1:
