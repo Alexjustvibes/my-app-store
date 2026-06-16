@@ -1,4 +1,4 @@
-const CACHE = 'wiki-v1';
+const CACHE = 'wiki-v2';
 // App shell + the notes index. Note bodies under ../../notes/ are fetched live
 // (network, with cache fallback) so freshly synced notes always show.
 const ASSETS = [

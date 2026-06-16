@@ -1,0 +1,3 @@
+# Obsidian vault config lives inside the synced wiki; keep it out of the
+# public repo (it's editor state, not notes). Delete this line to publish it.
+notes/.obsidian/
