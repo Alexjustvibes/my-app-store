@@ -29,7 +29,7 @@ if (Test-Path -LiteralPath $notes) {
     ForEach-Object {
       $rel = $_.FullName.Substring($notes.Length).TrimStart('\').Replace('\', '/')
       $title = $_.BaseName
-      $lines = Get-Content -LiteralPath $_.FullName -TotalCount 30 -ErrorAction SilentlyContinue
+      $lines = Get-Content -LiteralPath $_.FullName -TotalCount 30 -Encoding UTF8 -ErrorAction SilentlyContinue
       $h1 = $lines | Where-Object { $_ -match '^\s*#\s+\S' } | Select-Object -First 1
       if ($h1) { $title = ($h1 -replace '^\s*#\s+', '').Trim() }
       else { $f = $lines | Where-Object { $_.Trim() } | Select-Object -First 1; if ($f) { $title = $f.Trim() } }
