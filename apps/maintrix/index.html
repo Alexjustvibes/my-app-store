@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maintrix</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maintrix">
+<meta name="theme-color" content="#1e1f22">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --rail: #1e1f22;
+    --sidebar: #2b2d31;
+    --chat: #313338;
+    --elevated: #383a40;
+    --input: #383a40;
+    --hover: #35373c;
+    --active: #404249;
+    --divider: #26282c;
+    --text: #dbdee1;
+    --text-hi: #f2f3f5;
+    --muted: #949ba4;
+    --dim: #80848e;
+    --faint: #4e5058;
+    --accent: #5865f2;
+    --accent-hi: #6874f5;
+    --accent-press: #4752c4;
+    --green: #23a55a;
+    --green-hi: #2dc26b;
+    --red: #f23f43;
+    --yellow: #f0b232;
+    --role-red: #f23f43;
+    --role-blue: #5865f2;
+    --role-green: #3ba55d;
+    --role-pink: #eb459e;
+    --role-orange: #e67e22;
+    --font: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    background: var(--rail);
+    color: var(--text);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  svg { display: block; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ═══════════ LOGIN ═══════════ */
+  #auth {
+    position: fixed; inset: 0; z-index: 100;
+    display: grid; place-items: center; padding: 20px;
+    background:
+      radial-gradient(60% 60% at 20% 20%, #5865f2 0%, transparent 60%),
+      radial-gradient(60% 60% at 85% 80%, #7c4bd6 0%, transparent 55%),
+      linear-gradient(135deg, #404eed, #2b2d64);
+  }
+  .auth-card {
+    width: 100%; max-width: 420px;
+    background: var(--chat); border-radius: 8px;
+    padding: 30px 28px; box-shadow: 0 8px 40px #0007;
+    animation: rise .4s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .brand { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 4px; }
+  .brand .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--accent); display: grid; place-items: center; color: #fff; }
+  .brand .name { font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--text-hi); }
+  .auth-card h2 { text-align: center; color: var(--text-hi); font-size: 22px; font-weight: 700; margin: 16px 0 4px; }
+  .auth-card .sub { text-align: center; color: var(--muted); font-size: 15px; margin-bottom: 20px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+  .field label .req { color: var(--red); }
+  .field input {
+    width: 100%; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px;
+    color: var(--text); font-size: 15px; padding: 11px; outline: none; transition: border-color .12s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .auth-btn {
+    width: 100%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+    padding: 12px; border-radius: 4px; margin-top: 4px; transition: background .15s;
+  }
+  .auth-btn:hover { background: var(--accent-press); }
+  .auth-alt { font-size: 14px; color: var(--muted); margin-top: 14px; }
+  .auth-alt a { color: #00a8fc; text-decoration: none; cursor: pointer; }
+  .auth-alt a:hover { text-decoration: underline; }
+  .proto-note {
+    margin-top: 18px; padding: 9px 12px; border-radius: 5px; background: #5865f21a;
+    border: 1px solid #5865f233; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center;
+  }
+
+  /* ═══════════ APP SHELL ═══════════ */
+  #app { display: none; height: 100%; }
+  #app.on { display: flex; }
+
+  /* server rail */
+  .rail {
+    width: 72px; flex: 0 0 72px; background: var(--rail);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 12px 0; overflow-y: auto; overflow-x: hidden;
+  }
+  .rail::-webkit-scrollbar { width: 0; }
+  .rail .pill {
+    position: relative; width: 48px; height: 48px; flex: 0 0 48px;
+    border-radius: 24px; background: var(--chat); color: var(--text);
+    display: grid; place-items: center; font-weight: 700; font-size: 17px;
+    transition: border-radius .18s cubic-bezier(.2,.8,.2,1), background .18s; overflow: hidden;
+  }
+  .rail .pill img, .rail .pill svg { pointer-events: none; }
+  .rail .pill:hover { border-radius: 16px; background: var(--accent); color: #fff; }
+  .rail .pill.home:hover, .rail .pill.home.sel { background: var(--accent); color: #fff; }
+  .rail .pill.sel { border-radius: 16px; background: var(--accent); color: #fff; }
+  .rail .server.sel { background: var(--accent); color: #fff; }
+  .rail .marker {
+    position: absolute; left: -12px; top: 50%; width: 8px; height: 0; background: #fff;
+    border-radius: 0 4px 4px 0; transform: translateY(-50%); transition: height .18s;
+  }
+  .rail .pill:hover .marker { height: 20px; }
+  .rail .pill.sel .marker { height: 40px; }
+  .rail .divider { width: 32px; height: 2px; background: var(--divider); border-radius: 1px; flex: 0 0 2px; }
+  .rail .pill.add { background: var(--chat); color: var(--green); }
+  .rail .pill.add:hover { background: var(--green); color: #fff; }
+
+  /* channel sidebar */
+  .sidebar { width: 240px; flex: 0 0 240px; background: var(--sidebar); display: flex; flex-direction: column; }
+  .srv-header {
+    height: 48px; flex: 0 0 48px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; font-weight: 700; font-size: 15px; color: var(--text-hi);
+    box-shadow: 0 1px 0 #00000033, 0 1.5px 0 #00000018; cursor: pointer;
+  }
+  .srv-header:hover { background: #35373c; }
+  .channels { flex: 1; overflow-y: auto; padding: 8px 8px 0; }
+  .cat {
+    display: flex; align-items: center; gap: 4px; padding: 16px 8px 4px;
+    font-size: 11px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
+    cursor: pointer;
+  }
+  .cat:hover { color: var(--text); }
+  .cat .chev { transition: transform .15s; }
+  .cat.collapsed .chev { transform: rotate(-90deg); }
+  .chan {
+    display: flex; align-items: center; gap: 6px; padding: 7px 8px; margin-bottom: 2px;
+    border-radius: 4px; color: var(--muted); font-size: 15px; font-weight: 500; cursor: pointer;
+    position: relative;
+  }
+  .chan .ico { color: var(--faint); flex: 0 0 20px; }
+  .chan:hover { background: var(--hover); color: var(--text); }
+  .chan:hover .ico { color: var(--muted); }
+  .chan.sel { background: var(--active); color: var(--text-hi); }
+  .chan.sel .ico { color: var(--text); }
+  .chan .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chan .unread { position: absolute; left: -8px; width: 4px; height: 8px; background: #fff; border-radius: 0 4px 4px 0; }
+  .chan .badge { background: var(--red); color: #fff; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 0 6px; min-width: 16px; height: 16px; display: grid; place-items: center; }
+
+  /* user panel */
+  .userbar { height: 52px; flex: 0 0 52px; background: #232428; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+  .userbar .me { display: flex; align-items: center; gap: 8px; flex: 1; padding: 4px; border-radius: 4px; min-width: 0; }
+  .userbar .me:hover { background: #35373c; }
+  .userbar .u-meta { min-width: 0; }
+  .userbar .u-name { font-size: 14px; font-weight: 600; color: var(--text-hi); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .userbar .u-status { font-size: 12px; color: var(--muted); line-height: 1.1; }
+  .userbar .u-btn { width: 32px; height: 32px; border-radius: 4px; display: grid; place-items: center; color: var(--muted); }
+  .userbar .u-btn:hover { background: #35373c; color: var(--text); }
+
+  /* avatars */
+  .av { border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; color: #fff; font-weight: 600; position: relative; overflow: visible; }
+  .av .dot { position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--sidebar); }
+  .av .dot.online { background: var(--green); }
+  .av .dot.idle { background: var(--yellow); }
+  .av .dot.dnd { background: var(--red); }
+  .av .dot.offline { background: #80848e; }
+
+  /* main chat */
+  .main { flex: 1; display: flex; flex-direction: column; background: var(--chat); min-width: 0; }
+  .chat-header {
+    height: 48px; flex: 0 0 48px; display: flex; align-items: center; gap: 8px; padding: 0 16px;
+    box-shadow: 0 1px 0 #00000033; z-index: 2;
+  }
+  .chat-header .h-ico { color: var(--faint); }
+  .chat-header .h-name { font-weight: 700; color: var(--text-hi); font-size: 16px; }
+  .chat-header .h-div { width: 1px; height: 24px; background: var(--faint); margin: 0 8px; }
+  .chat-header .h-topic { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chat-header .h-actions { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .chat-header .h-actions button { color: var(--muted); }
+  .chat-header .h-actions button:hover { color: var(--text); }
+  .h-search { background: var(--rail); border-radius: 4px; height: 28px; width: 144px; display: flex; align-items: center; padding: 0 8px; color: var(--dim); font-size: 13px; }
+
+  .messages { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+  .welcome { padding: 16px 18px 8px; }
+  .welcome .w-ico { width: 68px; height: 68px; border-radius: 50%; background: var(--elevated); display: grid; place-items: center; color: var(--text-hi); margin-bottom: 8px; }
+  .welcome h1 { color: var(--text-hi); font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px; }
+  .welcome p { color: var(--muted); font-size: 15px; }
+  .day-div { display: flex; align-items: center; gap: 8px; margin: 16px 16px 0; }
+  .day-div .line { flex: 1; height: 1px; background: var(--divider); }
+  .day-div .lbl { font-size: 11px; font-weight: 600; color: var(--dim); }
+
+  .msg { display: flex; gap: 16px; padding: 2px 48px 2px 16px; position: relative; }
+  .msg:hover { background: #2e3035; }
+  .msg.grouped { padding-top: 1px; padding-bottom: 1px; }
+  .msg .m-av { width: 40px; flex: 0 0 40px; }
+  .msg .m-gutter { width: 40px; flex: 0 0 40px; font-size: 10px; color: var(--dim); text-align: center; opacity: 0; padding-top: 4px; font-variant-numeric: tabular-nums; }
+  .msg.grouped:hover .m-gutter { opacity: 1; }
+  .msg .m-body { flex: 1; min-width: 0; }
+  .msg .m-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 1px; }
+  .msg .m-author { font-size: 15px; font-weight: 600; color: var(--text-hi); }
+  .msg .m-time { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  .msg .m-text { font-size: 15px; line-height: 1.375; color: var(--text); word-wrap: break-word; }
+  .msg .m-text code { font-family: var(--mono); font-size: 13px; background: var(--rail); padding: 1px 4px; border-radius: 4px; }
+  .msg .m-text .mention { background: #5865f233; color: #c9cdfb; border-radius: 3px; padding: 0 2px; font-weight: 500; }
+  .badge-bot { background: var(--accent); color: #fff; font-size: 10px; font-weight: 600; border-radius: 4px; padding: 1px 4px; text-transform: uppercase; letter-spacing: .02em; position: relative; top: -1px; }
+  .m-tools { position: absolute; top: -14px; right: 16px; background: var(--elevated); border: 1px solid #2b2d31; border-radius: 8px; display: none; box-shadow: 0 2px 8px #0004; }
+  .msg:hover .m-tools { display: flex; }
+  .m-tools button { width: 32px; height: 30px; display: grid; place-items: center; color: var(--muted); }
+  .m-tools button:hover { color: var(--text); background: var(--hover); }
+  .reacts { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .react { display: flex; align-items: center; gap: 5px; background: #2b2d31; border: 1px solid #ffffff0f; border-radius: 8px; padding: 2px 7px; font-size: 13px; color: var(--text); cursor: pointer; }
+  .react.mine { background: #5865f226; border-color: var(--accent); }
+  .react:hover { border-color: var(--muted); }
+  .react .cnt { font-weight: 600; color: var(--muted); font-size: 12px; }
+
+  .typing { height: 24px; padding: 0 16px; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .typing .dots { display: inline-flex; gap: 3px; }
+  .typing .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: blink 1.4s infinite both; }
+  .typing .dots i:nth-child(2) { animation-delay: .2s; }
+  .typing .dots i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
+
+  /* composer */
+  .composer { padding: 0 16px 24px; }
+  .composer .box { background: var(--input); border-radius: 8px; display: flex; align-items: center; padding: 0 16px; }
+  .composer .c-add { width: 24px; height: 24px; border-radius: 50%; background: var(--muted); color: var(--input); display: grid; place-items: center; flex: 0 0 24px; margin-right: 16px; }
+  .composer .c-add:hover { background: var(--text); }
+  .composer input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 15px; padding: 11px 0; }
+  .composer input::placeholder { color: var(--dim); }
+  .composer .c-icons { display: flex; align-items: center; gap: 16px; margin-left: 8px; color: var(--muted); }
+  .composer .c-icons button:hover { color: var(--text); }
+
+  /* member list */
+  .members { width: 240px; flex: 0 0 240px; background: var(--sidebar); overflow-y: auto; padding: 16px 8px; }
+  .mem-cat { font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); padding: 16px 8px 4px; }
+  .mem { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+  .mem:hover { background: var(--hover); }
+  .mem.off { opacity: .38; }
+  .mem .m-name { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mem .crown { margin-left: auto; color: var(--yellow); }
+
+  /* mobile */
+  .mobile-bar { display: none; }
+  .scrim { display: none; }
+  @media (max-width: 900px) { .members { display: none; } }
+  @media (max-width: 768px) {
+    .rail, .sidebar {
+      position: fixed; top: 0; bottom: 0; left: 0; z-index: 30;
+      transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1);
+    }
+    .sidebar { left: 72px; }
+    body.nav-open .rail, body.nav-open .sidebar { transform: none; }
+    body.nav-open .scrim { display: block; position: fixed; inset: 0; z-index: 20; background: #0006; }
+    .main { width: 100%; }
+    .mobile-bar { display: flex; }
+    .h-search { display: none; }
+    .msg { padding-right: 16px; }
+  }
+
+  .hidden { display: none !important; }
+  .rail a.pill { text-decoration: none; }
+  .rail .store-back { color: var(--muted); background: var(--chat); }
+  .rail .store-back:hover { background: var(--accent); color: #fff; border-radius: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="auth">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><circle cx="9" cy="10.5" r="1.4" fill="#5865f2"/><circle cx="12" cy="10.5" r="1.4" fill="#5865f2"/><circle cx="15" cy="10.5" r="1.4" fill="#5865f2"/></svg>
+      </div>
+      <div class="name">Maintrix</div>
+    </div>
+    <h2 id="authTitle">Welcome back</h2>
+    <div class="sub" id="authSub">We're so glad to see you again.</div>
+    <form id="authForm">
+      <div class="field" id="emailField">
+        <label>Email or Phone <span class="req">*</span></label>
+        <input type="text" id="authEmail" autocomplete="off" value="you@maintrix.chat">
+      </div>
+      <div class="field">
+        <label>Display name <span class="req">*</span></label>
+        <input type="text" id="authName" autocomplete="off" placeholder="Pick a name" value="">
+      </div>
+      <div class="field">
+        <label>Password <span class="req">*</span></label>
+        <input type="password" id="authPass" autocomplete="off" value="••••••••">
+      </div>
+      <button type="submit" class="auth-btn" id="authBtn">Log In</button>
+      <div class="auth-alt" id="authAlt">Need an account? <a data-toggle>Register</a></div>
+    </form>
+    <div class="proto-note">Prototype — no real accounts or servers. Everything runs locally in your browser so you can click around the feel.</div>
+    <div style="text-align:center;margin-top:14px"><a href="../../index.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Back to App Store</a></div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app">
+  <div class="scrim" id="scrim"></div>
+  <nav class="rail" id="rail"></nav>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="srv-header" id="srvHeader">
+      <span id="srvName">Maintrix HQ</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="channels" id="channels"></div>
+    <div class="userbar" id="userbar"></div>
+  </aside>
+
+  <main class="main">
+    <header class="chat-header">
+      <button class="mobile-bar u-btn" id="menuBtn" style="width:32px;height:32px;border-radius:4px;color:var(--muted)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="h-ico" id="hIco"></span>
+      <span class="h-name" id="hName">general</span>
+      <span class="h-div"></span>
+      <span class="h-topic" id="hTopic">Building the future of talking to each other.</span>
+      <div class="h-actions">
+        <button title="Threads"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 4v10a4 4 0 004 4h9M6 4H4m2 0h2m11 14l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button title="Pinned"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 4h6l-1 6 4 3v2H7v-2l4-3-2-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 15v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button title="Members" id="memToggle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 19a6 6 0 0112 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 6a3 3 0 010 6m1 7a6 6 0 00-2-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <div class="h-search">Search</div>
+      </div>
+    </header>
+
+    <div class="messages" id="messages"></div>
+    <div class="typing hidden" id="typing"></div>
+
+    <div class="composer">
+      <div class="box">
+        <button class="c-add"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+        <input id="composerInput" placeholder="Message #general" autocomplete="off">
+        <div class="c-icons">
+          <button title="Gift"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M12 9v11M12 9s-4-6-6-3 6 3 6 3zm0 0s4-6 6-3-6 3-6 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+          <button title="GIF"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 10.5H7v3h2v-1M12 10v4M15 10h2m-2 2h1.5m-1.5-2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          <button title="Emoji"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 14a4 4 0 007 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="members" id="members"></aside>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const LS = 'maintrix.v1';
+  const HASH = '<svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 4L5.5 20M18.5 4L17 20M4 8.5h16M3.5 15.5h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const SPEAKER = '<svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M11 5L6 9H3v6h3l5 4V5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M15 9a3 3 0 010 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
+  const ROLE = { red: 'var(--role-red)', blue: 'var(--role-blue)', green: 'var(--role-green)', pink: 'var(--role-pink)', orange: 'var(--role-orange)', none: 'var(--text-hi)' };
+  const AVC = ['#5865f2', '#eb459e', '#3ba55d', '#e67e22', '#f23f43', '#9b59b6', '#1abc9c', '#faa61a'];
+  const avc = s => AVC[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
+
+  /* ── seed data ── */
+  const PEOPLE = {
+    nova:  { name: 'nova', role: 'red', status: 'online', note: 'shipping maintrix' },
+    kestrel:{ name: 'kestrel', role: 'pink', status: 'online', note: 'design' },
+    dax:   { name: 'dax', role: 'green', status: 'idle', note: 'compiling…' },
+    juno:  { name: 'juno', role: 'orange', status: 'dnd', note: 'in the zone' },
+    pip:   { name: 'pip', role: 'blue', status: 'online', note: '' },
+    echo:  { name: 'echo', role: 'none', status: 'offline', note: '' },
+    wren:  { name: 'wren', role: 'none', status: 'offline', note: '' },
+    MaintrixBot: { name: 'Maintrix', role: 'blue', status: 'online', note: '', bot: true }
+  };
+
+  const SERVERS = [
+    { id: 'hq', name: 'Maintrix HQ', icon: 'MX', cats: [
+      { name: 'Information', chans: [
+        { id: 'welcome', name: 'welcome', topic: 'Start here. Read the vibe.' },
+        { id: 'announcements', name: 'announcements', topic: 'What just shipped.' }
+      ]},
+      { name: 'Text Channels', chans: [
+        { id: 'general', name: 'general', topic: 'Building the future of talking to each other.' },
+        { id: 'design', name: 'design', topic: 'Pixels, palettes, and prototypes.' },
+        { id: 'dev', name: 'dev', topic: 'It works on my machine.' },
+        { id: 'random', name: 'random', topic: 'Off-topic gremlins welcome.' },
+        { id: 'memes', name: 'memes', topic: 'Post the good ones.' }
+      ]},
+      { name: 'Voice Channels', chans: [
+        { id: 'v-lounge', name: 'Lounge', voice: true },
+        { id: 'v-focus', name: 'Focus Room', voice: true }
+      ]}
+    ]},
+    { id: 'gamers', name: 'Late Night Gamers', icon: '🎮', cats: [
+      { name: 'Text Channels', chans: [ { id: 'lng-general', name: 'general', topic: 'GG.' }, { id: 'lng-lfg', name: 'looking-for-group', topic: 'Squad up.' } ] }
+    ]},
+    { id: 'book', name: 'The Reading Room', icon: '📚', cats: [
+      { name: 'Text Channels', chans: [ { id: 'bk-general', name: 'general', topic: 'What are you reading?' } ] }
+    ]}
+  ];
+
+  const MEMBERS = {
+    hq: [
+      { key: 'nova', crown: true }, { key: 'kestrel' }, { key: 'dax' }, { key: 'juno' },
+      { key: 'pip' }, { key: 'MaintrixBot' }, { key: 'echo' }, { key: 'wren' }
+    ],
+    gamers: [{ key: 'pip', crown: true }, { key: 'dax' }, { key: 'echo' }],
+    book: [{ key: 'kestrel', crown: true }, { key: 'wren' }]
+  };
+
+  const DMS = [
+    { id: 'dm-nova', key: 'nova' },
+    { id: 'dm-kestrel', key: 'kestrel' },
+    { id: 'dm-dax', key: 'dax' }
+  ];
+
+  const SEED = {
+    welcome: [
+      { a: 'MaintrixBot', t: 'Welcome to **Maintrix HQ** — the home server for building Maintrix itself. 👋', react: [{ e: '👋', n: 5, mine: false }] },
+      { a: 'MaintrixBot', t: 'Head to #general to say hi, or #design to see what we\'re prototyping.' }
+    ],
+    announcements: [
+      { a: 'nova', t: 'v0.3 is live: message grouping, the member list, and DMs now feel right. Try sending yourself a message.' },
+      { a: 'nova', t: 'Next up: reactions you can actually add, and a light theme toggle.', react: [{ e: '🚀', n: 8, mine: true }, { e: '🔥', n: 4, mine: false }] }
+    ],
+    general: [
+      { a: 'nova', t: 'ok the four-column layout is finally clicking. server rail, channels, chat, members.' },
+      { a: 'kestrel', t: 'the hover states are what sell it honestly. little floating toolbar on each message = chef\'s kiss' },
+      { a: 'kestrel', t: 'also the pill that morphs from circle to squircle on the server rail 🤌' },
+      { a: 'dax', t: 'grouping consecutive messages from the same person cleaned it up so much', react: [{ e: '💯', n: 3, mine: false }] },
+      { a: 'juno', t: 'can we get `code blocks` and @mentions rendering?' },
+      { a: 'nova', t: 'already in — try typing `like this` or @kestrel in the composer' },
+      { a: 'pip', t: 'this genuinely feels like the real thing. what are we even building on?' },
+      { a: 'nova', t: 'pure vanilla for the prototype. real backend comes once the feel is locked.' }
+    ],
+    design: [
+      { a: 'kestrel', t: 'palette is straight Discord-dark: #313338 chat, #2b2d31 sidebar, blurple accent. we can reskin later.' },
+      { a: 'kestrel', t: 'thinking a green "matrix" accent could be our own identity without losing the muscle memory' },
+      { a: 'juno', t: 'ooh a subtle terminal-green. i\'m into it' },
+      { a: 'nova', t: 'let\'s prototype both and A/B the vibe' }
+    ],
+    dev: [
+      { a: 'dax', t: 'message state is just localStorage for now, keyed by channel' },
+      { a: 'dax', t: 'send → append → autoscroll → persist. nothing fancy, but it survives a refresh' },
+      { a: 'pip', t: 'DMs get a fake auto-reply so two-way texting feels alive. temporary but sells the demo' }
+    ],
+    random: [
+      { a: 'juno', t: 'is it weird that i\'m using our chat app to talk about our chat app' },
+      { a: 'echo', t: 'deeply recursive. i respect it' }
+    ],
+    memes: [
+      { a: 'dax', t: 'it works on my machine ¯\\_(ツ)_/¯', react: [{ e: '😂', n: 6, mine: false }] }
+    ],
+    'lng-general': [ { a: 'pip', t: 'anyone up for ranked later?' }, { a: 'dax', t: 'after this build finishes compiling. so, never' } ],
+    'lng-lfg': [ { a: 'pip', t: 'need 2 more, mic required, chill vibes only' } ],
+    'bk-general': [ { a: 'kestrel', t: 'just started "The Creative Act". slow but good.' } ],
+    'dm-nova': [ { a: 'nova', t: 'yo! this is a DM. try replying — i\'ll write back.' } ],
+    'dm-kestrel': [ { a: 'kestrel', t: 'sent you the new palette swatches 🎨' } ],
+    'dm-dax': [ { a: 'dax', t: 'the refactor is done, pushing now' } ]
+  };
+
+  const DM_REPLIES = [
+    'ha, fair', 'oh nice 👀', 'wait say more', 'yeah that tracks', 'lol', 'ok that\'s actually clever',
+    'sending it up the chain', 'i\'ll take a look in a bit', 'agreed', 'let\'s ship it', 'brb compiling'
+  ];
+
+  /* ── state ── */
+  let state = load();
+  function load() {
+    try { const s = JSON.parse(localStorage.getItem(LS)); if (s && s.msgs) return s; } catch (e) {}
+    const msgs = {};
+    for (const k in SEED) msgs[k] = SEED[k].map(m => ({ ...m, time: seedTime() }));
+    return { user: null, server: 'hq', channel: 'general', view: 'server', msgs };
+  }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
+  function seedTime() { const h = 9 + Math.floor(Math.random() * 9); const m = Math.floor(Math.random() * 60); return `Today at ${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; }
+  function nowTime() { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, '0'); const ap = h < 12 ? 'AM' : 'PM'; h = ((h + 11) % 12) + 1; return `Today at ${h}:${m} ${ap}`; }
+
+  function person(a) { return PEOPLE[a] || (state.user && a === state.user.name ? { name: state.user.name, role: 'none', status: 'online' } : { name: a, role: 'none', status: 'online' }); }
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  function fmt(t) {
+    return esc(t)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|\s)@([a-z0-9_]+)/gi, '$1<span class="mention">@$2</span>');
+  }
+  function avatar(nameOrKey, size, showDot) {
+    const p = person(nameOrKey);
+    const s = size || 40;
+    const initial = (p.name[0] || '?').toUpperCase();
+    const dot = showDot ? `<span class="dot ${p.status || 'online'}"></span>` : '';
+    const bg = p.bot ? 'var(--accent)' : avc(p.name);
+    const glyph = p.bot ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="7" width="16" height="12" rx="3" fill="#fff"/><circle cx="9.5" cy="13" r="1.6" fill="#5865f2"/><circle cx="14.5" cy="13" r="1.6" fill="#5865f2"/><path d="M12 4v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>' : `<span style="font-size:${s * 0.4}px">${initial}</span>`;
+    return `<div class="av" style="width:${s}px;height:${s}px;background:${bg}">${glyph}${dot}</div>`;
+  }
+
+  /* ═══════════ RENDER ═══════════ */
+  function currentServer() { return SERVERS.find(s => s.id === state.server); }
+
+  function renderRail() {
+    const rail = $('rail');
+    let h = `<button class="pill home ${state.view === 'dm' ? 'sel' : ''}" data-home="1" title="Direct Messages"><span class="marker"></span>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v10H7l-3 3V5z" fill="currentColor"/><circle cx="9" cy="10" r="1.3" fill="var(--rail)"/><circle cx="12" cy="10" r="1.3" fill="var(--rail)"/><circle cx="15" cy="10" r="1.3" fill="var(--rail)"/></svg></button>
+      <div class="divider"></div>`;
+    SERVERS.forEach(s => {
+      const sel = state.view === 'server' && state.server === s.id;
+      const isEmoji = /\p{Emoji}/u.test(s.icon);
+      h += `<button class="pill server ${sel ? 'sel' : ''}" data-server="${s.id}" title="${s.name}"><span class="marker"></span><span style="font-size:${isEmoji ? '22px' : '15px'}">${s.icon}</span></button>`;
+    });
+    h += `<button class="pill add" title="Add a server"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+      <button class="pill add" title="Explore" style="color:var(--green)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l2 5 5 .5-4 3.5 1.5 5-4.5-3-4.5 3 1.5-5-4-3.5 5-.5 2-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>`;
+    h += `<div class="divider"></div><a class="pill store-back" href="../../index.html" title="Exit to App Store"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>`;
+    rail.innerHTML = h;
+    rail.querySelector('[data-home]').onclick = () => { state.view = 'dm'; state.channel = DMS[0].id; commit(); };
+    rail.querySelectorAll('[data-server]').forEach(b => b.onclick = () => {
+      state.view = 'server'; state.server = b.dataset.server;
+      state.channel = firstChannel(b.dataset.server); commit();
+    });
+  }
+
+  function firstChannel(sid) { const s = SERVERS.find(x => x.id === sid); for (const c of s.cats) for (const ch of c.chans) if (!ch.voice) return ch.id; return s.cats[0].chans[0].id; }
+
+  function renderSidebar() {
+    if (state.view === 'dm') {
+      $('srvName').textContent = 'Direct Messages';
+      let h = `<div class="chan" style="margin-top:8px"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 19a6 6 0 0112 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="nm" style="font-weight:600">Friends</span></div>
+        <div class="cat" style="justify-content:space-between"><span>Direct Messages</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>`;
+      DMS.forEach(d => {
+        const p = person(d.key);
+        h += `<div class="chan ${state.channel === d.id ? 'sel' : ''}" data-ch="${d.id}" style="padding:6px 8px">
+          ${avatar(d.key, 32, true)}<span class="nm" style="margin-left:2px">${p.name}</span></div>`;
+      });
+      $('channels').innerHTML = h;
+    } else {
+      const s = currentServer();
+      $('srvName').textContent = s.name;
+      let h = '';
+      s.cats.forEach(cat => {
+        h += `<div class="cat"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>${cat.name}</div>`;
+        cat.chans.forEach(ch => {
+          const sel = state.channel === ch.id && !ch.voice;
+          h += `<div class="chan ${sel ? 'sel' : ''}" data-ch="${ch.id}" data-voice="${ch.voice ? 1 : ''}">
+            ${ch.voice ? SPEAKER : HASH}<span class="nm">${ch.name}</span></div>`;
+        });
+      });
+      $('channels').innerHTML = h;
+    }
+    $('channels').querySelectorAll('[data-ch]').forEach(el => el.onclick = () => {
+      if (el.dataset.voice) return;
+      state.channel = el.dataset.ch; commit(); closeNav();
+    });
+  }
+
+  function renderUserbar() {
+    const u = state.user;
+    $('userbar').innerHTML = `
+      <button class="me" id="meBtn">${avatar(u.name, 32, true)}
+        <div class="u-meta"><div class="u-name">${esc(u.name)}</div><div class="u-status">online</div></div>
+      </button>
+      <button class="u-btn" title="Mute"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 4a3 3 0 013 3v5a3 3 0 01-6 0V7a3 3 0 013-3z" stroke="currentColor" stroke-width="1.7"/><path d="M6 11a6 6 0 0012 0M12 18v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <button class="u-btn" title="Deafen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 13v-1a8 8 0 0116 0v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="3" y="12" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="17" y="12" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg></button>
+      <button class="u-btn" title="User Settings" id="settingsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.7"/><path d="M19 12a7 7 0 00-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L14.5 2h-4l-.3 2.4a7 7 0 00-1.7 1l-2.4-1-2 3.4L4 11a7 7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.3 2.4h4l.3-2.4a7 7 0 001.7-1l2.4 1 2-3.4-2-1.6a7 7 0 00.1-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button>`;
+    $('settingsBtn').onclick = () => {
+      if (confirm('Log out and reset the prototype? This clears local messages.')) {
+        localStorage.removeItem(LS); location.reload();
+      }
+    };
+  }
+
+  function meta() {
+    if (state.view === 'dm') {
+      const d = DMS.find(x => x.id === state.channel); const p = person(d.key);
+      return { name: p.name, topic: 'This is the beginning of your direct message history with ' + p.name + '.', voice: false, dm: true, key: d.key };
+    }
+    const s = currentServer();
+    for (const cat of s.cats) for (const ch of cat.chans) if (ch.id === state.channel) return { name: ch.name, topic: ch.topic, voice: ch.voice, dm: false };
+    return { name: 'general', topic: '' };
+  }
+
+  function renderHeader() {
+    const m = meta();
+    $('hIco').innerHTML = m.dm ? avatar(m.key, 24, true) : HASH.replace('width="20" height="20"', 'width="24" height="24"');
+    $('hName').textContent = m.name;
+    $('hTopic').textContent = m.topic;
+    $('composerInput').placeholder = m.dm ? 'Message @' + m.name : 'Message #' + m.name;
+    $('memToggle').classList.toggle('hidden', m.dm);
+  }
+
+  function renderMessages() {
+    const box = $('messages'); const list = state.msgs[state.channel] || [];
+    const m = meta();
+    let h = `<div class="welcome"><div class="w-ico">${m.dm ? avatar(m.key, 48, false) : HASH.replace('width="20" height="20"', 'width="32" height="32"')}</div>
+      <h1>${m.dm ? esc(m.name) : 'Welcome to #' + esc(m.name) + '!'}</h1>
+      <p>${m.dm ? 'This is the beginning of your legendary conversation with ' + esc(m.name) + '.' : 'This is the start of the #' + esc(m.name) + ' channel.'}</p></div>
+      <div class="day-div"><div class="line"></div><div class="lbl">Today</div><div class="line"></div></div>`;
+
+    let prev = null;
+    list.forEach(msg => {
+      const p = person(msg.a);
+      const grouped = prev && prev.a === msg.a;
+      const color = ROLE[p.role] || 'var(--text-hi)';
+      const reacts = (msg.react || []).map(r => `<button class="react ${r.mine ? 'mine' : ''}"><span>${r.e}</span><span class="cnt">${r.n}</span></button>`).join('');
+      if (grouped) {
+        h += `<div class="msg grouped"><div class="m-gutter">${(msg.time.split(' ').slice(-2).join(' '))}</div>
+          <div class="m-body"><div class="m-text">${fmt(msg.t)}</div>${reacts ? `<div class="reacts">${reacts}</div>` : ''}</div>${tools()}</div>`;
+      } else {
+        h += `<div class="msg"><div class="m-av">${avatar(msg.a, 40, false)}</div>
+          <div class="m-body"><div class="m-head"><span class="m-author" style="color:${color}">${esc(p.name)}</span>${p.bot ? '<span class="badge-bot">Bot</span>' : ''}<span class="m-time">${msg.time}</span></div>
+          <div class="m-text">${fmt(msg.t)}</div>${reacts ? `<div class="reacts">${reacts}</div>` : ''}</div>${tools()}</div>`;
+      }
+      prev = msg;
+    });
+    box.innerHTML = h;
+    box.scrollTop = box.scrollHeight;
+    box.querySelectorAll('.react').forEach(r => r.onclick = () => {
+      const cnt = r.querySelector('.cnt'); let n = +cnt.textContent;
+      r.classList.toggle('mine'); cnt.textContent = r.classList.contains('mine') ? n + 1 : n - 1;
+    });
+  }
+  function tools() {
+    return `<div class="m-tools">
+      <button title="React">😀</button>
+      <button title="Reply"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M10 9V5l-7 7 7 7v-4c5 0 8 1 10 4-1-6-4-9-10-9z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <button title="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>`;
+  }
+
+  function renderMembers() {
+    const box = $('members');
+    if (state.view === 'dm') { box.innerHTML = ''; return; }
+    const list = MEMBERS[state.server] || [];
+    const online = list.filter(m => person(m.key).status !== 'offline');
+    const offline = list.filter(m => person(m.key).status === 'offline');
+    const row = m => { const p = person(m.key); const color = ROLE[p.role] || 'var(--text-hi)';
+      return `<div class="mem ${p.status === 'offline' ? 'off' : ''}">${avatar(m.key, 32, true)}
+        <span class="m-name" style="color:${color}">${esc(p.name)}</span>${m.crown ? '<span class="crown" title="Owner"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8l4 4 4-6 4 6 4-4-2 10H6L4 8z"/></svg></span>' : ''}</div>`; };
+    let h = '';
+    if (online.length) h += `<div class="mem-cat">Online — ${online.length}</div>` + online.map(row).join('');
+    if (offline.length) h += `<div class="mem-cat">Offline — ${offline.length}</div>` + offline.map(row).join('');
+    box.innerHTML = h;
+  }
+
+  /* ── send ── */
+  function send(text) {
+    text = text.trim(); if (!text) return;
+    const ch = state.channel;
+    (state.msgs[ch] = state.msgs[ch] || []).push({ a: state.user.name, t: text, time: nowTime() });
+    save(); renderMessages();
+    const m = meta();
+    if (m.dm) simulateReply(m.key, ch);
+  }
+  let replyTimer = null;
+  function simulateReply(key, ch) {
+    clearTimeout(replyTimer);
+    const t = $('typing'); const p = person(key);
+    setTimeout(() => {
+      if (state.channel !== ch) return;
+      t.classList.remove('hidden');
+      t.innerHTML = `<span class="dots"><i></i><i></i><i></i></span><strong style="font-weight:600">${esc(p.name)}</strong> is typing…`;
+    }, 500);
+    replyTimer = setTimeout(() => {
+      t.classList.add('hidden');
+      const reply = DM_REPLIES[Math.floor(Math.random() * DM_REPLIES.length)];
+      (state.msgs[ch] = state.msgs[ch] || []).push({ a: key, t: reply, time: nowTime() });
+      save(); if (state.channel === ch) renderMessages();
+    }, 1900);
+  }
+
+  /* ── glue ── */
+  function commit() { save(); renderRail(); renderSidebar(); renderHeader(); renderMessages(); renderMembers(); }
+  function closeNav() { document.body.classList.remove('nav-open'); }
+
+  $('composerInput').addEventListener('keydown', e => { if (e.key === 'Enter') { send(e.target.value); e.target.value = ''; } });
+  $('menuBtn').onclick = () => document.body.classList.toggle('nav-open');
+  $('scrim').onclick = closeNav;
+  $('memToggle').onclick = () => $('members').classList.toggle('hidden');
+  $('srvHeader').onclick = () => {};
+
+  /* ── auth ── */
+  let mode = 'login';
+  function setMode(m) {
+    mode = m;
+    $('authTitle').textContent = mode === 'login' ? 'Welcome back' : 'Create an account';
+    $('authSub').textContent = mode === 'login' ? "We're so glad to see you again." : 'Pick a name and jump in.';
+    $('authBtn').textContent = mode === 'login' ? 'Log In' : 'Register';
+    $('authAlt').innerHTML = mode === 'login' ? 'Need an account? <a data-toggle>Register</a>' : '<a data-toggle>← Back to log in</a>';
+    $('emailField').style.display = mode === 'login' ? '' : 'none';
+  }
+  $('authAlt').addEventListener('click', e => { if (e.target.closest('[data-toggle]')) setMode(mode === 'login' ? 'register' : 'login'); });
+
+  $('authForm').addEventListener('submit', e => {
+    e.preventDefault();
+    let name = $('authName').value.trim();
+    if (!name) { name = $('authEmail').value.split('@')[0] || 'you'; }
+    state.user = { name, color: avc(name) };
+    save();
+    enter();
+  });
+
+  function enter() {
+    $('auth').style.display = 'none';
+    $('app').classList.add('on');
+    commit();
+    setTimeout(() => $('composerInput').focus(), 100);
+  }
+
+  /* ── boot ── */
+  if (state.user && state.user.name) {
+    // returning session
+    $('authName').value = state.user.name;
+    enter();
+  }
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
