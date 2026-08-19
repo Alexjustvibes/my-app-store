@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Maintrix</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -104,14 +104,14 @@
   }
 
   /* ═══════════ APP SHELL ═══════════ */
-  #app { display: none; height: 100%; }
+  #app { display: none; height: 100vh; height: 100dvh; }
   #app.on { display: flex; }
 
   /* server rail */
   .rail {
     width: 72px; flex: 0 0 72px; background: var(--rail);
     display: flex; flex-direction: column; align-items: center; gap: 8px;
-    padding: 12px 0; overflow-y: auto; overflow-x: hidden;
+    padding: calc(12px + env(safe-area-inset-top)) 0 12px; overflow-y: auto; overflow-x: hidden;
   }
   .rail::-webkit-scrollbar { width: 0; }
   .rail .pill {
@@ -138,8 +138,8 @@
   /* channel sidebar */
   .sidebar { width: 240px; flex: 0 0 240px; background: var(--sidebar); display: flex; flex-direction: column; }
   .srv-header {
-    height: 48px; flex: 0 0 48px; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 16px; font-weight: 700; font-size: 15px; color: var(--text-hi);
+    height: calc(48px + env(safe-area-inset-top)); flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+    padding: env(safe-area-inset-top) 16px 0; font-weight: 700; font-size: 15px; color: var(--text-hi);
     box-shadow: 0 1px 0 #00000033, 0 1.5px 0 #00000018; cursor: pointer;
   }
   .srv-header:hover { background: #35373c; }
@@ -167,7 +167,7 @@
   .chan .badge { background: var(--red); color: #fff; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 0 6px; min-width: 16px; height: 16px; display: grid; place-items: center; }
 
   /* user panel */
-  .userbar { height: 52px; flex: 0 0 52px; background: #232428; display: flex; align-items: center; padding: 0 8px; gap: 8px; }
+  .userbar { height: calc(52px + env(safe-area-inset-bottom)); flex: 0 0 auto; background: #232428; display: flex; align-items: center; padding: 0 8px env(safe-area-inset-bottom); gap: 8px; }
   .userbar .me { display: flex; align-items: center; gap: 8px; flex: 1; padding: 4px; border-radius: 4px; min-width: 0; }
   .userbar .me:hover { background: #35373c; }
   .userbar .u-meta { min-width: 0; }
@@ -187,7 +187,8 @@
   /* main chat */
   .main { flex: 1; display: flex; flex-direction: column; background: var(--chat); min-width: 0; }
   .chat-header {
-    height: 48px; flex: 0 0 48px; display: flex; align-items: center; gap: 8px; padding: 0 16px;
+    height: calc(48px + env(safe-area-inset-top)); flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+    padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 16px;
     box-shadow: 0 1px 0 #00000033; z-index: 2;
   }
   .chat-header .h-ico { color: var(--faint); }
@@ -240,7 +241,7 @@
   @keyframes blink { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
 
   /* composer */
-  .composer { padding: 0 16px 24px; }
+  .composer { padding: 0 16px calc(24px + env(safe-area-inset-bottom)); }
   .composer .box { background: var(--input); border-radius: 8px; display: flex; align-items: center; padding: 0 16px; }
   .composer .c-add { width: 24px; height: 24px; border-radius: 50%; background: var(--muted); color: var(--input); display: grid; place-items: center; flex: 0 0 24px; margin-right: 16px; }
   .composer .c-add:hover { background: var(--text); }
@@ -250,7 +251,7 @@
   .composer .c-icons button:hover { color: var(--text); }
 
   /* member list */
-  .members { width: 240px; flex: 0 0 240px; background: var(--sidebar); overflow-y: auto; padding: 16px 8px; }
+  .members { width: 240px; flex: 0 0 240px; background: var(--sidebar); overflow-y: auto; padding: calc(16px + env(safe-area-inset-top)) 8px calc(16px + env(safe-area-inset-bottom)); }
   .mem-cat { font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); padding: 16px 8px 4px; }
   .mem { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
   .mem:hover { background: var(--hover); }
@@ -258,21 +259,31 @@
   .mem .m-name { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .mem .crown { margin-left: auto; color: var(--yellow); }
 
-  /* mobile */
+  /* mobile — drawers are opened/closed by inline left/right styles set in JS,
+     so no `body.nav-open X` descendant rules are relied on. */
   .mobile-bar { display: none; }
-  .scrim { display: none; }
-  @media (max-width: 900px) { .members { display: none; } }
+  .scrim { display: none; position: fixed; inset: 0; z-index: 20; background: #0006; }
+
+  /* member list becomes a right-side drawer on narrow screens */
+  @media (max-width: 900px) {
+    .members {
+      position: fixed; top: 0; bottom: 0; right: -260px; width: 240px; z-index: 30;
+      transition: right .22s cubic-bezier(.2,.8,.2,1);
+    }
+  }
+
+  /* phone: server rail + channels slide in from the left */
   @media (max-width: 768px) {
     .rail, .sidebar {
-      position: fixed; top: 0; bottom: 0; left: 0; z-index: 30;
-      transform: translateX(-100%); transition: transform .22s cubic-bezier(.2,.8,.2,1);
+      position: fixed; top: 0; bottom: 0; z-index: 30;
+      transition: left .22s cubic-bezier(.2,.8,.2,1);
     }
-    .sidebar { left: 72px; }
-    body.nav-open .rail, body.nav-open .sidebar { transform: none; }
-    body.nav-open .scrim { display: block; position: fixed; inset: 0; z-index: 20; background: #0006; }
+    .rail { left: -72px; }
+    .sidebar { left: -240px; }
     .main { width: 100%; }
     .mobile-bar { display: flex; }
-    .h-search { display: none; }
+    .h-search, .hm { display: none; }
+    .chat-header .h-actions { gap: 14px; }
     .msg { padding-right: 16px; }
   }
 
@@ -340,8 +351,8 @@
       <span class="h-div"></span>
       <span class="h-topic" id="hTopic">Building the future of talking to each other.</span>
       <div class="h-actions">
-        <button title="Threads"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 4v10a4 4 0 004 4h9M6 4H4m2 0h2m11 14l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button title="Pinned"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 4h6l-1 6 4 3v2H7v-2l4-3-2-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 15v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button class="hm" title="Threads"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 4v10a4 4 0 004 4h9M6 4H4m2 0h2m11 14l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="hm" title="Pinned"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 4h6l-1 6 4 3v2H7v-2l4-3-2-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 15v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <button title="Members" id="memToggle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 19a6 6 0 0112 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 6a3 3 0 010 6m1 7a6 6 0 00-2-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <div class="h-search">Search</div>
       </div>
@@ -682,12 +693,31 @@
 
   /* ── glue ── */
   function commit() { save(); renderRail(); renderSidebar(); renderHeader(); renderMessages(); renderMembers(); }
-  function closeNav() { document.body.classList.remove('nav-open'); }
+
+  /* ── mobile drawers (driven by inline styles so they work regardless of
+     descendant-selector cascade quirks; the offsets are inert on desktop
+     where the panels are position:static) ── */
+  const isNarrow = () => matchMedia('(max-width: 900px)').matches;
+  let navOpen = false, memOpen = false;
+  function syncDrawers() {
+    const rail = $('rail'), sb = $('sidebar'), mem = $('members'), scrim = $('scrim');
+    rail.style.left = navOpen ? '0px' : '';
+    sb.style.left = navOpen ? '72px' : '';
+    sb.style.boxShadow = navOpen ? '8px 0 24px #0006' : '';
+    mem.style.right = memOpen ? '0px' : '';
+    mem.style.boxShadow = memOpen ? '-8px 0 24px #0006' : '';
+    scrim.style.display = (navOpen || memOpen) ? 'block' : 'none';
+  }
+  function closeNav() { navOpen = false; memOpen = false; syncDrawers(); }
 
   $('composerInput').addEventListener('keydown', e => { if (e.key === 'Enter') { send(e.target.value); e.target.value = ''; } });
-  $('menuBtn').onclick = () => document.body.classList.toggle('nav-open');
+  $('menuBtn').onclick = () => { navOpen = !navOpen; if (navOpen) memOpen = false; syncDrawers(); };
   $('scrim').onclick = closeNav;
-  $('memToggle').onclick = () => $('members').classList.toggle('hidden');
+  $('memToggle').onclick = () => {
+    if (isNarrow()) { $('members').classList.remove('hidden'); memOpen = !memOpen; if (memOpen) navOpen = false; syncDrawers(); }
+    else { $('members').classList.toggle('hidden'); }
+  };
+  window.addEventListener('resize', () => { if (!isNarrow()) closeNav(); });
   $('srvHeader').onclick = () => {};
 
   /* ── auth ── */
