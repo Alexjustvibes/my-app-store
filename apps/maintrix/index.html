@@ -8,754 +8,780 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Maintrix">
-<meta name="theme-color" content="#1e1f22">
+<meta name="theme-color" content="#150e10">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
 <style>
   :root {
-    --rail: #1e1f22;
-    --sidebar: #2b2d31;
-    --chat: #313338;
-    --elevated: #383a40;
-    --input: #383a40;
-    --hover: #35373c;
-    --active: #404249;
-    --divider: #26282c;
-    --text: #dbdee1;
-    --text-hi: #f2f3f5;
-    --muted: #949ba4;
-    --dim: #80848e;
-    --faint: #4e5058;
-    --accent: #5865f2;
-    --accent-hi: #6874f5;
-    --accent-press: #4752c4;
+    --ground: #150e10;      /* warm near-black */
+    --surface: #201417;
+    --surface-2: #2a191d;
+    --elevated: #332025;
+    --line: #3a2429;
+    --hover: #2b1a1f;
+    --text: #f5eaec;
+    --text-hi: #ffffff;
+    --muted: #b7969c;
+    --dim: #86636b;
+    --faint: #5a3d44;
+    --accent: #ed2e44;      /* Maintrix red */
+    --accent-hi: #ff4257;
+    --accent-press: #c11d31;
+    --accent-soft: #ed2e4420;
+    --gold: #f0b232;
     --green: #23a55a;
-    --green-hi: #2dc26b;
-    --red: #f23f43;
-    --yellow: #f0b232;
-    --role-red: #f23f43;
-    --role-blue: #5865f2;
-    --role-green: #3ba55d;
-    --role-pink: #eb459e;
-    --role-orange: #e67e22;
+    --live: #ff2d55;
     --font: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+    --display: 'Fraunces', Georgia, serif;
     --mono: 'JetBrains Mono', ui-monospace, monospace;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body {
-    font-family: var(--font);
-    background: var(--rail);
-    color: var(--text);
-    overflow: hidden;
+    font-family: var(--font); color: var(--text); background: #0d090a;
     -webkit-font-smoothing: antialiased;
   }
   button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, textarea, select { font-family: inherit; }
   svg { display: block; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 8px; }
+  ::-webkit-scrollbar { width: 7px; }
+  ::-webkit-scrollbar-thumb { background: #00000066; border-radius: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
 
-  /* ═══════════ LOGIN ═══════════ */
-  #auth {
-    position: fixed; inset: 0; z-index: 100;
-    display: grid; place-items: center; padding: 20px;
-    background:
-      radial-gradient(60% 60% at 20% 20%, #5865f2 0%, transparent 60%),
-      radial-gradient(60% 60% at 85% 80%, #7c4bd6 0%, transparent 55%),
-      linear-gradient(135deg, #404eed, #2b2d64);
+  /* phone frame — centered on desktop */
+  .frame {
+    position: relative; width: 100%; max-width: 480px; margin: 0 auto;
+    height: 100vh; height: 100dvh; background: var(--ground);
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 0 80px #000a;
   }
-  .auth-card {
-    width: 100%; max-width: 420px;
-    background: var(--chat); border-radius: 8px;
-    padding: 30px 28px; box-shadow: 0 8px 40px #0007;
-    animation: rise .4s cubic-bezier(.2,.8,.2,1) both;
-  }
-  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-  .brand { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 4px; }
-  .brand .logo { width: 40px; height: 40px; border-radius: 12px; background: var(--accent); display: grid; place-items: center; color: #fff; }
-  .brand .name { font-size: 24px; font-weight: 800; letter-spacing: -.02em; color: var(--text-hi); }
-  .auth-card h2 { text-align: center; color: var(--text-hi); font-size: 22px; font-weight: 700; margin: 16px 0 4px; }
-  .auth-card .sub { text-align: center; color: var(--muted); font-size: 15px; margin-bottom: 20px; }
-  .field { margin-bottom: 16px; }
-  .field label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
-  .field label .req { color: var(--red); }
-  .field input {
-    width: 100%; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px;
-    color: var(--text); font-size: 15px; padding: 11px; outline: none; transition: border-color .12s;
-  }
-  .field input:focus { border-color: var(--accent); }
-  .auth-btn {
-    width: 100%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
-    padding: 12px; border-radius: 4px; margin-top: 4px; transition: background .15s;
-  }
-  .auth-btn:hover { background: var(--accent-press); }
-  .auth-alt { font-size: 14px; color: var(--muted); margin-top: 14px; }
-  .auth-alt a { color: #00a8fc; text-decoration: none; cursor: pointer; }
-  .auth-alt a:hover { text-decoration: underline; }
-  .proto-note {
-    margin-top: 18px; padding: 9px 12px; border-radius: 5px; background: #5865f21a;
-    border: 1px solid #5865f233; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center;
-  }
-
-  /* ═══════════ APP SHELL ═══════════ */
-  #app { display: none; height: 100vh; height: 100dvh; }
-  #app.on { display: flex; }
-
-  /* server rail */
-  .rail {
-    width: 72px; flex: 0 0 72px; background: var(--rail);
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    padding: calc(12px + env(safe-area-inset-top)) 0 12px; overflow-y: auto; overflow-x: hidden;
-  }
-  .rail::-webkit-scrollbar { width: 0; }
-  .rail .pill {
-    position: relative; width: 48px; height: 48px; flex: 0 0 48px;
-    border-radius: 24px; background: var(--chat); color: var(--text);
-    display: grid; place-items: center; font-weight: 700; font-size: 17px;
-    transition: border-radius .18s cubic-bezier(.2,.8,.2,1), background .18s; overflow: hidden;
-  }
-  .rail .pill img, .rail .pill svg { pointer-events: none; }
-  .rail .pill:hover { border-radius: 16px; background: var(--accent); color: #fff; }
-  .rail .pill.home:hover, .rail .pill.home.sel { background: var(--accent); color: #fff; }
-  .rail .pill.sel { border-radius: 16px; background: var(--accent); color: #fff; }
-  .rail .server.sel { background: var(--accent); color: #fff; }
-  .rail .marker {
-    position: absolute; left: -12px; top: 50%; width: 8px; height: 0; background: #fff;
-    border-radius: 0 4px 4px 0; transform: translateY(-50%); transition: height .18s;
-  }
-  .rail .pill:hover .marker { height: 20px; }
-  .rail .pill.sel .marker { height: 40px; }
-  .rail .divider { width: 32px; height: 2px; background: var(--divider); border-radius: 1px; flex: 0 0 2px; }
-  .rail .pill.add { background: var(--chat); color: var(--green); }
-  .rail .pill.add:hover { background: var(--green); color: #fff; }
-
-  /* channel sidebar */
-  .sidebar { width: 240px; flex: 0 0 240px; background: var(--sidebar); display: flex; flex-direction: column; }
-  .srv-header {
-    height: calc(48px + env(safe-area-inset-top)); flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
-    padding: env(safe-area-inset-top) 16px 0; font-weight: 700; font-size: 15px; color: var(--text-hi);
-    box-shadow: 0 1px 0 #00000033, 0 1.5px 0 #00000018; cursor: pointer;
-  }
-  .srv-header:hover { background: #35373c; }
-  .channels { flex: 1; overflow-y: auto; padding: 8px 8px 0; }
-  .cat {
-    display: flex; align-items: center; gap: 4px; padding: 16px 8px 4px;
-    font-size: 11px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--dim);
-    cursor: pointer;
-  }
-  .cat:hover { color: var(--text); }
-  .cat .chev { transition: transform .15s; }
-  .cat.collapsed .chev { transform: rotate(-90deg); }
-  .chan {
-    display: flex; align-items: center; gap: 6px; padding: 7px 8px; margin-bottom: 2px;
-    border-radius: 4px; color: var(--muted); font-size: 15px; font-weight: 500; cursor: pointer;
-    position: relative;
-  }
-  .chan .ico { color: var(--faint); flex: 0 0 20px; }
-  .chan:hover { background: var(--hover); color: var(--text); }
-  .chan:hover .ico { color: var(--muted); }
-  .chan.sel { background: var(--active); color: var(--text-hi); }
-  .chan.sel .ico { color: var(--text); }
-  .chan .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .chan .unread { position: absolute; left: -8px; width: 4px; height: 8px; background: #fff; border-radius: 0 4px 4px 0; }
-  .chan .badge { background: var(--red); color: #fff; font-size: 11px; font-weight: 700; border-radius: 8px; padding: 0 6px; min-width: 16px; height: 16px; display: grid; place-items: center; }
-
-  /* user panel */
-  .userbar { height: calc(52px + env(safe-area-inset-bottom)); flex: 0 0 auto; background: #232428; display: flex; align-items: center; padding: 0 8px env(safe-area-inset-bottom); gap: 8px; }
-  .userbar .me { display: flex; align-items: center; gap: 8px; flex: 1; padding: 4px; border-radius: 4px; min-width: 0; }
-  .userbar .me:hover { background: #35373c; }
-  .userbar .u-meta { min-width: 0; }
-  .userbar .u-name { font-size: 14px; font-weight: 600; color: var(--text-hi); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .userbar .u-status { font-size: 12px; color: var(--muted); line-height: 1.1; }
-  .userbar .u-btn { width: 32px; height: 32px; border-radius: 4px; display: grid; place-items: center; color: var(--muted); }
-  .userbar .u-btn:hover { background: #35373c; color: var(--text); }
-
-  /* avatars */
-  .av { border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; color: #fff; font-weight: 600; position: relative; overflow: visible; }
-  .av .dot { position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--sidebar); }
-  .av .dot.online { background: var(--green); }
-  .av .dot.idle { background: var(--yellow); }
-  .av .dot.dnd { background: var(--red); }
-  .av .dot.offline { background: #80848e; }
-
-  /* main chat */
-  .main { flex: 1; display: flex; flex-direction: column; background: var(--chat); min-width: 0; }
-  .chat-header {
-    height: calc(48px + env(safe-area-inset-top)); flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
-    padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 16px;
-    box-shadow: 0 1px 0 #00000033; z-index: 2;
-  }
-  .chat-header .h-ico { color: var(--faint); }
-  .chat-header .h-name { font-weight: 700; color: var(--text-hi); font-size: 16px; }
-  .chat-header .h-div { width: 1px; height: 24px; background: var(--faint); margin: 0 8px; }
-  .chat-header .h-topic { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .chat-header .h-actions { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-  .chat-header .h-actions button { color: var(--muted); }
-  .chat-header .h-actions button:hover { color: var(--text); }
-  .h-search { background: var(--rail); border-radius: 4px; height: 28px; width: 144px; display: flex; align-items: center; padding: 0 8px; color: var(--dim); font-size: 13px; }
-
-  .messages { flex: 1; overflow-y: auto; padding-bottom: 20px; }
-  .welcome { padding: 16px 18px 8px; }
-  .welcome .w-ico { width: 68px; height: 68px; border-radius: 50%; background: var(--elevated); display: grid; place-items: center; color: var(--text-hi); margin-bottom: 8px; }
-  .welcome h1 { color: var(--text-hi); font-size: 30px; font-weight: 800; letter-spacing: -.02em; margin-bottom: 6px; }
-  .welcome p { color: var(--muted); font-size: 15px; }
-  .day-div { display: flex; align-items: center; gap: 8px; margin: 16px 16px 0; }
-  .day-div .line { flex: 1; height: 1px; background: var(--divider); }
-  .day-div .lbl { font-size: 11px; font-weight: 600; color: var(--dim); }
-
-  .msg { display: flex; gap: 16px; padding: 2px 48px 2px 16px; position: relative; }
-  .msg:hover { background: #2e3035; }
-  .msg.grouped { padding-top: 1px; padding-bottom: 1px; }
-  .msg .m-av { width: 40px; flex: 0 0 40px; }
-  .msg .m-gutter { width: 40px; flex: 0 0 40px; font-size: 10px; color: var(--dim); text-align: center; opacity: 0; padding-top: 4px; font-variant-numeric: tabular-nums; }
-  .msg.grouped:hover .m-gutter { opacity: 1; }
-  .msg .m-body { flex: 1; min-width: 0; }
-  .msg .m-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 1px; }
-  .msg .m-author { font-size: 15px; font-weight: 600; color: var(--text-hi); }
-  .msg .m-time { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
-  .msg .m-text { font-size: 15px; line-height: 1.375; color: var(--text); word-wrap: break-word; }
-  .msg .m-text code { font-family: var(--mono); font-size: 13px; background: var(--rail); padding: 1px 4px; border-radius: 4px; }
-  .msg .m-text .mention { background: #5865f233; color: #c9cdfb; border-radius: 3px; padding: 0 2px; font-weight: 500; }
-  .badge-bot { background: var(--accent); color: #fff; font-size: 10px; font-weight: 600; border-radius: 4px; padding: 1px 4px; text-transform: uppercase; letter-spacing: .02em; position: relative; top: -1px; }
-  .m-tools { position: absolute; top: -14px; right: 16px; background: var(--elevated); border: 1px solid #2b2d31; border-radius: 8px; display: none; box-shadow: 0 2px 8px #0004; }
-  .msg:hover .m-tools { display: flex; }
-  .m-tools button { width: 32px; height: 30px; display: grid; place-items: center; color: var(--muted); }
-  .m-tools button:hover { color: var(--text); background: var(--hover); }
-  .reacts { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-  .react { display: flex; align-items: center; gap: 5px; background: #2b2d31; border: 1px solid #ffffff0f; border-radius: 8px; padding: 2px 7px; font-size: 13px; color: var(--text); cursor: pointer; }
-  .react.mine { background: #5865f226; border-color: var(--accent); }
-  .react:hover { border-color: var(--muted); }
-  .react .cnt { font-weight: 600; color: var(--muted); font-size: 12px; }
-
-  .typing { height: 24px; padding: 0 16px; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 6px; }
-  .typing .dots { display: inline-flex; gap: 3px; }
-  .typing .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: blink 1.4s infinite both; }
-  .typing .dots i:nth-child(2) { animation-delay: .2s; }
-  .typing .dots i:nth-child(3) { animation-delay: .4s; }
-  @keyframes blink { 0%, 60%, 100% { opacity: .3; } 30% { opacity: 1; } }
-
-  /* composer */
-  .composer { padding: 0 16px calc(24px + env(safe-area-inset-bottom)); }
-  .composer .box { background: var(--input); border-radius: 8px; display: flex; align-items: center; padding: 0 16px; }
-  .composer .c-add { width: 24px; height: 24px; border-radius: 50%; background: var(--muted); color: var(--input); display: grid; place-items: center; flex: 0 0 24px; margin-right: 16px; }
-  .composer .c-add:hover { background: var(--text); }
-  .composer input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 15px; padding: 11px 0; }
-  .composer input::placeholder { color: var(--dim); }
-  .composer .c-icons { display: flex; align-items: center; gap: 16px; margin-left: 8px; color: var(--muted); }
-  .composer .c-icons button:hover { color: var(--text); }
-
-  /* member list */
-  .members { width: 240px; flex: 0 0 240px; background: var(--sidebar); overflow-y: auto; padding: calc(16px + env(safe-area-inset-top)) 8px calc(16px + env(safe-area-inset-bottom)); }
-  .mem-cat { font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); padding: 16px 8px 4px; }
-  .mem { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
-  .mem:hover { background: var(--hover); }
-  .mem.off { opacity: .38; }
-  .mem .m-name { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mem .crown { margin-left: auto; color: var(--yellow); }
-
-  /* mobile — drawers are opened/closed by inline left/right styles set in JS,
-     so no `body.nav-open X` descendant rules are relied on. */
-  .mobile-bar { display: none; }
-  .scrim { display: none; position: fixed; inset: 0; z-index: 20; background: #0006; }
-
-  /* member list becomes a right-side drawer on narrow screens */
-  @media (max-width: 900px) {
-    .members {
-      position: fixed; top: 0; bottom: 0; right: -260px; width: 240px; z-index: 30;
-      transition: right .22s cubic-bezier(.2,.8,.2,1);
-    }
-  }
-
-  /* phone: server rail + channels slide in from the left */
-  @media (max-width: 768px) {
-    .rail, .sidebar {
-      position: fixed; top: 0; bottom: 0; z-index: 30;
-      transition: left .22s cubic-bezier(.2,.8,.2,1);
-    }
-    .rail { left: -72px; }
-    .sidebar { left: -240px; }
-    .main { width: 100%; }
-    .mobile-bar { display: flex; }
-    .h-search, .hm { display: none; }
-    .chat-header .h-actions { gap: 14px; }
-    .msg { padding-right: 16px; }
-  }
+  @media (min-width: 500px) { .frame { border-left: 1px solid var(--line); border-right: 1px solid var(--line); } }
 
   .hidden { display: none !important; }
-  .rail a.pill { text-decoration: none; }
-  .rail .store-back { color: var(--muted); background: var(--chat); }
-  .rail .store-back:hover { background: var(--accent); color: #fff; border-radius: 16px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 20px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: all .12s; user-select: none;
+  }
+  .chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hi); }
+  .chip:active { transform: scale(.96); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 16px;
+    padding: 13px 20px; border-radius: 12px; transition: filter .12s, transform .1s;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:active { transform: scale(.97); }
+  .btn.block { width: 100%; }
+  .btn.ghost { background: var(--surface); border: 1px solid var(--line); color: var(--text); }
+  .btn.ghost:hover { border-color: var(--accent); filter: none; }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .av { border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; color: #fff; font-weight: 700; position: relative; }
+  .av.live { box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--live); }
+  .av .dot { position: absolute; right: -1px; bottom: -1px; border-radius: 50%; border: 2.5px solid var(--surface); }
+  .av .dot.online { background: var(--green); } .av .dot.offline { background: #6b5158; } .av .dot.idle { background: var(--gold); } .av .dot.dnd { background: var(--accent); }
+
+  /* ═══════════ AUTH / ONBOARDING ═══════════ */
+  #auth, #onboard {
+    position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column;
+    padding: max(28px, env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
+  }
+  #auth {
+    justify-content: center; text-align: center;
+    background:
+      radial-gradient(70% 55% at 50% 12%, #7a0f1e 0%, transparent 60%),
+      radial-gradient(80% 60% at 50% 108%, #3a0a12 0%, transparent 55%),
+      linear-gradient(180deg, #1a0b0e, #0d090a);
+  }
+  .logo-mark { width: 60px; height: 60px; border-radius: 18px; background: linear-gradient(150deg, var(--accent-hi), var(--accent-press)); display: grid; place-items: center; margin: 0 auto 22px; box-shadow: 0 10px 40px #ed2e4455; }
+  #auth .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: var(--accent-hi); margin-bottom: 14px; }
+  #auth h1 { font-family: var(--display); font-weight: 900; font-size: 40px; line-height: 1.02; letter-spacing: -.02em; color: var(--text-hi); text-wrap: balance; margin-bottom: 14px; }
+  #auth .tag { font-size: 18px; color: var(--muted); line-height: 1.5; max-width: 340px; margin: 0 auto 30px; }
+  #auth .tag b { color: var(--text-hi); font-weight: 700; }
+  .auth-actions { display: flex; flex-direction: column; gap: 10px; max-width: 340px; width: 100%; margin: 0 auto; }
+  #auth .fine { margin-top: 18px; font-size: 12px; color: var(--dim); line-height: 1.5; }
+  #auth .store { position: absolute; top: max(16px, env(safe-area-inset-top)); left: 18px; color: var(--dim); font-size: 13px; font-weight: 600; }
+
+  /* onboarding */
+  #onboard { background: var(--ground); }
+  .ob-head { flex: 0 0 auto; padding-top: 6px; }
+  .ob-bar { height: 4px; background: var(--line); border-radius: 3px; overflow: hidden; margin-bottom: 22px; }
+  .ob-bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+  .ob-step { flex: 1; overflow-y: auto; display: none; flex-direction: column; }
+  .ob-step.on { display: flex; animation: rise .35s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .ob-k { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-hi); margin-bottom: 8px; }
+  .ob-step h2 { font-family: var(--display); font-weight: 700; font-size: 27px; color: var(--text-hi); letter-spacing: -.01em; margin-bottom: 6px; text-wrap: balance; }
+  .ob-step p.sub { color: var(--muted); font-size: 15px; margin-bottom: 22px; line-height: 1.5; }
+  .chips { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 8px; }
+  .field { margin-bottom: 18px; }
+  .field label { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .field input, .field textarea, .field select {
+    width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--text); font-size: 16px; padding: 13px; outline: none; transition: border-color .12s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+  .field textarea { resize: none; min-height: 80px; line-height: 1.5; }
+  .swatches { display: flex; gap: 12px; }
+  .sw { width: 40px; height: 40px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: transform .1s; }
+  .sw.on { border-color: #fff; transform: scale(1.1); }
+  .ob-foot { flex: 0 0 auto; padding-top: 16px; display: flex; gap: 10px; }
+
+  /* ═══════════ APP SHELL ═══════════ */
+  #app { display: none; flex-direction: column; height: 100%; }
+  #app.on { display: flex; }
+  .topbar {
+    flex: 0 0 auto; height: calc(54px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 16px 0;
+    display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--line); background: var(--ground); z-index: 5;
+  }
+  .topbar .tb-title { font-family: var(--display); font-weight: 700; font-size: 21px; color: var(--text-hi); flex: 1; letter-spacing: -.01em; display: flex; align-items: center; gap: 9px; }
+  .topbar .tb-sub { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  .tier-pill { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 20px; border: 1px solid var(--line); color: var(--muted); }
+  .tier-pill.main { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-hi); }
+  .tb-btn { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+  .tb-btn:hover { background: var(--hover); color: var(--text); }
+
+  #view { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
+  .screen { display: none; min-height: 100%; }
+  .screen.on { display: block; animation: fade .28s ease; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .pad { padding: 16px; }
+  .sec-title { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 22px 4px 10px; }
+  .sec-title:first-child { margin-top: 4px; }
+
+  /* bottom nav */
+  .botnav {
+    flex: 0 0 auto; display: flex; border-top: 1px solid var(--line); background: var(--ground);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .botnav button {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 7px;
+    color: var(--dim); font-size: 10px; font-weight: 600; letter-spacing: .02em; position: relative;
+  }
+  .botnav button .ni { transition: transform .12s; }
+  .botnav button:active .ni { transform: scale(.85); }
+  .botnav button.on { color: var(--accent-hi); }
+  .botnav button.on .ni { filter: drop-shadow(0 0 8px var(--accent)); }
+  .botnav .lockdot { position: absolute; top: 6px; right: calc(50% - 18px); width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+  /* message thread (nexus / dm / channel) */
+  .thread { display: flex; flex-direction: column; height: 100%; }
+  .thread-scroll { flex: 1; overflow-y: auto; padding: 10px 0 8px; }
+  .msg { display: flex; gap: 11px; padding: 3px 14px; position: relative; }
+  .msg:hover { background: #ffffff05; }
+  .msg.grouped { padding-top: 1px; }
+  .msg .m-av { width: 38px; flex: 0 0 38px; }
+  .msg .m-gutter { width: 38px; flex: 0 0 38px; }
+  .msg .m-body { flex: 1; min-width: 0; }
+  .msg .m-head { display: flex; align-items: baseline; gap: 8px; }
+  .msg .m-author { font-size: 15px; font-weight: 700; color: var(--text-hi); }
+  .msg .m-time { font-size: 11px; color: var(--dim); }
+  .msg .m-trait { font-family: var(--mono); font-size: 9px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-hi); background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+  .msg .m-text { font-size: 15px; line-height: 1.4; color: var(--text); word-wrap: break-word; }
+  .msg .m-text code { font-family: var(--mono); font-size: 13px; background: #0006; padding: 1px 5px; border-radius: 5px; }
+  .msg .m-text .mention { color: var(--accent-hi); background: var(--accent-soft); border-radius: 3px; padding: 0 3px; font-weight: 600; }
+  .composer { flex: 0 0 auto; padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .composer .box { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; display: flex; align-items: center; padding: 4px 6px 4px 16px; }
+  .composer input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 15px; padding: 8px 0; }
+  .composer input::placeholder { color: var(--dim); }
+  .composer .send { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; flex: 0 0 34px; }
+  .composer .send:disabled { background: var(--surface-2); color: var(--dim); }
+
+  .thread-head { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .thread-head .back { color: var(--muted); width: 32px; height: 32px; display: grid; place-items: center; margin-left: -6px; }
+  .thread-head .th-name { font-weight: 700; font-size: 17px; color: var(--text-hi); flex: 1; }
+  .thread-head .th-sub { font-size: 12px; color: var(--muted); }
+
+  /* nexus banner */
+  .nexus-banner { margin: 14px; padding: 14px 16px; border-radius: 14px; background: linear-gradient(135deg, #3a0f18, #24141a); border: 1px solid var(--accent); position: relative; overflow: hidden; }
+  .nexus-banner::after { content: ''; position: absolute; right: -30px; top: -30px; width: 120px; height: 120px; background: radial-gradient(var(--accent-soft), transparent 70%); }
+  .nexus-banner .nb-k { font-family: var(--mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-hi); margin-bottom: 6px; }
+  .nexus-banner .nb-t { font-family: var(--display); font-size: 19px; font-weight: 700; color: var(--text-hi); line-height: 1.25; }
+  .nexus-banner .nb-s { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+  /* list rows */
+  .row { display: flex; align-items: center; gap: 13px; padding: 11px 14px; cursor: pointer; }
+  .row:hover { background: var(--hover); }
+  .row .r-main { flex: 1; min-width: 0; }
+  .row .r-name { font-size: 16px; font-weight: 600; color: var(--text-hi); display: flex; align-items: center; gap: 7px; }
+  .row .r-sub { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .r-meta { font-size: 11px; color: var(--dim); text-align: right; white-space: nowrap; }
+  .tag-shared { font-family: var(--mono); font-size: 9px; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-hi); background: var(--accent-soft); padding: 2px 6px; border-radius: 5px; }
+  .segmented { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin: 14px; }
+  .segmented button { flex: 1; padding: 9px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .segmented button.on { background: var(--accent-soft); color: var(--accent-hi); }
+
+  /* feed */
+  .post { border-bottom: 8px solid #0d090a; }
+  .post-top { display: flex; align-items: center; gap: 11px; padding: 13px 14px 10px; }
+  .post-top .r-name { font-size: 15px; font-weight: 700; color: var(--text-hi); }
+  .post-top .p-follow { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--accent-hi); }
+  .post-body { padding: 0 14px 12px; font-size: 16px; line-height: 1.5; color: var(--text); }
+  .post-media { height: 200px; margin: 0 0 12px; display: grid; place-items: center; color: #fff9; font-family: var(--display); font-size: 22px; font-weight: 700; text-align: center; padding: 20px; }
+  .post-actions { display: flex; gap: 22px; padding: 0 16px 14px; color: var(--muted); font-size: 14px; font-weight: 600; }
+  .post-actions button { display: flex; align-items: center; gap: 7px; color: inherit; }
+  .post-actions .liked { color: var(--accent-hi); }
+
+  /* live */
+  .live-card { margin: 12px 14px; border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); cursor: pointer; }
+  .live-thumb { height: 120px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+  .live-badge { align-self: flex-start; display: flex; align-items: center; gap: 5px; background: var(--live); color: #fff; font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 3px 8px; border-radius: 6px; }
+  .live-badge i { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  .live-topic { font-family: var(--display); font-size: 20px; font-weight: 700; color: #fff; line-height: 1.15; text-shadow: 0 2px 12px #000a; }
+  .live-foot { display: flex; align-items: center; gap: 10px; padding: 11px 14px; }
+  .live-foot .lf-host { font-size: 14px; font-weight: 600; color: var(--text-hi); flex: 1; }
+  .live-foot .lf-count { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+
+  /* lobby */
+  .prog-wrap { display: flex; align-items: center; gap: 18px; padding: 20px 16px; }
+  .prog-ring { position: relative; width: 78px; height: 78px; flex: 0 0 78px; }
+  .prog-ring .pv { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--text-hi); }
+  .prog-txt h3 { font-family: var(--display); font-size: 20px; color: var(--text-hi); font-weight: 700; }
+  .prog-txt p { font-size: 14px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .task { display: flex; align-items: flex-start; gap: 13px; padding: 13px 16px; border-top: 1px solid var(--line); }
+  .task .tick { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--faint); flex: 0 0 24px; margin-top: 1px; display: grid; place-items: center; cursor: pointer; transition: all .12s; }
+  .task .tick.done { background: var(--accent); border-color: var(--accent); }
+  .task .t-body { flex: 1; }
+  .task .t-name { font-size: 15px; font-weight: 600; color: var(--text-hi); }
+  .task.done .t-name { color: var(--dim); text-decoration: line-through; }
+  .task .t-sub { font-size: 13px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+  /* paywall */
+  .lock { padding: 40px 24px; text-align: center; }
+  .lock .lock-ic { width: 68px; height: 68px; border-radius: 20px; background: var(--accent-soft); border: 1px solid var(--accent); display: grid; place-items: center; color: var(--accent-hi); margin: 20px auto 18px; }
+  .lock h2 { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--text-hi); margin-bottom: 8px; text-wrap: balance; }
+  .lock p { color: var(--muted); font-size: 15px; line-height: 1.55; max-width: 320px; margin: 0 auto 22px; }
+  .lock .feat { text-align: left; max-width: 320px; margin: 0 auto 24px; display: flex; flex-direction: column; gap: 12px; }
+  .lock .feat div { display: flex; gap: 11px; font-size: 15px; color: var(--text); }
+  .lock .feat .fi { color: var(--accent-hi); flex: 0 0 auto; }
+
+  /* sheet / modal */
+  .sheet-scrim { position: absolute; inset: 0; z-index: 70; background: #000a; display: none; align-items: flex-end; }
+  .sheet-scrim.on { display: flex; animation: fade .2s ease; }
+  .sheet { width: 100%; max-height: 92%; background: var(--ground); border-radius: 20px 20px 0 0; border-top: 1px solid var(--line); overflow-y: auto; animation: slideup .28s cubic-bezier(.2,.8,.2,1); }
+  @keyframes slideup { from { transform: translateY(100%); } to { transform: none; } }
+  .sheet-grab { width: 40px; height: 4px; background: var(--faint); border-radius: 3px; margin: 10px auto 4px; }
+
+  /* profile */
+  .prof-hero { padding: 10px 20px 20px; text-align: center; position: relative; }
+  .prof-hero .p-av { margin: 6px auto 12px; }
+  .prof-hero h2 { font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--text-hi); }
+  .prof-hero .p-since { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 4px; }
+  .prof-stats { display: flex; justify-content: center; gap: 30px; margin: 16px 0; }
+  .prof-stats .ps { text-align: center; }
+  .prof-stats .ps b { font-family: var(--display); font-size: 20px; color: var(--text-hi); font-weight: 700; display: block; }
+  .prof-stats .ps span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .prof-bio { font-size: 15px; color: var(--text); line-height: 1.55; padding: 0 20px 16px; text-align: center; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 16px 16px; }
+  .badge { display: flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); font-size: 13px; font-weight: 600; color: var(--text); }
+  .trait-group { padding: 4px 16px 10px; }
+  .trait-group .tg-k { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
+
+  .settings-row { display: flex; align-items: center; gap: 13px; padding: 15px 18px; border-top: 1px solid var(--line); cursor: pointer; font-size: 15px; color: var(--text); }
+  .settings-row:hover { background: var(--hover); }
+  .settings-row .sr-ic { color: var(--muted); }
+  .settings-row .sr-r { margin-left: auto; color: var(--dim); font-size: 13px; }
+  .settings-row.danger { color: var(--accent-hi); }
+
+  .toast { position: absolute; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--elevated); border: 1px solid var(--line); color: var(--text-hi); padding: 11px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 80; opacity: 0; pointer-events: none; transition: all .25s; box-shadow: 0 8px 30px #000a; white-space: nowrap; }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty { text-align: center; color: var(--dim); font-size: 15px; padding: 50px 24px; line-height: 1.6; }
 </style>
 </head>
 <body>
+<div class="frame">
 
-<!-- ═══════════ LOGIN ═══════════ -->
-<div id="auth">
-  <div class="auth-card">
-    <div class="brand">
-      <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><circle cx="9" cy="10.5" r="1.4" fill="#5865f2"/><circle cx="12" cy="10.5" r="1.4" fill="#5865f2"/><circle cx="15" cy="10.5" r="1.4" fill="#5865f2"/></svg>
-      </div>
-      <div class="name">Maintrix</div>
+  <!-- ═══════════ LOGIN ═══════════ -->
+  <div id="auth">
+    <a class="store" href="../../index.html">← Store</a>
+    <div class="logo-mark">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
-    <h2 id="authTitle">Welcome back</h2>
-    <div class="sub" id="authSub">We're so glad to see you again.</div>
-    <form id="authForm">
-      <div class="field" id="emailField">
-        <label>Email or Phone <span class="req">*</span></label>
-        <input type="text" id="authEmail" autocomplete="off" value="you@maintrix.chat">
-      </div>
-      <div class="field">
-        <label>Display name <span class="req">*</span></label>
-        <input type="text" id="authName" autocomplete="off" placeholder="Pick a name" value="">
-      </div>
-      <div class="field">
-        <label>Password <span class="req">*</span></label>
-        <input type="password" id="authPass" autocomplete="off" value="••••••••">
-      </div>
-      <button type="submit" class="auth-btn" id="authBtn">Log In</button>
-      <div class="auth-alt" id="authAlt">Need an account? <a data-toggle>Register</a></div>
-    </form>
-    <div class="proto-note">Prototype — no real accounts or servers. Everything runs locally in your browser so you can click around the feel.</div>
-    <div style="text-align:center;margin-top:14px"><a href="../../index.html" style="color:var(--muted);font-size:13px;text-decoration:none">← Back to App Store</a></div>
+    <div class="eyebrow">Maintrix</div>
+    <h1>Welcome to heaven on earth.</h1>
+    <p class="tag">Discord for smart people. One <b>self</b>, one <b>world</b> — where you talk, you grow, and you become who you're trying to be.</p>
+    <div class="auth-actions">
+      <button class="btn block" id="beginBtn">Enter the Nexus</button>
+      <button class="btn ghost block" id="haveBtn">I already have an identity</button>
+    </div>
+    <div class="fine">Prototype — no real accounts. Everything lives locally in your browser.</div>
   </div>
-</div>
 
-<!-- ═══════════ APP ═══════════ -->
-<div id="app">
-  <div class="scrim" id="scrim"></div>
-  <nav class="rail" id="rail"></nav>
+  <!-- ═══════════ ONBOARDING ═══════════ -->
+  <div id="onboard" class="hidden">
+    <div class="ob-head"><div class="ob-bar"><i id="obBar"></i></div></div>
 
-  <aside class="sidebar" id="sidebar">
-    <div class="srv-header" id="srvHeader">
-      <span id="srvName">Maintrix HQ</span>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </div>
-    <div class="channels" id="channels"></div>
-    <div class="userbar" id="userbar"></div>
-  </aside>
-
-  <main class="main">
-    <header class="chat-header">
-      <button class="mobile-bar u-btn" id="menuBtn" style="width:32px;height:32px;border-radius:4px;color:var(--muted)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-      <span class="h-ico" id="hIco"></span>
-      <span class="h-name" id="hName">general</span>
-      <span class="h-div"></span>
-      <span class="h-topic" id="hTopic">Building the future of talking to each other.</span>
-      <div class="h-actions">
-        <button class="hm" title="Threads"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 4v10a4 4 0 004 4h9M6 4H4m2 0h2m11 14l-3-3m3 3l-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <button class="hm" title="Pinned"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 4h6l-1 6 4 3v2H7v-2l4-3-2-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 15v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-        <button title="Members" id="memToggle"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 19a6 6 0 0112 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 6a3 3 0 010 6m1 7a6 6 0 00-2-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-        <div class="h-search">Search</div>
-      </div>
-    </header>
-
-    <div class="messages" id="messages"></div>
-    <div class="typing hidden" id="typing"></div>
-
-    <div class="composer">
-      <div class="box">
-        <button class="c-add"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
-        <input id="composerInput" placeholder="Message #general" autocomplete="off">
-        <div class="c-icons">
-          <button title="Gift"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="11" rx="1" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M12 9v11M12 9s-4-6-6-3 6 3 6 3zm0 0s4-6 6-3-6 3-6 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
-          <button title="GIF"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M9 10.5H7v3h2v-1M12 10v4M15 10h2m-2 2h1.5m-1.5-2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-          <button title="Emoji"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 14a4 4 0 007 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg></button>
-        </div>
+    <div class="ob-step on" data-step="0">
+      <div class="ob-k">Identity · 1 of 4</div>
+      <h2>Who walks in?</h2>
+      <p class="sub">Your identity is the center of Maintrix — every room, feed, and lobby reads from it.</p>
+      <div class="field"><label>Display name</label><input id="obName" placeholder="Choose a name" autocomplete="off"></div>
+      <div class="field"><label>You are</label>
+        <select id="obGender"><option>Prefer not to say</option><option>Man</option><option>Woman</option><option>Non-binary</option></select>
       </div>
     </div>
-  </main>
 
-  <aside class="members" id="members"></aside>
+    <div class="ob-step" data-step="1">
+      <div class="ob-k">Identity · 2 of 4</div>
+      <h2>What are you chasing?</h2>
+      <p class="sub">Pick the goals that actually drive you. Maintrix uses these to connect you to people chasing the same thing.</p>
+      <div class="chips" id="obGoals"></div>
+    </div>
+
+    <div class="ob-step" data-step="2">
+      <div class="ob-k">Identity · 3 of 4</div>
+      <h2>What's in the way?</h2>
+      <p class="sub">Name your fears. The people who share them are the ones you'll grow fastest beside.</p>
+      <div class="chips" id="obFears"></div>
+    </div>
+
+    <div class="ob-step" data-step="3">
+      <div class="ob-k">Identity · 4 of 4</div>
+      <h2>Set your mark.</h2>
+      <p class="sub">A line about who you are, and the color you'll be known by.</p>
+      <div class="field"><label>Bio</label><textarea id="obBio" placeholder="In one line — who are you becoming?"></textarea></div>
+      <div class="field"><label>Your color</label><div class="swatches" id="obSwatches"></div></div>
+    </div>
+
+    <div class="ob-foot">
+      <button class="btn ghost" id="obBack">Back</button>
+      <button class="btn block" id="obNext">Continue</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ APP ═══════════ -->
+  <div id="app">
+    <div class="topbar">
+      <div class="tb-title"><span id="tbTitle">Nexus</span><span class="tb-sub" id="tbSub"></span></div>
+      <span class="tier-pill" id="tierPill">Lite</span>
+      <button class="tb-btn" id="profileBtn"></button>
+    </div>
+
+    <div id="view">
+      <section class="screen" id="s-nexus"></section>
+      <section class="screen" id="s-chats"></section>
+      <section class="screen" id="s-feed"></section>
+      <section class="screen" id="s-live"></section>
+      <section class="screen" id="s-lobby"></section>
+    </div>
+
+    <nav class="botnav" id="botnav"></nav>
+  </div>
+
+  <div class="sheet-scrim" id="sheetScrim"><div class="sheet" id="sheet"></div></div>
+  <div class="toast" id="toast"></div>
 </div>
 
 <script>
 (function () {
   const $ = id => document.getElementById(id);
-  const LS = 'maintrix.v1';
-  const HASH = '<svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 4L5.5 20M18.5 4L17 20M4 8.5h16M3.5 15.5h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-  const SPEAKER = '<svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M11 5L6 9H3v6h3l5 4V5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M15 9a3 3 0 010 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
-  const ROLE = { red: 'var(--role-red)', blue: 'var(--role-blue)', green: 'var(--role-green)', pink: 'var(--role-pink)', orange: 'var(--role-orange)', none: 'var(--text-hi)' };
-  const AVC = ['#5865f2', '#eb459e', '#3ba55d', '#e67e22', '#f23f43', '#9b59b6', '#1abc9c', '#faa61a'];
-  const avc = s => AVC[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % AVC.length];
+  const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const LS = 'maintrix.v2';
 
-  /* ── seed data ── */
+  /* ── static data ── */
+  const GOALS = ['Discipline', 'Wealth', 'Mastery', 'Courage', 'Focus', 'Health', 'Creativity', 'Leadership', 'Purpose', 'Freedom'];
+  const FEARS = ['Wasted potential', 'Irrelevance', 'Failure', 'Rejection', 'Mediocrity', 'Being forgotten', 'Running out of time', 'Loneliness'];
+  const SWATCH = ['#ed2e44', '#f0663b', '#f0b232', '#3ba55d', '#4a9eff', '#a855f7', '#eb459e'];
+  const ROLE_COLORS = { owner: '#f0b232', admin: '#ed2e44', member: '#f5eaec' };
+
   const PEOPLE = {
-    nova:  { name: 'nova', role: 'red', status: 'online', note: 'shipping maintrix' },
-    kestrel:{ name: 'kestrel', role: 'pink', status: 'online', note: 'design' },
-    dax:   { name: 'dax', role: 'green', status: 'idle', note: 'compiling…' },
-    juno:  { name: 'juno', role: 'orange', status: 'dnd', note: 'in the zone' },
-    pip:   { name: 'pip', role: 'blue', status: 'online', note: '' },
-    echo:  { name: 'echo', role: 'none', status: 'offline', note: '' },
-    wren:  { name: 'wren', role: 'none', status: 'offline', note: '' },
-    MaintrixBot: { name: 'Maintrix', role: 'blue', status: 'online', note: '', bot: true }
+    nova:    { name: 'nova', color: '#ed2e44', status: 'online', goals: ['Discipline', 'Mastery'], fears: ['Wasted potential'], badges: ['Founder'], live: true },
+    kestrel: { name: 'kestrel', color: '#a855f7', status: 'online', goals: ['Creativity', 'Freedom'], fears: ['Mediocrity'], badges: ['Designer'] },
+    dax:     { name: 'dax', color: '#3ba55d', status: 'idle', goals: ['Mastery', 'Focus'], fears: ['Irrelevance'], badges: ['Builder'] },
+    juno:    { name: 'juno', color: '#f0663b', status: 'dnd', goals: ['Discipline', 'Courage'], fears: ['Failure', 'Running out of time'], badges: [] },
+    pip:     { name: 'pip', color: '#4a9eff', status: 'online', goals: ['Wealth', 'Leadership'], fears: ['Rejection'], badges: ['Connector'] },
+    sable:   { name: 'sable', color: '#eb459e', status: 'online', goals: ['Purpose', 'Health'], fears: ['Loneliness'], badges: [] },
+    echo:    { name: 'echo', color: '#f0b232', status: 'offline', goals: ['Focus'], fears: ['Being forgotten'], badges: [] },
+    Overwatch: { name: 'Overwatch', color: '#ed2e44', status: 'online', goals: [], fears: [], badges: ['Admin'], bot: true }
+  };
+
+  const SEED = {
+    nexus: [
+      { a: 'Overwatch', t: 'You have entered **the Nexus** — the one space every Maintrix member shares. No walls, no islands. Say something true.', bot: true },
+      { a: 'nova', t: 'the whole point: you\'re never posting into a dead server. everyone\'s here.' },
+      { a: 'juno', t: 'day 14 of showing up before 6am. it\'s getting easier and that scares me a little' },
+      { a: 'sable', t: 'anyone else here just to not feel alone while they work? 🙂' },
+      { a: 'dax', t: 'shipped the thing i said i\'d ship last week. `git push` therapy is real' },
+      { a: 'pip', t: 'the trait matching is wild — half the people in here are chasing the same thing i am' }
+    ],
+    'dm-nova': [{ a: 'nova', t: 'welcome in. this is a DM — try replying, i write back.' }],
+    'dm-kestrel': [{ a: 'kestrel', t: 'pushed you the red theme swatches 🎨' }],
+    'dm-juno': [{ a: 'juno', t: 'you said you\'d hold me to the 6am thing. holding?' }],
+    'hq-general': [
+      { a: 'nova', t: 'HQ is the build server. this is where Maintrix gets made.' },
+      { a: 'kestrel', t: 'the red aesthetic is landing. feels like intent, not danger.' },
+      { a: 'dax', t: 'bottom nav > four columns on mobile, called it' }
+    ],
+    'hq-design': [{ a: 'kestrel', t: 'accent #ed2e44, warm near-black grounds. Fraunces for the display serif.' }],
+    'arena-general': [{ a: 'juno', t: 'accountability check: post your one hard thing for today.' }, { a: 'sable', t: 'cold shower + the email i\'ve been avoiding.' }]
   };
 
   const SERVERS = [
-    { id: 'hq', name: 'Maintrix HQ', icon: 'MX', cats: [
-      { name: 'Information', chans: [
-        { id: 'welcome', name: 'welcome', topic: 'Start here. Read the vibe.' },
-        { id: 'announcements', name: 'announcements', topic: 'What just shipped.' }
-      ]},
-      { name: 'Text Channels', chans: [
-        { id: 'general', name: 'general', topic: 'Building the future of talking to each other.' },
-        { id: 'design', name: 'design', topic: 'Pixels, palettes, and prototypes.' },
-        { id: 'dev', name: 'dev', topic: 'It works on my machine.' },
-        { id: 'random', name: 'random', topic: 'Off-topic gremlins welcome.' },
-        { id: 'memes', name: 'memes', topic: 'Post the good ones.' }
-      ]},
-      { name: 'Voice Channels', chans: [
-        { id: 'v-lounge', name: 'Lounge', voice: true },
-        { id: 'v-focus', name: 'Focus Room', voice: true }
-      ]}
-    ]},
-    { id: 'gamers', name: 'Late Night Gamers', icon: '🎮', cats: [
-      { name: 'Text Channels', chans: [ { id: 'lng-general', name: 'general', topic: 'GG.' }, { id: 'lng-lfg', name: 'looking-for-group', topic: 'Squad up.' } ] }
-    ]},
-    { id: 'book', name: 'The Reading Room', icon: '📚', cats: [
-      { name: 'Text Channels', chans: [ { id: 'bk-general', name: 'general', topic: 'What are you reading?' } ] }
-    ]}
+    { id: 'hq', name: 'Maintrix HQ', icon: 'MX', color: '#ed2e44', cats: [
+      { name: 'Text', chans: [{ id: 'hq-general', name: 'general' }, { id: 'hq-design', name: 'design' }] }
+    ], members: [{ k: 'nova', role: 'owner' }, { k: 'kestrel', role: 'admin' }, { k: 'dax', role: 'member' }, { k: 'pip', role: 'member' }] },
+    { id: 'arena', name: 'The Arena', icon: '⚔', color: '#f0663b', cats: [
+      { name: 'Text', chans: [{ id: 'arena-general', name: 'general' }] }
+    ], members: [{ k: 'juno', role: 'owner' }, { k: 'sable', role: 'member' }, { k: 'dax', role: 'member' }] }
   ];
 
-  const MEMBERS = {
-    hq: [
-      { key: 'nova', crown: true }, { key: 'kestrel' }, { key: 'dax' }, { key: 'juno' },
-      { key: 'pip' }, { key: 'MaintrixBot' }, { key: 'echo' }, { key: 'wren' }
-    ],
-    gamers: [{ key: 'pip', crown: true }, { key: 'dax' }, { key: 'echo' }],
-    book: [{ key: 'kestrel', crown: true }, { key: 'wren' }]
-  };
+  const FRIENDS = ['nova', 'kestrel', 'dax', 'juno', 'sable'];
+  const REQUESTS = ['pip'];
+  const DMS = ['nova', 'kestrel', 'juno'];
 
-  const DMS = [
-    { id: 'dm-nova', key: 'nova' },
-    { id: 'dm-kestrel', key: 'kestrel' },
-    { id: 'dm-dax', key: 'dax' }
+  const FEED = [
+    { a: 'nova', t: 'You don\'t need another app. You need a reason to open the one you have. Maintrix is the reason.', media: 'Thesis', mc: '#3a0f18', likes: 1240, comments: 88, liked: false },
+    { a: 'juno', t: '14 days of 5am. Nobody clapped. That\'s the point — you do it when no one\'s watching.', media: '05:00', mc: '#2a1810', likes: 892, comments: 45, liked: true },
+    { a: 'kestrel', t: 'The red isn\'t danger. It\'s intent. Design your life like you mean it.', media: 'Intent.', mc: '#3a0f18', likes: 2103, comments: 130, liked: false },
+    { a: 'pip', t: 'Cold DM\'d 10 people I admire. 3 replied. That ratio changed my year.', media: '3 / 10', mc: '#0f2033', likes: 604, comments: 37, liked: false },
+    { a: 'sable', t: 'Working alone made me quit. Working next to strangers with the same fear made me finish.', media: 'together', mc: '#2a1020', likes: 1512, comments: 96, liked: false }
   ];
 
-  const SEED = {
-    welcome: [
-      { a: 'MaintrixBot', t: 'Welcome to **Maintrix HQ** — the home server for building Maintrix itself. 👋', react: [{ e: '👋', n: 5, mine: false }] },
-      { a: 'MaintrixBot', t: 'Head to #general to say hi, or #design to see what we\'re prototyping.' }
-    ],
-    announcements: [
-      { a: 'nova', t: 'v0.3 is live: message grouping, the member list, and DMs now feel right. Try sending yourself a message.' },
-      { a: 'nova', t: 'Next up: reactions you can actually add, and a light theme toggle.', react: [{ e: '🚀', n: 8, mine: true }, { e: '🔥', n: 4, mine: false }] }
-    ],
-    general: [
-      { a: 'nova', t: 'ok the four-column layout is finally clicking. server rail, channels, chat, members.' },
-      { a: 'kestrel', t: 'the hover states are what sell it honestly. little floating toolbar on each message = chef\'s kiss' },
-      { a: 'kestrel', t: 'also the pill that morphs from circle to squircle on the server rail 🤌' },
-      { a: 'dax', t: 'grouping consecutive messages from the same person cleaned it up so much', react: [{ e: '💯', n: 3, mine: false }] },
-      { a: 'juno', t: 'can we get `code blocks` and @mentions rendering?' },
-      { a: 'nova', t: 'already in — try typing `like this` or @kestrel in the composer' },
-      { a: 'pip', t: 'this genuinely feels like the real thing. what are we even building on?' },
-      { a: 'nova', t: 'pure vanilla for the prototype. real backend comes once the feel is locked.' }
-    ],
-    design: [
-      { a: 'kestrel', t: 'palette is straight Discord-dark: #313338 chat, #2b2d31 sidebar, blurple accent. we can reskin later.' },
-      { a: 'kestrel', t: 'thinking a green "matrix" accent could be our own identity without losing the muscle memory' },
-      { a: 'juno', t: 'ooh a subtle terminal-green. i\'m into it' },
-      { a: 'nova', t: 'let\'s prototype both and A/B the vibe' }
-    ],
-    dev: [
-      { a: 'dax', t: 'message state is just localStorage for now, keyed by channel' },
-      { a: 'dax', t: 'send → append → autoscroll → persist. nothing fancy, but it survives a refresh' },
-      { a: 'pip', t: 'DMs get a fake auto-reply so two-way texting feels alive. temporary but sells the demo' }
-    ],
-    random: [
-      { a: 'juno', t: 'is it weird that i\'m using our chat app to talk about our chat app' },
-      { a: 'echo', t: 'deeply recursive. i respect it' }
-    ],
-    memes: [
-      { a: 'dax', t: 'it works on my machine ¯\\_(ツ)_/¯', react: [{ e: '😂', n: 6, mine: false }] }
-    ],
-    'lng-general': [ { a: 'pip', t: 'anyone up for ranked later?' }, { a: 'dax', t: 'after this build finishes compiling. so, never' } ],
-    'lng-lfg': [ { a: 'pip', t: 'need 2 more, mic required, chill vibes only' } ],
-    'bk-general': [ { a: 'kestrel', t: 'just started "The Creative Act". slow but good.' } ],
-    'dm-nova': [ { a: 'nova', t: 'yo! this is a DM. try replying — i\'ll write back.' } ],
-    'dm-kestrel': [ { a: 'kestrel', t: 'sent you the new palette swatches 🎨' } ],
-    'dm-dax': [ { a: 'dax', t: 'the refactor is done, pushing now' } ]
-  };
-
-  const DM_REPLIES = [
-    'ha, fair', 'oh nice 👀', 'wait say more', 'yeah that tracks', 'lol', 'ok that\'s actually clever',
-    'sending it up the chain', 'i\'ll take a look in a bit', 'agreed', 'let\'s ship it', 'brb compiling'
+  const LIVE = [
+    { topic: 'Beating procrastination in real time', host: 'juno', count: 214, c: '#3a0f18' },
+    { topic: 'Cold outreach that actually converts', host: 'pip', count: 087, c: '#0f2033' },
+    { topic: 'Deep work co-working — cameras on, mics off', host: 'dax', count: 341, c: '#12241a' },
+    { topic: 'Designing a life with intent', host: 'kestrel', count: 158, c: '#2a1020' }
   ];
+
+  const TASKS = [
+    { id: 't1', name: 'Name the fear you\'re avoiding today', sub: 'Write it in the Nexus. Naming it drains it.', done: true },
+    { id: 't2', name: 'One hard thing before noon', sub: 'The task you keep pushing. Do it first.', done: true },
+    { id: 't3', name: '20 minutes of deep work, no phone', sub: 'Join a co-working Live room if you need company.', done: false },
+    { id: 't4', name: 'Reach out to one person you admire', sub: 'A DM. A friend request. A comment that isn\'t empty.', done: false },
+    { id: 't5', name: 'Reflect: did today move you closer?', sub: 'One honest line before you close the app.', done: false }
+  ];
+
+  const ACOLYTES = ['juno', 'sable', 'dax', 'nova', 'kestrel'];
 
   /* ── state ── */
   let state = load();
   function load() {
-    try { const s = JSON.parse(localStorage.getItem(LS)); if (s && s.msgs) return s; } catch (e) {}
-    const msgs = {};
-    for (const k in SEED) msgs[k] = SEED[k].map(m => ({ ...m, time: seedTime() }));
-    return { user: null, server: 'hq', channel: 'general', view: 'server', msgs };
+    try { const s = JSON.parse(localStorage.getItem(LS)); if (s && s.profile) return migrate(s); } catch (e) {}
+    return { profile: null, screen: 'nexus', chatsTab: 'dms', msgs: seedMsgs(), tasks: TASKS.map(t => ({ ...t })), feed: FEED.map(f => ({ ...f })), admin: [] };
   }
+  function migrate(s) { s.msgs = s.msgs || seedMsgs(); s.tasks = s.tasks || TASKS.map(t => ({ ...t })); s.feed = s.feed || FEED.map(f => ({ ...f })); s.admin = s.admin || []; if (!s.screen) s.screen = 'nexus'; return s; }
+  function seedMsgs() { const m = {}; for (const k in SEED) m[k] = SEED[k].map(x => ({ ...x, time: seedTime() })); return m; }
   function save() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
-  function seedTime() { const h = 9 + Math.floor(Math.random() * 9); const m = Math.floor(Math.random() * 60); return `Today at ${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; }
-  function nowTime() { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, '0'); const ap = h < 12 ? 'AM' : 'PM'; h = ((h + 11) % 12) + 1; return `Today at ${h}:${m} ${ap}`; }
+  function seedTime() { const h = 7 + Math.floor(Math.random() * 12); const m = Math.floor(Math.random() * 60); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; }
+  function nowTime() { const d = new Date(); let h = d.getHours(); const ap = h < 12 ? 'AM' : 'PM'; h = ((h + 11) % 12) + 1; return `${h}:${String(d.getMinutes()).padStart(2, '0')} ${ap}`; }
 
-  function person(a) { return PEOPLE[a] || (state.user && a === state.user.name ? { name: state.user.name, role: 'none', status: 'online' } : { name: a, role: 'none', status: 'online' }); }
-  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  function fmt(t) {
-    return esc(t)
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/(^|\s)@([a-z0-9_]+)/gi, '$1<span class="mention">@$2</span>');
-  }
-  function avatar(nameOrKey, size, showDot) {
-    const p = person(nameOrKey);
-    const s = size || 40;
-    const initial = (p.name[0] || '?').toUpperCase();
-    const dot = showDot ? `<span class="dot ${p.status || 'online'}"></span>` : '';
-    const bg = p.bot ? 'var(--accent)' : avc(p.name);
-    const glyph = p.bot ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="7" width="16" height="12" rx="3" fill="#fff"/><circle cx="9.5" cy="13" r="1.6" fill="#5865f2"/><circle cx="14.5" cy="13" r="1.6" fill="#5865f2"/><path d="M12 4v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>' : `<span style="font-size:${s * 0.4}px">${initial}</span>`;
-    return `<div class="av" style="width:${s}px;height:${s}px;background:${bg}">${glyph}${dot}</div>`;
+  function me() { return state.profile; }
+  function person(a) { if (PEOPLE[a]) return PEOPLE[a]; if (me() && a === me().name) return { name: me().name, color: me().color, goals: me().goals, fears: me().fears, status: 'online', badges: me().badges, live: me().live }; return { name: a, color: '#86636b', status: 'online', goals: [], fears: [] }; }
+  function shared(p) { const u = me(); if (!u) return null; const g = (p.goals || []).find(x => u.goals.includes(x)); if (g) return { k: 'goal', v: g }; const f = (p.fears || []).find(x => u.fears.includes(x)); if (f) return { k: 'fear', v: f }; return null; }
+
+  function fmt(t) { return esc(t).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|\s)@([a-z0-9_]+)/gi, '$1<span class="mention">@$2</span>'); }
+  function avatar(a, size, opt) {
+    opt = opt || {}; const p = person(a); const s = size || 40;
+    const dot = opt.dot ? `<span class="dot ${p.status || 'online'}" style="width:${s * .3}px;height:${s * .3}px"></span>` : '';
+    const live = (opt.ring && p.live) ? ' live' : '';
+    const bg = p.bot ? 'linear-gradient(150deg,#ff4257,#c11d31)' : p.color;
+    const inner = p.bot ? '<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : `<span style="font-size:${s * .4}px">${(p.name[0] || '?').toUpperCase()}</span>`;
+    return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`;
   }
 
-  /* ═══════════ RENDER ═══════════ */
-  function currentServer() { return SERVERS.find(s => s.id === state.server); }
+  function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2000); }
 
-  function renderRail() {
-    const rail = $('rail');
-    let h = `<button class="pill home ${state.view === 'dm' ? 'sel' : ''}" data-home="1" title="Direct Messages"><span class="marker"></span>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v10H7l-3 3V5z" fill="currentColor"/><circle cx="9" cy="10" r="1.3" fill="var(--rail)"/><circle cx="12" cy="10" r="1.3" fill="var(--rail)"/><circle cx="15" cy="10" r="1.3" fill="var(--rail)"/></svg></button>
-      <div class="divider"></div>`;
-    SERVERS.forEach(s => {
-      const sel = state.view === 'server' && state.server === s.id;
-      const isEmoji = /\p{Emoji}/u.test(s.icon);
-      h += `<button class="pill server ${sel ? 'sel' : ''}" data-server="${s.id}" title="${s.name}"><span class="marker"></span><span style="font-size:${isEmoji ? '22px' : '15px'}">${s.icon}</span></button>`;
+  /* ═══════════ THREAD (nexus / dm / channel) ═══════════ */
+  let activeThread = null; // {key, title, sub, dmKey}
+  function openThread(key, title, sub, dmKey) { activeThread = { key, title, sub, dmKey }; state.screen = '_thread'; renderThread(); }
+  function renderThread() {
+    const th = activeThread; const list = state.msgs[th.key] = state.msgs[th.key] || [];
+    const wrap = $('view');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+    let host = $('s-thread'); if (!host) { host = el('section', 'screen'); host.id = 's-thread'; wrap.appendChild(host); }
+    host.classList.add('on');
+    let h = `<div class="thread"><div class="thread-head"><button class="back" id="thBack">${IC.back}</button>`;
+    h += th.dmKey ? avatar(th.dmKey, 34, { dot: true, ring: true }) : '';
+    h += `<div style="flex:1;min-width:0"><div class="th-name">${esc(th.title)}</div>${th.sub ? `<div class="th-sub">${esc(th.sub)}</div>` : ''}</div></div>`;
+    h += `<div class="thread-scroll" id="thScroll">${renderMsgs(list)}</div>`;
+    h += `<div class="composer"><div class="box"><input id="thInput" placeholder="Message ${esc(th.dmKey ? '@' + th.title : '#' + th.title)}" autocomplete="off"><button class="send" id="thSend">${IC.send}</button></div></div></div>`;
+    host.innerHTML = h;
+    const sc = $('thScroll'); sc.scrollTop = sc.scrollHeight;
+    $('thBack').onclick = () => { state.screen = th.back || (th.dmKey ? 'chats' : (th.key === 'nexus' ? 'nexus' : 'chats')); render(); };
+    const input = $('thInput');
+    const doSend = () => { const v = input.value.trim(); if (!v) return; list.push({ a: me().name, t: v, time: nowTime() }); save(); input.value = ''; $('thScroll').innerHTML = renderMsgs(list); const s2 = $('thScroll'); s2.scrollTop = s2.scrollHeight; if (th.dmKey) simReply(th.key, th.dmKey); };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
+    $('thSend').onclick = doSend;
+    setTimeout(() => input.focus(), 60);
+    updateChrome();
+  }
+  function renderMsgs(list) {
+    let h = '', prev = null;
+    list.forEach(mm => {
+      const p = person(mm.a); const grouped = prev && prev.a === mm.a;
+      const color = p.bot ? 'var(--accent-hi)' : (p.color || 'var(--text-hi)');
+      const sh = !grouped && !mm.bot ? shared(p) : null;
+      const trait = sh ? `<span class="m-trait">${sh.k === 'goal' ? '◎ ' : '⚑ '}${esc(sh.v)}</span>` : '';
+      if (grouped) h += `<div class="msg grouped"><div class="m-gutter"></div><div class="m-body"><div class="m-text">${fmt(mm.t)}</div></div></div>`;
+      else h += `<div class="msg"><div class="m-av">${avatar(mm.a, 38, { ring: true })}</div><div class="m-body"><div class="m-head"><span class="m-author" style="color:${color}">${esc(p.name)}</span>${trait}<span class="m-time">${mm.time || ''}</span></div><div class="m-text">${fmt(mm.t)}</div></div></div>`;
+      prev = mm;
     });
-    h += `<button class="pill add" title="Add a server"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
-      <button class="pill add" title="Explore" style="color:var(--green)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l2 5 5 .5-4 3.5 1.5 5-4.5-3-4.5 3 1.5-5-4-3.5 5-.5 2-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>`;
-    h += `<div class="divider"></div><a class="pill store-back" href="../../index.html" title="Exit to App Store"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>`;
-    rail.innerHTML = h;
-    rail.querySelector('[data-home]').onclick = () => { state.view = 'dm'; state.channel = DMS[0].id; commit(); };
-    rail.querySelectorAll('[data-server]').forEach(b => b.onclick = () => {
-      state.view = 'server'; state.server = b.dataset.server;
-      state.channel = firstChannel(b.dataset.server); commit();
-    });
+    return h;
   }
-
-  function firstChannel(sid) { const s = SERVERS.find(x => x.id === sid); for (const c of s.cats) for (const ch of c.chans) if (!ch.voice) return ch.id; return s.cats[0].chans[0].id; }
-
-  function renderSidebar() {
-    if (state.view === 'dm') {
-      $('srvName').textContent = 'Direct Messages';
-      let h = `<div class="chan" style="margin-top:8px"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3 19a6 6 0 0112 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="nm" style="font-weight:600">Friends</span></div>
-        <div class="cat" style="justify-content:space-between"><span>Direct Messages</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>`;
-      DMS.forEach(d => {
-        const p = person(d.key);
-        h += `<div class="chan ${state.channel === d.id ? 'sel' : ''}" data-ch="${d.id}" style="padding:6px 8px">
-          ${avatar(d.key, 32, true)}<span class="nm" style="margin-left:2px">${p.name}</span></div>`;
-      });
-      $('channels').innerHTML = h;
-    } else {
-      const s = currentServer();
-      $('srvName').textContent = s.name;
-      let h = '';
-      s.cats.forEach(cat => {
-        h += `<div class="cat"><svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>${cat.name}</div>`;
-        cat.chans.forEach(ch => {
-          const sel = state.channel === ch.id && !ch.voice;
-          h += `<div class="chan ${sel ? 'sel' : ''}" data-ch="${ch.id}" data-voice="${ch.voice ? 1 : ''}">
-            ${ch.voice ? SPEAKER : HASH}<span class="nm">${ch.name}</span></div>`;
-        });
-      });
-      $('channels').innerHTML = h;
-    }
-    $('channels').querySelectorAll('[data-ch]').forEach(el => el.onclick = () => {
-      if (el.dataset.voice) return;
-      state.channel = el.dataset.ch; commit(); closeNav();
-    });
-  }
-
-  function renderUserbar() {
-    const u = state.user;
-    $('userbar').innerHTML = `
-      <button class="me" id="meBtn">${avatar(u.name, 32, true)}
-        <div class="u-meta"><div class="u-name">${esc(u.name)}</div><div class="u-status">online</div></div>
-      </button>
-      <button class="u-btn" title="Mute"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 4a3 3 0 013 3v5a3 3 0 01-6 0V7a3 3 0 013-3z" stroke="currentColor" stroke-width="1.7"/><path d="M6 11a6 6 0 0012 0M12 18v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
-      <button class="u-btn" title="Deafen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 13v-1a8 8 0 0116 0v1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="3" y="12" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="17" y="12" width="4" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg></button>
-      <button class="u-btn" title="User Settings" id="settingsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="1.7"/><path d="M19 12a7 7 0 00-.1-1l2-1.6-2-3.4-2.4 1a7 7 0 00-1.7-1L14.5 2h-4l-.3 2.4a7 7 0 00-1.7 1l-2.4-1-2 3.4L4 11a7 7 0 000 2l-2 1.6 2 3.4 2.4-1a7 7 0 001.7 1l.3 2.4h4l.3-2.4a7 7 0 001.7-1l2.4 1 2-3.4-2-1.6a7 7 0 00.1-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button>`;
-    $('settingsBtn').onclick = () => {
-      if (confirm('Log out and reset the prototype? This clears local messages.')) {
-        localStorage.removeItem(LS); location.reload();
-      }
-    };
-  }
-
-  function meta() {
-    if (state.view === 'dm') {
-      const d = DMS.find(x => x.id === state.channel); const p = person(d.key);
-      return { name: p.name, topic: 'This is the beginning of your direct message history with ' + p.name + '.', voice: false, dm: true, key: d.key };
-    }
-    const s = currentServer();
-    for (const cat of s.cats) for (const ch of cat.chans) if (ch.id === state.channel) return { name: ch.name, topic: ch.topic, voice: ch.voice, dm: false };
-    return { name: 'general', topic: '' };
-  }
-
-  function renderHeader() {
-    const m = meta();
-    $('hIco').innerHTML = m.dm ? avatar(m.key, 24, true) : HASH.replace('width="20" height="20"', 'width="24" height="24"');
-    $('hName').textContent = m.name;
-    $('hTopic').textContent = m.topic;
-    $('composerInput').placeholder = m.dm ? 'Message @' + m.name : 'Message #' + m.name;
-    $('memToggle').classList.toggle('hidden', m.dm);
-  }
-
-  function renderMessages() {
-    const box = $('messages'); const list = state.msgs[state.channel] || [];
-    const m = meta();
-    let h = `<div class="welcome"><div class="w-ico">${m.dm ? avatar(m.key, 48, false) : HASH.replace('width="20" height="20"', 'width="32" height="32"')}</div>
-      <h1>${m.dm ? esc(m.name) : 'Welcome to #' + esc(m.name) + '!'}</h1>
-      <p>${m.dm ? 'This is the beginning of your legendary conversation with ' + esc(m.name) + '.' : 'This is the start of the #' + esc(m.name) + ' channel.'}</p></div>
-      <div class="day-div"><div class="line"></div><div class="lbl">Today</div><div class="line"></div></div>`;
-
-    let prev = null;
-    list.forEach(msg => {
-      const p = person(msg.a);
-      const grouped = prev && prev.a === msg.a;
-      const color = ROLE[p.role] || 'var(--text-hi)';
-      const reacts = (msg.react || []).map(r => `<button class="react ${r.mine ? 'mine' : ''}"><span>${r.e}</span><span class="cnt">${r.n}</span></button>`).join('');
-      if (grouped) {
-        h += `<div class="msg grouped"><div class="m-gutter">${(msg.time.split(' ').slice(-2).join(' '))}</div>
-          <div class="m-body"><div class="m-text">${fmt(msg.t)}</div>${reacts ? `<div class="reacts">${reacts}</div>` : ''}</div>${tools()}</div>`;
-      } else {
-        h += `<div class="msg"><div class="m-av">${avatar(msg.a, 40, false)}</div>
-          <div class="m-body"><div class="m-head"><span class="m-author" style="color:${color}">${esc(p.name)}</span>${p.bot ? '<span class="badge-bot">Bot</span>' : ''}<span class="m-time">${msg.time}</span></div>
-          <div class="m-text">${fmt(msg.t)}</div>${reacts ? `<div class="reacts">${reacts}</div>` : ''}</div>${tools()}</div>`;
-      }
-      prev = msg;
-    });
-    box.innerHTML = h;
-    box.scrollTop = box.scrollHeight;
-    box.querySelectorAll('.react').forEach(r => r.onclick = () => {
-      const cnt = r.querySelector('.cnt'); let n = +cnt.textContent;
-      r.classList.toggle('mine'); cnt.textContent = r.classList.contains('mine') ? n + 1 : n - 1;
-    });
-  }
-  function tools() {
-    return `<div class="m-tools">
-      <button title="React">😀</button>
-      <button title="Reply"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M10 9V5l-7 7 7 7v-4c5 0 8 1 10 4-1-6-4-9-10-9z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
-      <button title="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>`;
-  }
-
-  function renderMembers() {
-    const box = $('members');
-    if (state.view === 'dm') { box.innerHTML = ''; return; }
-    const list = MEMBERS[state.server] || [];
-    const online = list.filter(m => person(m.key).status !== 'offline');
-    const offline = list.filter(m => person(m.key).status === 'offline');
-    const row = m => { const p = person(m.key); const color = ROLE[p.role] || 'var(--text-hi)';
-      return `<div class="mem ${p.status === 'offline' ? 'off' : ''}">${avatar(m.key, 32, true)}
-        <span class="m-name" style="color:${color}">${esc(p.name)}</span>${m.crown ? '<span class="crown" title="Owner"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8l4 4 4-6 4 6 4-4-2 10H6L4 8z"/></svg></span>' : ''}</div>`; };
-    let h = '';
-    if (online.length) h += `<div class="mem-cat">Online — ${online.length}</div>` + online.map(row).join('');
-    if (offline.length) h += `<div class="mem-cat">Offline — ${offline.length}</div>` + offline.map(row).join('');
-    box.innerHTML = h;
-  }
-
-  /* ── send ── */
-  function send(text) {
-    text = text.trim(); if (!text) return;
-    const ch = state.channel;
-    (state.msgs[ch] = state.msgs[ch] || []).push({ a: state.user.name, t: text, time: nowTime() });
-    save(); renderMessages();
-    const m = meta();
-    if (m.dm) simulateReply(m.key, ch);
-  }
-  let replyTimer = null;
-  function simulateReply(key, ch) {
-    clearTimeout(replyTimer);
-    const t = $('typing'); const p = person(key);
+  const REPLIES = ['ha, true', 'say more', 'oh that\'s good', 'holding you to it 🔒', 'agreed', 'let\'s go', 'proud of you honestly', 'do the hard one first'];
+  function simReply(key, dmKey) {
     setTimeout(() => {
-      if (state.channel !== ch) return;
-      t.classList.remove('hidden');
-      t.innerHTML = `<span class="dots"><i></i><i></i><i></i></span><strong style="font-weight:600">${esc(p.name)}</strong> is typing…`;
-    }, 500);
-    replyTimer = setTimeout(() => {
-      t.classList.add('hidden');
-      const reply = DM_REPLIES[Math.floor(Math.random() * DM_REPLIES.length)];
-      (state.msgs[ch] = state.msgs[ch] || []).push({ a: key, t: reply, time: nowTime() });
-      save(); if (state.channel === ch) renderMessages();
-    }, 1900);
+      if (activeThread && activeThread.key === key) {
+        state.msgs[key].push({ a: dmKey, t: REPLIES[Math.floor(Math.random() * REPLIES.length)], time: nowTime() }); save();
+        $('thScroll').innerHTML = renderMsgs(state.msgs[key]); const s = $('thScroll'); s.scrollTop = s.scrollHeight;
+      }
+    }, 1400);
   }
 
-  /* ── glue ── */
-  function commit() { save(); renderRail(); renderSidebar(); renderHeader(); renderMessages(); renderMembers(); }
-
-  /* ── mobile drawers (driven by inline styles so they work regardless of
-     descendant-selector cascade quirks; the offsets are inert on desktop
-     where the panels are position:static) ── */
-  const isNarrow = () => matchMedia('(max-width: 900px)').matches;
-  let navOpen = false, memOpen = false;
-  function syncDrawers() {
-    const rail = $('rail'), sb = $('sidebar'), mem = $('members'), scrim = $('scrim');
-    rail.style.left = navOpen ? '0px' : '';
-    sb.style.left = navOpen ? '72px' : '';
-    sb.style.boxShadow = navOpen ? '8px 0 24px #0006' : '';
-    mem.style.right = memOpen ? '0px' : '';
-    mem.style.boxShadow = memOpen ? '-8px 0 24px #0006' : '';
-    scrim.style.display = (navOpen || memOpen) ? 'block' : 'none';
+  /* ═══════════ SCREENS ═══════════ */
+  function renderNexus() {
+    const online = Object.keys(PEOPLE).filter(k => PEOPLE[k].status !== 'offline' && !PEOPLE[k].bot).length + 1;
+    const goal = me().goals[0]; const matchN = Object.values(PEOPLE).filter(p => (p.goals || []).includes(goal)).length;
+    const list = state.msgs.nexus = state.msgs.nexus || [];
+    let h = `<div class="nexus-banner"><div class="nb-k">◎ ${online} minds online · one space</div>
+      <div class="nb-t">You're in the Nexus — connected to everyone in Maintrix at once.</div>
+      ${goal ? `<div class="nb-s">${matchN} people here are also chasing <b style="color:var(--accent-hi)">${esc(goal)}</b>.</div>` : ''}</div>`;
+    h += `<div class="thread" style="height:auto"><div class="thread-scroll" style="overflow:visible;padding-top:0" id="nxScroll">${renderMsgs(list)}</div></div>`;
+    h += `<div class="composer"><div class="box"><input id="nxInput" placeholder="Say something true to everyone…" autocomplete="off"><button class="send" id="nxSend">${IC.send}</button></div></div>`;
+    const s = $('s-nexus'); s.innerHTML = h;
+    // nexus composer is inline (screen scrolls); make it work
+    const input = $('nxInput');
+    const doSend = () => { const v = input.value.trim(); if (!v) return; list.push({ a: me().name, t: v, time: nowTime() }); save(); input.value = ''; $('nxScroll').innerHTML = renderMsgs(list); $('view').scrollTop = $('view').scrollHeight; };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
+    $('nxSend').onclick = doSend;
   }
-  function closeNav() { navOpen = false; memOpen = false; syncDrawers(); }
 
-  $('composerInput').addEventListener('keydown', e => { if (e.key === 'Enter') { send(e.target.value); e.target.value = ''; } });
-  $('menuBtn').onclick = () => { navOpen = !navOpen; if (navOpen) memOpen = false; syncDrawers(); };
-  $('scrim').onclick = closeNav;
-  $('memToggle').onclick = () => {
-    if (isNarrow()) { $('members').classList.remove('hidden'); memOpen = !memOpen; if (memOpen) navOpen = false; syncDrawers(); }
-    else { $('members').classList.toggle('hidden'); }
+  function renderChats() {
+    const t = state.chatsTab;
+    let h = `<div class="segmented"><button data-t="friends" class="${t === 'friends' ? 'on' : ''}">Friends</button><button data-t="dms" class="${t === 'dms' ? 'on' : ''}">DMs</button><button data-t="servers" class="${t === 'servers' ? 'on' : ''}">Servers</button></div>`;
+    if (t === 'friends') {
+      h += `<div class="pad" style="padding-bottom:0"><div class="box" style="display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 6px 4px 14px"><input id="addInput" placeholder="Add a friend by username" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:15px;padding:9px 0"><button class="send" id="addBtn">${IC.plus}</button></div></div>`;
+      if (REQUESTS.length) { h += `<div class="sec-title">Requests — ${REQUESTS.length}</div>`; REQUESTS.forEach(k => { const p = person(k); h += `<div class="row">${avatar(k, 42, { dot: true })}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">wants to connect</div></div><button class="chip on" data-accept="${k}">Accept</button></div>`; }); }
+      h += `<div class="sec-title">Friends — ${FRIENDS.length}</div>`;
+      FRIENDS.forEach(k => { const p = person(k); const sh = shared(p); h += `<div class="row" data-dm="${k}">${avatar(k, 42, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">${p.status === 'offline' ? 'offline' : (p.live ? 'live now' : 'online')}</div></div><button class="tb-btn" data-dm="${k}">${IC.chat}</button></div>`; });
+    } else if (t === 'dms') {
+      DMS.forEach(k => { const p = person(k); const key = 'dm-' + k; const last = (state.msgs[key] || []).slice(-1)[0]; h += `<div class="row" data-dm="${k}">${avatar(k, 46, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${last ? esc((last.a === me().name ? 'You: ' : '') + last.t) : 'Say hi'}</div></div></div>`; });
+      h += `<div class="empty" style="padding-top:24px">Your DMs are 1:1 and private — even Overwatch can't see them.</div>`;
+    } else {
+      SERVERS.forEach(s => { h += `<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)}</div><div class="r-sub">${s.members.length} members · ${s.cats[0].chans.length} channels</div></div></div>`; });
+      h += `<div class="pad"><button class="btn ghost block" id="newServer">${IC.plus} Create a group chat</button></div>`;
+    }
+    $('s-chats').innerHTML = h;
+    $('s-chats').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { state.chatsTab = b.dataset.t; save(); renderChats(); });
+    $('s-chats').querySelectorAll('[data-dm]').forEach(b => b.onclick = e => { e.stopPropagation(); const k = b.dataset.dm; openThread('dm-' + k, person(k).name, null, k); });
+    $('s-chats').querySelectorAll('[data-server]').forEach(b => b.onclick = () => openServer(b.dataset.server));
+    $('s-chats').querySelectorAll('[data-accept]').forEach(b => b.onclick = () => { toast('Friend request accepted'); b.textContent = 'Friends ✓'; b.classList.remove('on'); });
+    const add = $('addBtn'); if (add) add.onclick = () => { const v = $('addInput').value.trim(); if (v) { toast('Request sent to @' + v.replace(/^@/, '')); $('addInput').value = ''; } };
+    const ns = $('newServer'); if (ns) ns.onclick = () => toast('Group chats: coming in the next pass');
+  }
+  function openServer(sid) {
+    const s = SERVERS.find(x => x.id === sid); const ch = s.cats[0].chans[0];
+    const t = { back: 'chats' };
+    activeThread = { key: ch.id, title: ch.name, sub: s.name, dmKey: null, back: 'chats' };
+    state.screen = '_thread'; renderThread();
+  }
+
+  function renderFeed() {
+    if (me().tier !== 'main') return lockScreen('s-feed', 'For You', 'A feed that knows what you\'re becoming', 'The algorithm reads your identity — your goals, your fears — and surfaces the people and ideas pushing you forward. Not doomscroll. Direction.', [['◎', 'Ideas matched to your goals'], ['♥', 'Your own aesthetic for likes & comments'], ['↑', 'Follow the people one step ahead of you']]);
+    let h = '';
+    state.feed.forEach((post, i) => {
+      const p = person(post.a); const sh = shared(p);
+      h += `<div class="post"><div class="post-top">${avatar(post.a, 40, { ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">acolyte</div></div><button class="p-follow" data-follow="${i}">Follow</button></div>`;
+      h += `<div class="post-body">${fmt(post.t)}</div>`;
+      h += `<div class="post-media" style="background:linear-gradient(140deg,${post.mc},#0d090a)">${esc(post.media)}</div>`;
+      h += `<div class="post-actions"><button data-like="${i}" class="${post.liked ? 'liked' : ''}">${IC.heart} ${post.likes}</button><button>${IC.chat} ${post.comments}</button><button style="margin-left:auto">${IC.share}</button></div></div>`;
+    });
+    $('s-feed').innerHTML = h;
+    $('s-feed').querySelectorAll('[data-like]').forEach(b => b.onclick = () => { const p = state.feed[+b.dataset.like]; p.liked = !p.liked; p.likes += p.liked ? 1 : -1; save(); renderFeed(); });
+    $('s-feed').querySelectorAll('[data-follow]').forEach(b => b.onclick = () => { b.textContent = 'Following'; b.style.color = 'var(--muted)'; });
+  }
+
+  function renderLive() {
+    if (me().tier !== 'main') return lockScreen('s-live', 'Live', 'Rooms built around a topic, not a face', 'Every Live room leads with what\'s being talked about, not who\'s talking. Join a co-working session, a Q&A, a real-time push — the topic is the headline.', [['◉', 'Topic-first rooms, not streamer worship'], ['◎', 'Rooms around goals you share'], ['♥', 'Your aesthetic in every room you join']]);
+    let h = `<div class="sec-title" style="margin:16px">Live now — topic first</div>`;
+    LIVE.forEach((r, i) => {
+      h += `<div class="live-card" data-room="${i}"><div class="live-thumb" style="background:linear-gradient(140deg,${r.c},#0d090a)"><div class="live-badge"><i></i>LIVE</div><div class="live-topic">${esc(r.topic)}</div></div><div class="live-foot">${avatar(r.host, 30, { ring: true })}<div class="lf-host">${esc(person(r.host).name)}</div><div class="lf-count">${IC.eye} ${r.count}</div></div></div>`;
+    });
+    $('s-live').innerHTML = h;
+    $('s-live').querySelectorAll('[data-room]').forEach(b => b.onclick = () => toast('Joining “' + LIVE[+b.dataset.room].topic + '”…'));
+  }
+
+  function renderLobby() {
+    if (me().tier !== 'main') return lockScreen('s-lobby', 'Lobby', 'The Self-Actualization Lobby', 'Your own space before it\'s anyone else\'s: a daily program, your tasks, your progress. When you\'re ready, step through the door into the shared hub of acolytes doing the same work.', [['◈', 'A daily program built around your identity'], ['✓', 'Track the work, not just the talk'], ['⌂', 'A door into the acolyte hub when you want company']]);
+    const done = state.tasks.filter(t => t.done).length; const pct = Math.round(done / state.tasks.length * 100);
+    const R = 34, C = 2 * Math.PI * R, off = C * (1 - pct / 100);
+    let h = `<div class="prog-wrap"><div class="prog-ring"><svg width="78" height="78" viewBox="0 0 78 78"><circle cx="39" cy="39" r="${R}" fill="none" stroke="var(--line)" stroke-width="7"/><circle cx="39" cy="39" r="${R}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 39 39)" style="transition:stroke-dashoffset .5s"/></svg><div class="pv">${pct}%</div></div>
+      <div class="prog-txt"><h3>Your lobby</h3><p>${done} of ${state.tasks.length} done today. ${pct === 100 ? 'The work is done. Rest earned.' : 'Keep moving — you\'re closer than you think.'}</p></div></div>`;
+    h += `<div class="sec-title" style="margin-left:16px">Today's program</div>`;
+    state.tasks.forEach(t => { h += `<div class="task ${t.done ? 'done' : ''}"><div class="tick ${t.done ? 'done' : ''}" data-task="${t.id}">${t.done ? IC.check : ''}</div><div class="t-body"><div class="t-name">${esc(t.name)}</div><div class="t-sub">${esc(t.sub)}</div></div></div>`; });
+    h += `<div class="pad" style="padding-top:20px"><button class="btn block" id="toHub">${IC.door} Step into the acolyte hub</button></div>`;
+    h += `<div class="sec-title" style="margin-left:16px">Acolytes in the hub — ${ACOLYTES.length}</div>`;
+    ACOLYTES.forEach(k => { const p = person(k); const sh = shared(p); h += `<div class="row" data-dm="${k}">${avatar(k, 40, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">on the same path</div></div></div>`; });
+    $('s-lobby').innerHTML = h;
+    $('s-lobby').querySelectorAll('[data-task]').forEach(b => b.onclick = () => { const t = state.tasks.find(x => x.id === b.dataset.task); t.done = !t.done; save(); renderLobby(); });
+    $('s-lobby').querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { const k = b.dataset.dm; openThread('dm-' + k, person(k).name, null, k); });
+    $('toHub').onclick = () => { state.screen = 'nexus'; render(); toast('The hub lives in the Nexus — everyone, together.'); };
+  }
+
+  function lockScreen(id, title, headline, body, feats) {
+    let h = `<div class="lock"><div class="lock-ic">${IC.lock}</div><h2>${esc(headline)}</h2><p>${esc(body)}</p><div class="feat">`;
+    feats.forEach(f => h += `<div><span class="fi">${f[0]}</span><span>${esc(f[1])}</span></div>`);
+    h += `</div><button class="btn block" id="unlockBtn" style="max-width:320px;margin:0 auto">Unlock Maintrix Main</button><div style="margin-top:12px;font-size:12px;color:var(--dim)">Prototype — unlock is free & instant</div></div>`;
+    $(id).innerHTML = h;
+    $('unlockBtn').onclick = () => { me().tier = 'main'; save(); toast('Welcome to Main. Everything\'s open.'); render(); };
+  }
+
+  /* ═══════════ PROFILE / SETTINGS SHEET ═══════════ */
+  function openProfile(who) {
+    const own = !who; const u = own ? me() : person(who);
+    const goals = u.goals || []; const fears = u.fears || []; const badges = u.badges || (own ? [] : []);
+    let h = `<div class="sheet-grab"></div><div class="prof-hero"><div class="p-av">${avatar(own ? u.name : who, 84, { dot: true, ring: true })}</div><h2>${esc(u.name)}</h2><div class="p-since">Maintrix member since ${own ? (u.since || '—') : 'the beginning'}</div></div>`;
+    h += `<div class="prof-stats"><div class="ps"><b>${(own ? (u.likes || 0) : Math.floor(Math.random() * 3000)).toLocaleString()}</b><span>Likes</span></div><div class="ps"><b>${own ? FRIENDS.length : Math.floor(Math.random() * 200)}</b><span>Friends</span></div><div class="ps"><b>${(badges.length)}</b><span>Badges</span></div></div>`;
+    if (u.bio) h += `<div class="prof-bio">${esc(u.bio)}</div>`;
+    if (badges.length) { h += `<div class="badges">`; badges.forEach(b => h += `<span class="badge">✦ ${esc(b)}</span>`); h += `</div>`; }
+    if (!own) h += `<div class="pad" style="display:flex;gap:10px"><button class="btn block" id="pDm">${IC.chat} Message</button><button class="btn ghost" id="pFr">Add friend</button></div>`;
+    if (goals.length) { h += `<div class="trait-group"><div class="tg-k">◎ Chasing</div><div class="chips">`; goals.forEach(g => { const on = me().goals.includes(g); h += `<span class="chip ${on ? 'on' : ''}">${esc(g)}</span>`; }); h += `</div></div>`; }
+    if (fears.length) { h += `<div class="trait-group"><div class="tg-k">⚑ Facing</div><div class="chips">`; fears.forEach(f => { const on = me().fears.includes(f); h += `<span class="chip ${on ? 'on' : ''}">${esc(f)}</span>`; }); h += `</div></div>`; }
+
+    if (own) {
+      h += `<div class="sec-title" style="margin-left:18px">Settings</div>`;
+      h += `<div class="settings-row" id="setTier"><span class="sr-ic">${IC.spark}</span> Membership <span class="sr-r">${u.tier === 'main' ? 'Main ✦' : 'Lite'}</span></div>`;
+      h += `<div class="settings-row" id="setLive"><span class="sr-ic">${IC.eye}</span> Go live <span class="sr-r">${u.live ? 'You\'re live' : 'Off'}</span></div>`;
+      h += `<div class="settings-row" id="setAdmin"><span class="sr-ic">${IC.shield}</span> Overwatch (admin) <span class="sr-r">${IC.chev}</span></div>`;
+      h += `<a class="settings-row" href="../../index.html" style="text-decoration:none"><span class="sr-ic">${IC.grid}</span> Back to App Store <span class="sr-r">${IC.chev}</span></a>`;
+      h += `<div class="settings-row danger" id="setReset"><span class="sr-ic">${IC.out}</span> Log out & reset prototype</div>`;
+      h += `<div style="height:24px"></div>`;
+    }
+    showSheet(h);
+    if (own) {
+      $('setTier').onclick = () => { u.tier = u.tier === 'main' ? 'lite' : 'main'; save(); toast(u.tier === 'main' ? 'Upgraded to Main ✦' : 'Back to Lite'); openProfile(); render(); };
+      $('setLive').onclick = () => { u.live = !u.live; save(); toast(u.live ? 'You\'re live — red ring on' : 'Live ended'); openProfile(); updateChrome(); };
+      $('setAdmin').onclick = () => openAdmin();
+      $('setReset').onclick = () => { if (confirm('Reset the whole prototype? This clears your identity and messages.')) { localStorage.removeItem(LS); location.reload(); } };
+    } else {
+      $('pDm').onclick = () => { closeSheet(); openThread('dm-' + who, u.name, null, who); };
+      $('pFr').onclick = () => { toast('Friend request sent to @' + u.name); };
+    }
+  }
+
+  function openAdmin() {
+    let h = `<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:22px;margin-bottom:4px">${IC.shield} Overwatch</div><div class="th-sub" style="margin-bottom:16px">Admin oversight — everything except private DMs & GCs.</div>`;
+    h += `<div class="field"><label>Broadcast an announcement to the Nexus</label><textarea id="admMsg" placeholder="Ship notes, a rule, a rally cry…"></textarea></div><button class="btn block" id="admSend">Broadcast to everyone</button>`;
+    h += `<div class="sec-title">Members</div></div>`;
+    ['nova', 'kestrel', 'dax', 'juno', 'sable', 'pip'].forEach(k => { h += `<div class="row">${avatar(k, 38, { dot: true })}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">member</div></div><button class="chip" data-mute="${k}">Mute</button><button class="chip" data-kick="${k}" style="color:var(--accent-hi);border-color:var(--faint);margin-left:6px">Kick</button></div>`; });
+    if (state.admin.length) { h += `<div class="sec-title" style="margin-left:16px">Overwatch log</div>`; state.admin.slice().reverse().forEach(a => h += `<div class="row" style="cursor:default"><div class="r-main"><div class="r-sub">${esc(a)}</div></div></div>`); }
+    h += `<div style="height:24px"></div>`;
+    showSheet(h);
+    $('admSend').onclick = () => { const v = $('admMsg').value.trim(); if (!v) return; state.msgs.nexus.push({ a: 'Overwatch', t: v, bot: true, time: nowTime() }); state.admin.push('📢 Announced: "' + v.slice(0, 40) + '"'); save(); toast('Broadcast sent to the Nexus'); closeSheet(); if (state.screen === 'nexus') renderNexus(); };
+    document.querySelectorAll('[data-mute]').forEach(b => b.onclick = () => { toast('Muted @' + b.dataset.mute); state.admin.push('🔇 Muted ' + b.dataset.mute); save(); b.textContent = 'Muted'; });
+    document.querySelectorAll('[data-kick]').forEach(b => b.onclick = () => { toast('Kicked @' + b.dataset.kick); state.admin.push('👢 Kicked ' + b.dataset.kick); save(); });
+  }
+
+  function showSheet(h) { $('sheet').innerHTML = h; $('sheetScrim').classList.add('on'); }
+  function closeSheet() { $('sheetScrim').classList.remove('on'); }
+  $('sheetScrim').onclick = e => { if (e.target === $('sheetScrim')) closeSheet(); };
+
+  /* ═══════════ ICONS ═══════════ */
+  const IC = {
+    nexus: '<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" stroke="currentColor" stroke-width="1.4"/></svg>',
+    chat: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 3V5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    chats: '<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v10H9l-5 4V5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+    feed: '<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg>',
+    live: '<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M7 7a7 7 0 000 10M17 7a7 7 0 010 10M4.5 4.5a11 11 0 000 15M19.5 4.5a11 11 0 010 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    lobby: '<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.4 5 5.6.6-4 4 1 5.4-5-2.8-5 2.8 1-5.4-4-4 5.6-.6L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+    send: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-8-6 16-3-6-7-2z" fill="currentColor"/></svg>',
+    back: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    plus: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    heart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9C1 9 2.5 5.5 6 5.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.5 0 5 3.5 3.5 6.5C19 16.5 12 21 12 21z"/></svg>',
+    share: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12v7h16v-7M12 3v13M7 8l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    eye: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>',
+    check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    lock: '<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.8"/></svg>',
+    door: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M14 3H5v18h9M14 3l5 2v14l-5 2M14 3v18M10 12h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    spark: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    shield: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+    grid: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>',
+    out: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 12H4m0 0l4-4m-4 4l4 4M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    chev: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   };
-  window.addEventListener('resize', () => { if (!isNarrow()) closeNav(); });
-  $('srvHeader').onclick = () => {};
 
-  /* ── auth ── */
-  let mode = 'login';
-  function setMode(m) {
-    mode = m;
-    $('authTitle').textContent = mode === 'login' ? 'Welcome back' : 'Create an account';
-    $('authSub').textContent = mode === 'login' ? "We're so glad to see you again." : 'Pick a name and jump in.';
-    $('authBtn').textContent = mode === 'login' ? 'Log In' : 'Register';
-    $('authAlt').innerHTML = mode === 'login' ? 'Need an account? <a data-toggle>Register</a>' : '<a data-toggle>← Back to log in</a>';
-    $('emailField').style.display = mode === 'login' ? '' : 'none';
+  /* ═══════════ ROUTER ═══════════ */
+  const NAV = [['nexus', 'Nexus', IC.nexus], ['chats', 'Chats', IC.chats], ['feed', 'Feed', IC.feed], ['live', 'Live', IC.live], ['lobby', 'Lobby', IC.lobby]];
+  const TITLES = { nexus: 'Nexus', chats: 'Chats', feed: 'For You', live: 'Live', lobby: 'Lobby' };
+  const SUBS = { nexus: 'one world', feed: 'main', live: 'main', lobby: 'main' };
+  const PAID = { feed: 1, live: 1, lobby: 1 };
+
+  function renderNav() {
+    $('botnav').innerHTML = NAV.map(([id, label, ic]) => `<button data-nav="${id}" class="${state.screen === id ? 'on' : ''}">${ic}<span>${label}</span>${PAID[id] && me().tier !== 'main' ? '<span class="lockdot"></span>' : ''}</button>`).join('');
+    $('botnav').querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { state.screen = b.dataset.nav; save(); render(); });
   }
-  $('authAlt').addEventListener('click', e => { if (e.target.closest('[data-toggle]')) setMode(mode === 'login' ? 'register' : 'login'); });
-
-  $('authForm').addEventListener('submit', e => {
-    e.preventDefault();
-    let name = $('authName').value.trim();
-    if (!name) { name = $('authEmail').value.split('@')[0] || 'you'; }
-    state.user = { name, color: avc(name) };
-    save();
-    enter();
-  });
-
-  function enter() {
-    $('auth').style.display = 'none';
-    $('app').classList.add('on');
-    commit();
-    setTimeout(() => $('composerInput').focus(), 100);
+  function updateChrome() {
+    const sc = state.screen === '_thread' ? 'chats' : state.screen;
+    $('tbTitle').textContent = TITLES[sc] || 'Maintrix';
+    $('tbSub').textContent = SUBS[sc] ? '· ' + SUBS[sc] : '';
+    $('tierPill').textContent = me().tier === 'main' ? 'Main ✦' : 'Lite';
+    $('tierPill').className = 'tier-pill' + (me().tier === 'main' ? ' main' : '');
+    $('profileBtn').innerHTML = avatar(me().name, 34, { ring: true });
+    renderNav();
   }
+  function render() {
+    if (state.screen === '_thread') { renderThread(); updateChrome(); return; }
+    const s2 = $('s-thread'); if (s2) s2.classList.remove('on');
+    document.querySelectorAll('#view > .screen').forEach(s => s.classList.toggle('on', s.id === 's-' + state.screen));
+    if (state.screen === 'nexus') renderNexus();
+    else if (state.screen === 'chats') renderChats();
+    else if (state.screen === 'feed') renderFeed();
+    else if (state.screen === 'live') renderLive();
+    else if (state.screen === 'lobby') renderLobby();
+    $('view').scrollTop = 0;
+    updateChrome();
+  }
+  $('profileBtn').onclick = () => openProfile();
+
+  /* ═══════════ ONBOARDING FLOW ═══════════ */
+  let ob = { step: 0, name: '', gender: '', goals: [], fears: [], bio: '', color: '#ed2e44' };
+  function buildOnboard() {
+    $('obGoals').innerHTML = GOALS.map(g => `<span class="chip" data-g="${g}">${g}</span>`).join('');
+    $('obFears').innerHTML = FEARS.map(f => `<span class="chip" data-f="${f}">${f}</span>`).join('');
+    $('obSwatches').innerHTML = SWATCH.map(c => `<div class="sw ${c === ob.color ? 'on' : ''}" data-c="${c}" style="background:${c}"></div>`).join('');
+    $('obGoals').querySelectorAll('[data-g]').forEach(b => b.onclick = () => { toggle(ob.goals, b.dataset.g); b.classList.toggle('on'); });
+    $('obFears').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { toggle(ob.fears, b.dataset.f); b.classList.toggle('on'); });
+    $('obSwatches').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { ob.color = b.dataset.c; $('obSwatches').querySelectorAll('.sw').forEach(x => x.classList.toggle('on', x.dataset.c === ob.color)); });
+  }
+  function toggle(arr, v) { const i = arr.indexOf(v); if (i < 0) arr.push(v); else arr.splice(i, 1); }
+  function showStep(n) {
+    ob.step = n; $('obBar').style.width = ((n + 1) / 4 * 100) + '%';
+    document.querySelectorAll('.ob-step').forEach(s => s.classList.toggle('on', +s.dataset.step === n));
+    $('obBack').style.visibility = n === 0 ? 'hidden' : 'visible';
+    $('obNext').textContent = n === 3 ? 'Enter Maintrix' : 'Continue';
+  }
+  function startOnboard() { $('auth').classList.add('hidden'); $('onboard').classList.remove('hidden'); buildOnboard(); showStep(0); }
+  $('beginBtn').onclick = startOnboard;
+  $('haveBtn').onclick = startOnboard;
+  $('obBack').onclick = () => showStep(Math.max(0, ob.step - 1));
+  $('obNext').onclick = () => {
+    if (ob.step === 0) { ob.name = $('obName').value.trim(); ob.gender = $('obGender').value; if (!ob.name) { $('obName').focus(); toast('Pick a name to continue'); return; } }
+    if (ob.step === 3) { finishOnboard(); return; }
+    showStep(ob.step + 1);
+  };
+  function finishOnboard() {
+    ob.bio = $('obBio').value.trim();
+    const now = new Date();
+    state.profile = {
+      name: ob.name, gender: ob.gender, goals: ob.goals.length ? ob.goals : ['Discipline'], fears: ob.fears.length ? ob.fears : ['Wasted potential'],
+      bio: ob.bio || 'Becoming.', color: ob.color, tier: 'lite', live: false, likes: 0,
+      badges: ['Founding acolyte'], since: `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
+    };
+    save(); enter();
+  }
+
+  function enter() { $('auth').classList.add('hidden'); $('onboard').classList.add('hidden'); $('app').classList.add('on'); render(); if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); }
 
   /* ── boot ── */
-  if (state.user && state.user.name) {
-    // returning session
-    $('authName').value = state.user.name;
-    enter();
-  }
-
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (me() && me().name) enter();
 })();
 </script>
 </body>
