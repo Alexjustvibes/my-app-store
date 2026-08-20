@@ -322,6 +322,23 @@
   .toast { position: absolute; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--elevated); border: 1px solid var(--line); color: var(--text-hi); padding: 11px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; z-index: 80; opacity: 0; pointer-events: none; transition: all .25s; box-shadow: 0 8px 30px #000a; white-space: nowrap; }
   .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
   .empty { text-align: center; color: var(--dim); font-size: 15px; padding: 50px 24px; line-height: 1.6; }
+
+  /* additions */
+  .login-name { width: 100%; background: #1e0e12; border: 1px solid var(--line); border-radius: 12px; color: var(--text); font-size: 16px; padding: 14px; outline: none; text-align: center; }
+  .login-name:focus { border-color: var(--accent); }
+  .searchbar { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; color: var(--muted); }
+  .searchbar input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 15px; }
+  .live-inline { font-family: var(--mono); font-size: 9px; font-weight: 800; letter-spacing: .06em; color: #fff; background: var(--live); padding: 2px 6px; border-radius: 5px; vertical-align: middle; }
+  .go-live-btn { width: 100%; background: var(--live); color: #fff; font-weight: 800; font-size: 16px; padding: 15px; border-radius: 14px; box-shadow: 0 8px 22px -6px var(--live); transition: filter .12s, transform .1s; }
+  .go-live-btn.on { background: var(--surface); color: var(--live); border: 1px solid var(--live); box-shadow: none; }
+  .go-live-btn:active { transform: scale(.98); }
+  .lswatches { display: flex; gap: 10px; }
+  .lsw { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: var(--surface); border: 2px solid var(--line); cursor: pointer; }
+  .lsw.on { border-color: var(--accent); background: var(--accent-soft); }
+  .ow-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .ow-head .ow-title { font-family: var(--display); font-weight: 700; font-size: 19px; color: var(--text-hi); display: flex; align-items: center; gap: 8px; }
+  .ow-head .chip { margin-left: auto; }
+  [data-user] { cursor: pointer; }
 </style>
 </head>
 <body>
@@ -346,10 +363,10 @@
     <h1>Welcome to heaven on earth.</h1>
     <p class="tag">Discord for smart people. One <b>self</b>, one <b>world</b> — where you talk, you grow, and you become who you're trying to be.</p>
     <div class="auth-actions">
+      <input id="loginName" class="login-name" placeholder="Choose your name" autocomplete="off" maxlength="20">
       <button class="btn block" id="beginBtn">Enter the Nexus</button>
-      <button class="btn ghost block" id="haveBtn">I already have an identity</button>
     </div>
-    <div class="fine">Prototype — no real accounts. Everything lives locally in your browser.</div>
+    <div class="fine">Prototype — set your goals, fears &amp; look anytime from your profile.</div>
   </div>
 
   <!-- ═══════════ ONBOARDING ═══════════ -->
@@ -408,6 +425,7 @@
       <section class="screen" id="s-feed"></section>
       <section class="screen" id="s-live"></section>
       <section class="screen" id="s-lobby"></section>
+      <section class="screen" id="s-overwatch"></section>
     </div>
 
     <nav class="botnav" id="botnav"></nav>
@@ -468,7 +486,8 @@
     ], members: [{ k: 'nova', role: 'owner' }, { k: 'kestrel', role: 'admin' }, { k: 'dax', role: 'member' }, { k: 'pip', role: 'member' }] },
     { id: 'arena', name: 'The Arena', icon: '⚔', color: '#f0663b', cats: [
       { name: 'Text', chans: [{ id: 'arena-general', name: 'general' }] }
-    ], members: [{ k: 'juno', role: 'owner' }, { k: 'sable', role: 'member' }, { k: 'dax', role: 'member' }] }
+    ], members: [{ k: 'juno', role: 'owner' }, { k: 'sable', role: 'member' }, { k: 'dax', role: 'member' }] },
+    { id: 'commons', name: 'The Commons', icon: '◍', color: '#ed2e44', live: true, cats: [{ name: 'Live', chans: [{ id: 'commons', name: 'the-commons' }] }], members: [] }
   ];
 
   const FRIENDS = ['nova', 'kestrel', 'dax', 'juno', 'sable'];
@@ -500,13 +519,39 @@
 
   const ACOLYTES = ['juno', 'sable', 'dax', 'nova', 'kestrel'];
 
+  // extra searchable "internet" people
+  Object.assign(PEOPLE, {
+    ravi: { name: 'ravi', color: '#4a9eff', status: 'online', goals: ['Wealth', 'Discipline'], fears: ['Failure'] },
+    mira: { name: 'mira', color: '#eb459e', status: 'idle', goals: ['Creativity', 'Purpose'], fears: ['Irrelevance'] },
+    theo: { name: 'theo', color: '#3ba55d', status: 'online', goals: ['Focus', 'Mastery'], fears: ['Running out of time'] },
+    lena: { name: 'lena', color: '#f0b232', status: 'offline', goals: ['Health', 'Freedom'], fears: ['Loneliness'] }
+  });
+  const SEARCH_USERS = Object.keys(PEOPLE).filter(k => !PEOPLE[k].bot);
+  const LIKE_ICONS = { heart: '♥', fire: '🔥', star: '★', bolt: '⚡', bloom: '✦' };
+  const likeGlyph = () => LIKE_ICONS[(me() && me().likeIcon) || 'heart'] || '♥';
+  function hashNum(s, mod) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % mod; }
+  const likesOf = n => (me() && n === me().name) ? (me().likes || 0) : 200 + hashNum(n, 4800);
+  const slikesOf = n => (me() && n === me().name) ? (me().serverLikes || 0) : 20 + hashNum(n + 's', 480);
+  const sinceOf = n => `${1 + hashNum(n, 12)}/${1 + hashNum(n + 'd', 27)}/${2024 + hashNum(n + 'y', 2)}`;
+
+  // The Commons — a live public room synced over a keyless relay (ntfy.sh)
+  const COMMONS_TOPIC = 'maintrix-commons-8a3f2';
+  const CLIENT_ID = Math.random().toString(36).slice(2);
+  let commonsWS = null;
+
   /* ── state ── */
   let state = load();
   function load() {
     try { const s = JSON.parse(localStorage.getItem(LS)); if (s && s.profile) return migrate(s); } catch (e) {}
     return { profile: null, screen: 'nexus', chatsTab: 'dms', msgs: seedMsgs(), tasks: TASKS.map(t => ({ ...t })), feed: FEED.map(f => ({ ...f })), admin: [] };
   }
-  function migrate(s) { s.msgs = s.msgs || seedMsgs(); s.tasks = s.tasks || TASKS.map(t => ({ ...t })); s.feed = s.feed || FEED.map(f => ({ ...f })); s.admin = s.admin || []; if (!s.screen) s.screen = 'nexus'; return s; }
+  function migrate(s) {
+    s.msgs = s.msgs || seedMsgs(); s.tasks = s.tasks || TASKS.map(t => ({ ...t })); s.feed = s.feed || FEED.map(f => ({ ...f })); s.admin = s.admin || []; if (!s.screen) s.screen = 'nexus';
+    const p = s.profile; if (p) { if (p.likeIcon == null) p.likeIcon = 'heart'; if (p.isAdmin == null) p.isAdmin = true; if (p.serverLikes == null) p.serverLikes = 0; p.badges = []; }
+    if (s.chatsTab === 'friends') s.chatsTab = 'search';
+    if (s.screen === 'overwatch' && p && !p.isAdmin) s.screen = 'nexus';
+    return s;
+  }
   function seedMsgs() { const m = {}; for (const k in SEED) m[k] = SEED[k].map(x => ({ ...x, time: seedTime() })); return m; }
   function save() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
   function seedTime() { const h = 7 + Math.floor(Math.random() * 12); const m = Math.floor(Math.random() * 60); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; }
@@ -532,35 +577,42 @@
   let activeThread = null; // {key, title, sub, dmKey}
   function openThread(key, title, sub, dmKey) { activeThread = { key, title, sub, dmKey }; state.screen = '_thread'; renderThread(); }
   function renderThread() {
-    const th = activeThread; const list = state.msgs[th.key] = state.msgs[th.key] || [];
+    const th = activeThread; const isCommons = th.key === 'commons';
+    if (isCommons && (!state.msgs.commons || !state.msgs.commons.length)) {
+      state.msgs.commons = [{ a: 'Overwatch', t: 'This is **The Commons** — a live public room. Anyone on the internet running Maintrix and in here sees what you type, in real time. It\'s public, so keep it clean.', bot: true, time: nowTime() }];
+    }
+    const list = state.msgs[th.key] = state.msgs[th.key] || [];
     const wrap = $('view');
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
     let host = $('s-thread'); if (!host) { host = el('section', 'screen'); host.id = 's-thread'; wrap.appendChild(host); }
     host.classList.add('on');
     let h = `<div class="thread"><div class="thread-head"><button class="back" id="thBack">${IC.back}</button>`;
     h += th.dmKey ? avatar(th.dmKey, 34, { dot: true, ring: true }) : '';
-    h += `<div style="flex:1;min-width:0"><div class="th-name">${esc(th.title)}</div>${th.sub ? `<div class="th-sub">${esc(th.sub)}</div>` : ''}</div></div>`;
+    h += `<div style="flex:1;min-width:0"><div class="th-name">${esc(th.title)} ${isCommons ? '<span class="live-inline">LIVE</span>' : ''}</div>${th.sub ? `<div class="th-sub">${esc(th.sub)}</div>` : ''}</div></div>`;
     h += `<div class="thread-scroll" id="thScroll">${renderMsgs(list)}</div>`;
     h += `<div class="composer"><div class="box"><input id="thInput" placeholder="Message ${esc(th.dmKey ? '@' + th.title : '#' + th.title)}" autocomplete="off"><button class="send" id="thSend">${IC.send}</button></div></div></div>`;
     host.innerHTML = h;
     const sc = $('thScroll'); sc.scrollTop = sc.scrollHeight;
+    if (isCommons) connectCommons();
     $('thBack').onclick = () => { state.screen = th.back || (th.dmKey ? 'chats' : (th.key === 'nexus' ? 'nexus' : 'chats')); render(); };
     const input = $('thInput');
-    const doSend = () => { const v = input.value.trim(); if (!v) return; list.push({ a: me().name, t: v, time: nowTime() }); save(); input.value = ''; $('thScroll').innerHTML = renderMsgs(list); const s2 = $('thScroll'); s2.scrollTop = s2.scrollHeight; if (th.dmKey) simReply(th.key, th.dmKey); };
+    const doSend = () => { const v = input.value.trim(); if (!v) return; list.push({ a: me().name, t: v, time: nowTime() }); save(); input.value = ''; $('thScroll').innerHTML = renderMsgs(list); const s2 = $('thScroll'); s2.scrollTop = s2.scrollHeight; if (isCommons) sendCommons(v); else if (th.dmKey) simReply(th.key, th.dmKey); };
     input.addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
     $('thSend').onclick = doSend;
     setTimeout(() => input.focus(), 60);
     updateChrome();
   }
+  const attr = s => esc(String(s)).replace(/"/g, '&quot;');
   function renderMsgs(list) {
     let h = '', prev = null;
     list.forEach(mm => {
       const p = person(mm.a); const grouped = prev && prev.a === mm.a;
-      const color = p.bot ? 'var(--accent-hi)' : (p.color || 'var(--text-hi)');
-      const sh = !grouped && !mm.bot ? shared(p) : null;
+      const color = mm.color ? mm.color : (p.bot ? 'var(--accent-hi)' : (p.color || 'var(--text-hi)'));
+      const sh = !grouped && !mm.bot && !mm.remote ? shared(p) : null;
       const trait = sh ? `<span class="m-trait">${sh.k === 'goal' ? '◎ ' : '⚑ '}${esc(sh.v)}</span>` : '';
+      const du = mm.remote ? '' : ` data-user="${attr(mm.a)}"`;
       if (grouped) h += `<div class="msg grouped"><div class="m-gutter"></div><div class="m-body"><div class="m-text">${fmt(mm.t)}</div></div></div>`;
-      else h += `<div class="msg"><div class="m-av">${avatar(mm.a, 38, { ring: true })}</div><div class="m-body"><div class="m-head"><span class="m-author" style="color:${color}">${esc(p.name)}</span>${trait}<span class="m-time">${mm.time || ''}</span></div><div class="m-text">${fmt(mm.t)}</div></div></div>`;
+      else h += `<div class="msg"><div class="m-av"${du}>${avatar(mm.a, 38, { ring: true })}</div><div class="m-body"><div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${trait}<span class="m-time">${mm.time || ''}</span></div><div class="m-text">${fmt(mm.t)}</div></div></div>`;
       prev = mm;
     });
     return h;
@@ -573,6 +625,31 @@
         $('thScroll').innerHTML = renderMsgs(state.msgs[key]); const s = $('thScroll'); s.scrollTop = s.scrollHeight;
       }
     }, 1400);
+  }
+
+  /* ── The Commons: live public room over ntfy.sh (keyless relay) ── */
+  function connectCommons() {
+    if (commonsWS) return;
+    try {
+      commonsWS = new WebSocket('wss://ntfy.sh/' + COMMONS_TOPIC + '/ws');
+      commonsWS.onmessage = ev => {
+        let d; try { d = JSON.parse(ev.data); } catch (e) { return; }
+        if (!d || d.event !== 'message' || !d.message) return;
+        let p; try { p = JSON.parse(d.message); } catch (e) { return; }
+        if (!p || p.cid === CLIENT_ID) return;                                   // skip our own echo
+        const name = String(p.name || 'guest').replace(/[^a-zA-Z0-9_ .-]/g, '').slice(0, 20) || 'guest';
+        const list = state.msgs.commons = state.msgs.commons || [];
+        list.push({ a: name, t: String(p.text || '').slice(0, 400), time: nowTime(), remote: true, color: /^#[0-9a-f]{6}$/i.test(p.color) ? p.color : '#b7969c' });
+        if (list.length > 200) list.splice(0, list.length - 200);
+        save();
+        if (activeThread && activeThread.key === 'commons') { const sc = $('thScroll'); if (sc) { sc.innerHTML = renderMsgs(list); sc.scrollTop = sc.scrollHeight; } }
+      };
+      commonsWS.onclose = () => { commonsWS = null; if (activeThread && activeThread.key === 'commons') setTimeout(connectCommons, 3000); };
+      commonsWS.onerror = () => { try { commonsWS.close(); } catch (e) {} };
+    } catch (e) {}
+  }
+  function sendCommons(text) {
+    try { fetch('https://ntfy.sh/' + COMMONS_TOPIC, { method: 'POST', body: JSON.stringify({ cid: CLIENT_ID, name: me().name, text: text, color: me().color }) }).catch(() => {}); } catch (e) {}
   }
 
   /* ═══════════ SCREENS ═══════════ */
@@ -595,31 +672,39 @@
 
   function renderChats() {
     const t = state.chatsTab;
-    let h = `<div class="segmented"><button data-t="friends" class="${t === 'friends' ? 'on' : ''}">Friends</button><button data-t="dms" class="${t === 'dms' ? 'on' : ''}">DMs</button><button data-t="servers" class="${t === 'servers' ? 'on' : ''}">Servers</button></div>`;
-    if (t === 'friends') {
-      h += `<div class="pad" style="padding-bottom:0"><div class="box" style="display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px 6px 4px 14px"><input id="addInput" placeholder="Add a friend by username" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:15px;padding:9px 0"><button class="send" id="addBtn">${IC.plus}</button></div></div>`;
-      if (REQUESTS.length) { h += `<div class="sec-title">Requests — ${REQUESTS.length}</div>`; REQUESTS.forEach(k => { const p = person(k); h += `<div class="row">${avatar(k, 42, { dot: true })}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">wants to connect</div></div><button class="chip on" data-accept="${k}">Accept</button></div>`; }); }
-      h += `<div class="sec-title">Friends — ${FRIENDS.length}</div>`;
-      FRIENDS.forEach(k => { const p = person(k); const sh = shared(p); h += `<div class="row" data-dm="${k}">${avatar(k, 42, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">${p.status === 'offline' ? 'offline' : (p.live ? 'live now' : 'online')}</div></div><button class="tb-btn" data-dm="${k}">${IC.chat}</button></div>`; });
+    let h = `<div class="segmented"><button data-t="search" class="${t === 'search' ? 'on' : ''}">Search</button><button data-t="dms" class="${t === 'dms' ? 'on' : ''}">DMs</button><button data-t="servers" class="${t === 'servers' ? 'on' : ''}">Servers</button></div>`;
+    if (t === 'search') {
+      h += `<div class="pad" style="padding-bottom:6px"><div class="searchbar">${IC.search}<input id="userSearch" placeholder="Search people by name" autocomplete="off"></div></div><div id="searchResults"></div>`;
     } else if (t === 'dms') {
+      if (REQUESTS.length) { h += `<div class="sec-title">Requests — ${REQUESTS.length}</div>`; REQUESTS.forEach(k => { const p = person(k); h += `<div class="row" data-user="${k}">${avatar(k, 42, { dot: true })}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">wants to connect</div></div><button class="chip on" data-accept="${k}">Accept</button></div>`; }); }
+      h += `<div class="sec-title">Direct messages</div>`;
       DMS.forEach(k => { const p = person(k); const key = 'dm-' + k; const last = (state.msgs[key] || []).slice(-1)[0]; h += `<div class="row" data-dm="${k}">${avatar(k, 46, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${last ? esc((last.a === me().name ? 'You: ' : '') + last.t) : 'Say hi'}</div></div></div>`; });
-      h += `<div class="empty" style="padding-top:24px">Your DMs are 1:1 and private — even Overwatch can't see them.</div>`;
+      h += `<div class="empty" style="padding-top:20px">DMs are 1:1 and private — even Overwatch can't see them.</div>`;
     } else {
-      SERVERS.forEach(s => { h += `<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)}</div><div class="r-sub">${s.members.length} members · ${s.cats[0].chans.length} channels</div></div></div>`; });
+      SERVERS.forEach(s => { const lv = s.live; h += `<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)} ${lv ? '<span class="live-inline">LIVE</span>' : ''}</div><div class="r-sub">${lv ? 'everyone on the internet · live' : (s.members.length + ' members · ' + s.cats[0].chans.length + ' channels')}</div></div></div>`; });
       h += `<div class="pad"><button class="btn ghost block" id="newServer">${IC.plus} Create a group chat</button></div>`;
     }
     $('s-chats').innerHTML = h;
     $('s-chats').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { state.chatsTab = b.dataset.t; save(); renderChats(); });
-    $('s-chats').querySelectorAll('[data-dm]').forEach(b => b.onclick = e => { e.stopPropagation(); const k = b.dataset.dm; openThread('dm-' + k, person(k).name, null, k); });
+    $('s-chats').querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { const k = b.dataset.dm; openThread('dm-' + k, person(k).name, null, k); });
     $('s-chats').querySelectorAll('[data-server]').forEach(b => b.onclick = () => openServer(b.dataset.server));
-    $('s-chats').querySelectorAll('[data-accept]').forEach(b => b.onclick = () => { toast('Friend request accepted'); b.textContent = 'Friends ✓'; b.classList.remove('on'); });
-    const add = $('addBtn'); if (add) add.onclick = () => { const v = $('addInput').value.trim(); if (v) { toast('Request sent to @' + v.replace(/^@/, '')); $('addInput').value = ''; } };
+    $('s-chats').querySelectorAll('[data-accept]').forEach(b => b.onclick = e => { e.stopPropagation(); toast('Friend request accepted'); b.textContent = 'Friends ✓'; b.classList.remove('on'); });
     const ns = $('newServer'); if (ns) ns.onclick = () => toast('Group chats: coming in the next pass');
+    const us = $('userSearch'); if (us) { us.oninput = () => runSearch(us.value); runSearch(''); setTimeout(() => us.focus(), 50); }
+  }
+  function runSearch(q) {
+    const box = $('searchResults'); if (!box) return;
+    q = (q || '').trim().toLowerCase();
+    const res = SEARCH_USERS.filter(k => person(k).name.toLowerCase().includes(q));
+    let h = q ? '' : '<div class="sec-title">Suggested people</div>';
+    if (q && !res.length) { box.innerHTML = `<div class="empty">No one found for “${esc(q)}”.</div>`; return; }
+    res.forEach(k => { const p = person(k); const sh = shared(p); h += `<div class="row" data-user="${k}">${avatar(k, 42, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">tap to view profile</div></div><button class="chip" data-add="${k}">Add</button></div>`; });
+    box.innerHTML = h;
+    box.querySelectorAll('[data-add]').forEach(b => b.onclick = e => { e.stopPropagation(); toast('Friend request sent to @' + b.dataset.add); b.textContent = 'Sent'; });
   }
   function openServer(sid) {
     const s = SERVERS.find(x => x.id === sid); const ch = s.cats[0].chans[0];
-    const t = { back: 'chats' };
-    activeThread = { key: ch.id, title: ch.name, sub: s.name, dmKey: null, back: 'chats' };
+    activeThread = { key: ch.id, title: s.live ? s.name : ch.name, sub: s.live ? 'everyone on the internet · live' : s.name, dmKey: null, back: 'chats' };
     state.screen = '_thread'; renderThread();
   }
 
@@ -628,10 +713,10 @@
     let h = '';
     state.feed.forEach((post, i) => {
       const p = person(post.a); const sh = shared(p);
-      h += `<div class="post"><div class="post-top">${avatar(post.a, 40, { ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">acolyte</div></div><button class="p-follow" data-follow="${i}">Follow</button></div>`;
+      h += `<div class="post"><div class="post-top"><div style="display:flex;align-items:center;gap:11px;flex:1;min-width:0" data-user="${attr(post.a)}">${avatar(post.a, 40, { ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">acolyte</div></div></div><button class="p-follow" data-follow="${i}">Follow</button></div>`;
       h += `<div class="post-body">${fmt(post.t)}</div>`;
       h += `<div class="post-media" style="background:linear-gradient(140deg,${post.mc},#0d090a)">${esc(post.media)}</div>`;
-      h += `<div class="post-actions"><button data-like="${i}" class="${post.liked ? 'liked' : ''}">${IC.heart} ${post.likes}</button><button>${IC.chat} ${post.comments}</button><button style="margin-left:auto">${IC.share}</button></div></div>`;
+      h += `<div class="post-actions"><button data-like="${i}" class="${post.liked ? 'liked' : ''}" style="font-size:16px">${likeGlyph()} ${post.likes}</button><button>${IC.chat} ${post.comments}</button><button style="margin-left:auto">${IC.share}</button></div></div>`;
     });
     $('s-feed').innerHTML = h;
     $('s-feed').querySelectorAll('[data-like]').forEach(b => b.onclick = () => { const p = state.feed[+b.dataset.like]; p.liked = !p.liked; p.likes += p.liked ? 1 : -1; save(); renderFeed(); });
@@ -640,12 +725,14 @@
 
   function renderLive() {
     if (me().tier !== 'main') return lockScreen('s-live', 'Live', 'Rooms built around a topic, not a face', 'Every Live room leads with what\'s being talked about, not who\'s talking. Join a co-working session, a Q&A, a real-time push — the topic is the headline.', [['◉', 'Topic-first rooms, not streamer worship'], ['◎', 'Rooms around goals you share'], ['♥', 'Your aesthetic in every room you join']]);
-    let h = `<div class="sec-title" style="margin:16px">Live now — topic first</div>`;
+    let h = `<div class="pad" style="padding-bottom:0"><button class="go-live-btn ${me().live ? 'on' : ''}" id="goLive">${me().live ? '● You\'re live — end broadcast' : '● Go live'}</button></div>`;
+    h += `<div class="sec-title" style="margin:18px 16px 8px">Live now — topic first</div>`;
     LIVE.forEach((r, i) => {
-      h += `<div class="live-card" data-room="${i}"><div class="live-thumb" style="background:linear-gradient(140deg,${r.c},#0d090a)"><div class="live-badge"><i></i>LIVE</div><div class="live-topic">${esc(r.topic)}</div></div><div class="live-foot">${avatar(r.host, 30, { ring: true })}<div class="lf-host">${esc(person(r.host).name)}</div><div class="lf-count">${IC.eye} ${r.count}</div></div></div>`;
+      h += `<div class="live-card" data-room="${i}"><div class="live-thumb" style="background:linear-gradient(140deg,${r.c},#0d090a)"><div class="live-badge"><i></i>LIVE</div><div class="live-topic">${esc(r.topic)}</div></div><div class="live-foot"><span data-user="${attr(r.host)}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">${avatar(r.host, 30, { ring: true })}<span class="lf-host">${esc(person(r.host).name)}</span></span><div class="lf-count">${IC.eye} ${r.count}</div></div></div>`;
     });
     $('s-live').innerHTML = h;
-    $('s-live').querySelectorAll('[data-room]').forEach(b => b.onclick = () => toast('Joining “' + LIVE[+b.dataset.room].topic + '”…'));
+    $('goLive').onclick = () => { me().live = !me().live; save(); toast(me().live ? 'You\'re live — red ring on across Maintrix' : 'Broadcast ended'); renderLive(); updateChrome(); };
+    $('s-live').querySelectorAll('[data-room]').forEach(b => b.onclick = e => { if (e.target.closest('[data-user]')) return; toast('Joining “' + LIVE[+b.dataset.room].topic + '”…'); });
   }
 
   function renderLobby() {
@@ -658,10 +745,9 @@
     state.tasks.forEach(t => { h += `<div class="task ${t.done ? 'done' : ''}"><div class="tick ${t.done ? 'done' : ''}" data-task="${t.id}">${t.done ? IC.check : ''}</div><div class="t-body"><div class="t-name">${esc(t.name)}</div><div class="t-sub">${esc(t.sub)}</div></div></div>`; });
     h += `<div class="pad" style="padding-top:20px"><button class="btn block" id="toHub">${IC.door} Step into the acolyte hub</button></div>`;
     h += `<div class="sec-title" style="margin-left:16px">Acolytes in the hub — ${ACOLYTES.length}</div>`;
-    ACOLYTES.forEach(k => { const p = person(k); const sh = shared(p); h += `<div class="row" data-dm="${k}">${avatar(k, 40, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">on the same path</div></div></div>`; });
+    ACOLYTES.forEach(k => { const p = person(k); const sh = shared(p); h += `<div class="row" data-user="${k}">${avatar(k, 40, { dot: true, ring: true })}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh ? `<span class="tag-shared">${sh.k === 'goal' ? '◎' : '⚑'} ${esc(sh.v)}</span>` : ''}</div><div class="r-sub">on the same path</div></div></div>`; });
     $('s-lobby').innerHTML = h;
     $('s-lobby').querySelectorAll('[data-task]').forEach(b => b.onclick = () => { const t = state.tasks.find(x => x.id === b.dataset.task); t.done = !t.done; save(); renderLobby(); });
-    $('s-lobby').querySelectorAll('[data-dm]').forEach(b => b.onclick = () => { const k = b.dataset.dm; openThread('dm-' + k, person(k).name, null, k); });
     $('toHub').onclick = () => { state.screen = 'nexus'; render(); toast('The hub lives in the Nexus — everyone, together.'); };
   }
 
@@ -675,35 +761,72 @@
 
   /* ═══════════ PROFILE / SETTINGS SHEET ═══════════ */
   function openProfile(who) {
-    const own = !who; const u = own ? me() : person(who);
-    const goals = u.goals || []; const fears = u.fears || []; const badges = u.badges || (own ? [] : []);
-    let h = `<div class="sheet-grab"></div><div class="prof-hero"><div class="p-av">${avatar(own ? u.name : who, 84, { dot: true, ring: true })}</div><h2>${esc(u.name)}</h2><div class="p-since">Maintrix member since ${own ? (u.since || '—') : 'the beginning'}</div></div>`;
-    h += `<div class="prof-stats"><div class="ps"><b>${(own ? (u.likes || 0) : Math.floor(Math.random() * 3000)).toLocaleString()}</b><span>Likes</span></div><div class="ps"><b>${own ? FRIENDS.length : Math.floor(Math.random() * 200)}</b><span>Friends</span></div><div class="ps"><b>${(badges.length)}</b><span>Badges</span></div></div>`;
+    const own = !who || (me() && who === me().name);
+    const key = own ? me().name : who;
+    const u = own ? me() : person(who);
+    const goals = u.goals || []; const fears = u.fears || [];
+    let h = `<div class="sheet-grab"></div><div class="prof-hero"><div class="p-av">${avatar(key, 84, { dot: true, ring: true })}</div><h2>${esc(u.name)}</h2><div class="p-since">Maintrix member since ${own ? (u.since || '—') : sinceOf(key)}</div></div>`;
+    h += `<div class="prof-stats"><div class="ps"><b>${likesOf(key).toLocaleString()}</b><span>${likeGlyph()} likes</span></div><div class="ps"><b>${slikesOf(key).toLocaleString()}</b><span>in your servers</span></div></div>`;
     if (u.bio) h += `<div class="prof-bio">${esc(u.bio)}</div>`;
-    if (badges.length) { h += `<div class="badges">`; badges.forEach(b => h += `<span class="badge">✦ ${esc(b)}</span>`); h += `</div>`; }
     if (!own) h += `<div class="pad" style="display:flex;gap:10px"><button class="btn block" id="pDm">${IC.chat} Message</button><button class="btn ghost" id="pFr">Add friend</button></div>`;
-    if (goals.length) { h += `<div class="trait-group"><div class="tg-k">◎ Chasing</div><div class="chips">`; goals.forEach(g => { const on = me().goals.includes(g); h += `<span class="chip ${on ? 'on' : ''}">${esc(g)}</span>`; }); h += `</div></div>`; }
-    if (fears.length) { h += `<div class="trait-group"><div class="tg-k">⚑ Facing</div><div class="chips">`; fears.forEach(f => { const on = me().fears.includes(f); h += `<span class="chip ${on ? 'on' : ''}">${esc(f)}</span>`; }); h += `</div></div>`; }
-
+    h += traitBlock('◎ Chasing', goals, 'goal', 'life goals');
+    h += traitBlock('⚑ Escaping', fears, 'fear', 'fears');
+    h += `<div class="trait-group"><div class="tg-k">✦ Badges</div><div class="prof-bio" style="text-align:left;padding:0;color:var(--dim);font-size:14px">No badges yet — they'll mark what ${own ? 'you' : 'they'} create &amp; accomplish.</div></div>`;
     if (own) {
       h += `<div class="sec-title" style="margin-left:18px">Settings</div>`;
-      h += `<div class="settings-row" id="setTier"><span class="sr-ic">${IC.spark}</span> Membership <span class="sr-r">${u.tier === 'main' ? 'Main ✦' : 'Lite'}</span></div>`;
-      h += `<div class="settings-row" id="setLive"><span class="sr-ic">${IC.eye}</span> Go live <span class="sr-r">${u.live ? 'You\'re live' : 'Off'}</span></div>`;
-      h += `<div class="settings-row" id="setAdmin"><span class="sr-ic">${IC.shield}</span> Overwatch (admin) <span class="sr-r">${IC.chev}</span></div>`;
+      h += `<div class="settings-row" id="setEdit"><span class="sr-ic">${IC.spark}</span> Edit identity <span class="sr-r">goals · fears · look</span></div>`;
+      h += `<div class="settings-row" id="setTier"><span class="sr-ic">${IC.door}</span> Membership <span class="sr-r">${u.tier === 'main' ? 'Main ✦' : 'Lite'}</span></div>`;
+      h += `<div class="settings-row" id="setAdmin"><span class="sr-ic">${IC.shield}</span> Admin mode <span class="sr-r">${u.isAdmin ? 'On' : 'Off'}</span></div>`;
       h += `<a class="settings-row" href="../../index.html" style="text-decoration:none"><span class="sr-ic">${IC.grid}</span> Back to App Store <span class="sr-r">${IC.chev}</span></a>`;
-      h += `<div class="settings-row danger" id="setReset"><span class="sr-ic">${IC.out}</span> Log out & reset prototype</div>`;
-      h += `<div style="height:24px"></div>`;
+      h += `<div class="settings-row danger" id="setReset"><span class="sr-ic">${IC.out}</span> Log out & reset prototype</div><div style="height:24px"></div>`;
     }
     showSheet(h);
     if (own) {
+      $('setEdit').onclick = () => editIdentity();
       $('setTier').onclick = () => { u.tier = u.tier === 'main' ? 'lite' : 'main'; save(); toast(u.tier === 'main' ? 'Upgraded to Main ✦' : 'Back to Lite'); openProfile(); render(); };
-      $('setLive').onclick = () => { u.live = !u.live; save(); toast(u.live ? 'You\'re live — red ring on' : 'Live ended'); openProfile(); updateChrome(); };
-      $('setAdmin').onclick = () => openAdmin();
+      $('setAdmin').onclick = () => { u.isAdmin = !u.isAdmin; save(); toast(u.isAdmin ? 'Admin mode on — Overwatch added' : 'Admin mode off'); if (!u.isAdmin && state.screen === 'overwatch') state.screen = 'nexus'; openProfile(); render(); };
       $('setReset').onclick = () => { if (confirm('Reset the whole prototype? This clears your identity and messages.')) { localStorage.removeItem(LS); location.reload(); } };
     } else {
       $('pDm').onclick = () => { closeSheet(); openThread('dm-' + who, u.name, null, who); };
       $('pFr').onclick = () => { toast('Friend request sent to @' + u.name); };
     }
+  }
+  function traitBlock(label, arr, kind, noun) {
+    if (!arr.length) return `<div class="trait-group"><div class="tg-k">${label}</div><div class="prof-bio" style="text-align:left;padding:0;color:var(--dim);font-size:14px">No ${noun} set yet.</div></div>`;
+    let h = `<div class="trait-group"><div class="tg-k">${label}</div><div class="chips">`;
+    arr.forEach(v => { const on = kind === 'goal' ? me().goals.includes(v) : me().fears.includes(v); h += `<span class="chip ${on ? 'on' : ''}">${esc(v)}</span>`; });
+    return h + `</div></div>`;
+  }
+  function editIdentity() {
+    const u = me();
+    const sel = { goals: [...u.goals], fears: [...u.fears], color: u.color, like: u.likeIcon || 'heart' };
+    let h = `<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:22px;margin-bottom:14px">Edit identity</div>`;
+    h += `<div class="field"><label>Display name</label><input id="eiName" value="${attr(u.name)}" maxlength="20"></div>`;
+    h += `<div class="field"><label>Bio</label><textarea id="eiBio" placeholder="Who are you becoming?">${esc(u.bio || '')}</textarea></div>`;
+    h += `<div class="field"><label>◎ Chasing — life goals</label><div class="chips" id="eiGoals">${GOALS.map(g => `<span class="chip ${u.goals.includes(g) ? 'on' : ''}" data-g="${g}">${g}</span>`).join('')}</div></div>`;
+    h += `<div class="field"><label>⚑ Escaping — fears</label><div class="chips" id="eiFears">${FEARS.map(f => `<span class="chip ${u.fears.includes(f) ? 'on' : ''}" data-f="${f}">${f}</span>`).join('')}</div></div>`;
+    h += `<div class="field"><label>Your color</label><div class="swatches" id="eiColor">${SWATCH.map(c => `<div class="sw ${c === u.color ? 'on' : ''}" data-c="${c}" style="background:${c}"></div>`).join('')}</div></div>`;
+    h += `<div class="field"><label>Profile aesthetic — how likes show</label><div class="lswatches" id="eiLike">${Object.keys(LIKE_ICONS).map(k => `<div class="lsw ${k === sel.like ? 'on' : ''}" data-l="${k}">${LIKE_ICONS[k]}</div>`).join('')}</div></div>`;
+    h += `<button class="btn block" id="eiSave">Save identity</button><div style="height:18px"></div></div>`;
+    showSheet(h);
+    $('eiGoals').querySelectorAll('[data-g]').forEach(b => b.onclick = () => { toggle(sel.goals, b.dataset.g); b.classList.toggle('on'); });
+    $('eiFears').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { toggle(sel.fears, b.dataset.f); b.classList.toggle('on'); });
+    $('eiColor').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { sel.color = b.dataset.c; $('eiColor').querySelectorAll('.sw').forEach(x => x.classList.toggle('on', x.dataset.c === sel.color)); });
+    $('eiLike').querySelectorAll('[data-l]').forEach(b => b.onclick = () => { sel.like = b.dataset.l; $('eiLike').querySelectorAll('.lsw').forEach(x => x.classList.toggle('on', x.dataset.l === sel.like)); });
+    $('eiSave').onclick = () => { u.name = $('eiName').value.trim() || u.name; u.bio = $('eiBio').value.trim(); u.goals = sel.goals; u.fears = sel.fears; u.color = sel.color; u.likeIcon = sel.like; save(); toast('Identity saved'); closeSheet(); render(); };
+  }
+  function renderOverwatch() {
+    if (!me().isAdmin) { state.screen = 'nexus'; render(); return; }
+    const list = state.msgs['ow-admin'] = state.msgs['ow-admin'] || [{ a: 'Overwatch', t: 'Admin channel. Coordinate moderation, announcements, and shipping here — only admins can see this space.', bot: true, time: nowTime() }, { a: 'nova', t: 'quality is holding. two spam accounts kicked overnight.', time: nowTime() }];
+    let h = `<div class="ow-head"><div><div class="ow-title">${IC.shield} Overwatch</div><div class="th-sub">Private admin channel · full oversight</div></div><button class="chip" id="owTools">Tools</button></div>`;
+    h += `<div class="thread" style="height:auto"><div class="thread-scroll" style="overflow:visible;padding-top:6px" id="owScroll">${renderMsgs(list)}</div></div>`;
+    h += `<div class="composer"><div class="box"><input id="owInput" placeholder="Message the admin team…" autocomplete="off"><button class="send" id="owSend">${IC.send}</button></div></div>`;
+    $('s-overwatch').innerHTML = h;
+    const input = $('owInput');
+    const doSend = () => { const v = input.value.trim(); if (!v) return; list.push({ a: me().name, t: v, time: nowTime() }); save(); input.value = ''; $('owScroll').innerHTML = renderMsgs(list); $('view').scrollTop = $('view').scrollHeight; };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
+    $('owSend').onclick = doSend;
+    $('owTools').onclick = () => openAdmin();
   }
 
   function openAdmin() {
@@ -722,6 +845,8 @@
   function showSheet(h) { $('sheet').innerHTML = h; $('sheetScrim').classList.add('on'); }
   function closeSheet() { $('sheetScrim').classList.remove('on'); }
   $('sheetScrim').onclick = e => { if (e.target === $('sheetScrim')) closeSheet(); };
+  // tap any user (message author, member row, search result) → open their profile
+  $('view').addEventListener('click', e => { const t = e.target.closest('[data-user]'); if (!t) return; const u = t.dataset.user; openProfile(me() && u === me().name ? undefined : u); });
 
   /* ═══════════ ICONS ═══════════ */
   const IC = {
@@ -744,17 +869,22 @@
     shield: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
     grid: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/></svg>',
     out: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 12H4m0 0l4-4m-4 4l4 4M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    chev: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    chev: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    search: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    watch: '<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="11" r="2" fill="currentColor"/></svg>'
   };
 
   /* ═══════════ ROUTER ═══════════ */
-  const NAV = [['nexus', 'Nexus', IC.nexus], ['chats', 'Chats', IC.chats], ['feed', 'Feed', IC.feed], ['live', 'Live', IC.live], ['lobby', 'Lobby', IC.lobby]];
-  const TITLES = { nexus: 'Nexus', chats: 'Chats', feed: 'For You', live: 'Live', lobby: 'Lobby' };
-  const SUBS = { nexus: 'one world', feed: 'main', live: 'main', lobby: 'main' };
+  const TITLES = { nexus: 'Nexus', chats: 'Chats', feed: 'For You', live: 'Live', lobby: 'Lobby', overwatch: 'Overwatch' };
+  const SUBS = { nexus: 'one world', feed: 'main', live: 'main', lobby: 'main', overwatch: 'admin' };
   const PAID = { feed: 1, live: 1, lobby: 1 };
-
+  function navItems() {
+    const base = [['nexus', 'Nexus', IC.nexus], ['chats', 'Chats', IC.chats], ['feed', 'Feed', IC.feed], ['live', 'Live', IC.live], ['lobby', 'Lobby', IC.lobby]];
+    if (me().isAdmin) base.push(['overwatch', 'Watch', IC.watch]);
+    return base;
+  }
   function renderNav() {
-    $('botnav').innerHTML = NAV.map(([id, label, ic]) => `<button data-nav="${id}" class="${state.screen === id ? 'on' : ''}">${ic}<span>${label}</span>${PAID[id] && me().tier !== 'main' ? '<span class="lockdot"></span>' : ''}</button>`).join('');
+    $('botnav').innerHTML = navItems().map(([id, label, ic]) => `<button data-nav="${id}" class="${state.screen === id ? 'on' : ''}">${ic}<span>${label}</span>${PAID[id] && me().tier !== 'main' ? '<span class="lockdot"></span>' : ''}</button>`).join('');
     $('botnav').querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { state.screen = b.dataset.nav; save(); render(); });
   }
   function updateChrome() {
@@ -775,47 +905,23 @@
     else if (state.screen === 'feed') renderFeed();
     else if (state.screen === 'live') renderLive();
     else if (state.screen === 'lobby') renderLobby();
+    else if (state.screen === 'overwatch') renderOverwatch();
     $('view').scrollTop = 0;
     updateChrome();
   }
   $('profileBtn').onclick = () => openProfile();
 
-  /* ═══════════ ONBOARDING FLOW ═══════════ */
-  let ob = { step: 0, name: '', gender: '', goals: [], fears: [], bio: '', color: '#ed2e44' };
-  function buildOnboard() {
-    $('obGoals').innerHTML = GOALS.map(g => `<span class="chip" data-g="${g}">${g}</span>`).join('');
-    $('obFears').innerHTML = FEARS.map(f => `<span class="chip" data-f="${f}">${f}</span>`).join('');
-    $('obSwatches').innerHTML = SWATCH.map(c => `<div class="sw ${c === ob.color ? 'on' : ''}" data-c="${c}" style="background:${c}"></div>`).join('');
-    $('obGoals').querySelectorAll('[data-g]').forEach(b => b.onclick = () => { toggle(ob.goals, b.dataset.g); b.classList.toggle('on'); });
-    $('obFears').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { toggle(ob.fears, b.dataset.f); b.classList.toggle('on'); });
-    $('obSwatches').querySelectorAll('[data-c]').forEach(b => b.onclick = () => { ob.color = b.dataset.c; $('obSwatches').querySelectorAll('.sw').forEach(x => x.classList.toggle('on', x.dataset.c === ob.color)); });
-  }
+  /* ═══════════ LOGIN → straight into the Nexus ═══════════ */
   function toggle(arr, v) { const i = arr.indexOf(v); if (i < 0) arr.push(v); else arr.splice(i, 1); }
-  function showStep(n) {
-    ob.step = n; $('obBar').style.width = ((n + 1) / 4 * 100) + '%';
-    document.querySelectorAll('.ob-step').forEach(s => s.classList.toggle('on', +s.dataset.step === n));
-    $('obBack').style.visibility = n === 0 ? 'hidden' : 'visible';
-    $('obNext').textContent = n === 3 ? 'Enter Maintrix' : 'Continue';
-  }
-  function startOnboard() { $('auth').classList.add('hidden'); $('onboard').classList.remove('hidden'); buildOnboard(); showStep(0); }
-  $('beginBtn').onclick = startOnboard;
-  $('haveBtn').onclick = startOnboard;
-  $('obBack').onclick = () => showStep(Math.max(0, ob.step - 1));
-  $('obNext').onclick = () => {
-    if (ob.step === 0) { ob.name = $('obName').value.trim(); ob.gender = $('obGender').value; if (!ob.name) { $('obName').focus(); toast('Pick a name to continue'); return; } }
-    if (ob.step === 3) { finishOnboard(); return; }
-    showStep(ob.step + 1);
-  };
-  function finishOnboard() {
-    ob.bio = $('obBio').value.trim();
+  function quickEnter() {
+    const nm = ($('loginName').value || '').trim();
+    if (!nm) { $('loginName').focus(); toast('Choose a name to enter'); return; }
     const now = new Date();
-    state.profile = {
-      name: ob.name, gender: ob.gender, goals: ob.goals.length ? ob.goals : ['Discipline'], fears: ob.fears.length ? ob.fears : ['Wasted potential'],
-      bio: ob.bio || 'Becoming.', color: ob.color, tier: 'lite', live: false, likes: 0,
-      badges: ['Founding acolyte'], since: `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}`
-    };
-    save(); enter();
+    state.profile = { name: nm.slice(0, 20), gender: '', goals: [], fears: [], bio: '', color: '#ed2e44', likeIcon: 'heart', tier: 'lite', live: false, likes: 0, serverLikes: 0, isAdmin: true, badges: [], since: `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()}` };
+    state.screen = 'nexus'; save(); enter();
   }
+  $('beginBtn').onclick = quickEnter;
+  $('loginName').addEventListener('keydown', e => { if (e.key === 'Enter') quickEnter(); });
 
   function enter() { $('auth').classList.add('hidden'); $('onboard').classList.add('hidden'); $('app').classList.add('on'); render(); if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); }
 

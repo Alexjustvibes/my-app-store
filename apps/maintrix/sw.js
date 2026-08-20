@@ -1,4 +1,4 @@
-const CACHE = 'maintrix-v4';
+const CACHE = 'maintrix-v5';
 const ASSETS = ['index.html', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
