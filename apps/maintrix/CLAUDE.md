@@ -147,6 +147,23 @@ Private DMs/GCs stay local and never hit the network. Implemented via a plain
 `WebSocket` (`wss://ntfy.sh/<topic>/ws`) for receive + `fetch` POST for send;
 own-echo filtered by a per-session `CLIENT_ID`.
 
+## Build state (as of v0.6)
+
+**v0.6 shipped the full feedback round:** traits set at signup & locked (+ location);
+Chats → **Connect**; **DM requests** (accept / deny-with-confirm) + **one-DM-until-
+accepted** (non-friends); **friend list** (own settings) + **mutual friends** on others;
+message **reply / edit / delete** (long-press or right-click); **Posts** on every
+profile + **TikTok fullscreen viewer** + **Lite blur-lock**; **Like** (not Follow),
+likeable from post & profile, one-per-user, toggle; **People I like** in Connect; the
+full **Nexus** system (World / Your World global+location / Trait Nexus Browsing /
+Nexus Topic Rooms create+browse) with location + at-home/foreigner labels + room tags;
+**servers** public/private + create (category/bio/title) + browse public (recommended +
+search + category) + **ranks** + roles; **Appearance** (color + like icon, Main only);
+tier gating aligned to the access lists. State key is now `maintrix.v3` (fresh — old
+sessions re-onboard). Still front-end/local + the live Commons.
+
+Below is the historical v0.5 note.
+
 ## Build state (as of v0.5)
 
 **Built:** phone-frame shell + bottom nav; EXPANSION intro; login → World Nexus;
