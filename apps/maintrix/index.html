@@ -264,7 +264,6 @@
   <div id="intro"><span class="ex-ring"></span><span class="ex-ring two"></span><div class="ex-word">Expansion</div><div class="ex-sub">presents</div><div class="ex-skip">tap to skip</div></div>
 
   <div id="auth">
-    <a class="store" href="../../index.html">← Store</a>
     <div class="logo-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="eyebrow">Maintrix</div>
     <h1>Welcome to heaven on earth.</h1>
@@ -276,16 +275,17 @@
   </div>
 
   <div id="supaAuth" class="hidden">
-    <a class="store" href="../../index.html">← Store</a>
     <div class="logo-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="eyebrow">Maintrix</div>
-    <h1>Sign in to your world.</h1>
-    <p class="tag">Enter your email and we'll send a <b>magic link</b>. No passwords.</p>
+    <h1 id="saTitle">Sign in to your world.</h1>
+    <p class="tag" id="saTag">Your identity, your world — wherever you sign in.</p>
     <div style="max-width:340px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:10px">
       <div class="field" style="margin:0;text-align:left"><input id="saEmail" type="email" placeholder="you@email.com" autocomplete="email" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:16px;padding:13px;outline:none"></div>
-      <button class="btn block" id="saSend">Send magic link</button>
+      <div class="field" style="margin:0;text-align:left"><input id="saPass" type="password" placeholder="Password" autocomplete="current-password" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:16px;padding:13px;outline:none"></div>
+      <button class="btn block" id="saGo">Sign in</button>
+      <button class="btn ghost block" id="saToggle">New here? Create an account</button>
     </div>
-    <div class="fine" id="saStatus">We'll email you a one-tap sign-in link.</div>
+    <div class="fine" id="saStatus"></div>
   </div>
 
   <div id="onboard" class="hidden">
@@ -356,7 +356,9 @@
   const db = {
     auth:{
       async session(){ await initSB(); const { data } = await sb.auth.getSession(); return data.session; },
-      async signInOtp(email){ await initSB(); return sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split('#')[0] } }); },
+      async signIn(email,password){ await initSB(); return sb.auth.signInWithPassword({ email, password }); },
+      async signUp(email,password){ await initSB(); return sb.auth.signUp({ email, password }); },
+      async setPassword(password){ await initSB(); return sb.auth.updateUser({ password }); },
       async signOut(){ if(sb) await sb.auth.signOut(); }
     },
     profiles:{
@@ -1016,7 +1018,8 @@
       h+=`<div class="settings-row" id="setTier"><span class="sr-ic">${IC.door}</span> Membership <span class="sr-r">${u.tier==='main'?'Main ✦':'Lite'}</span></div>`;
       if(u.tier==='main')h+=`<div class="settings-row" id="setLook"><span class="sr-ic">${IC.spark}</span> Appearance <span class="sr-r">color · likes</span></div>`;
       h+=`<div class="settings-row" id="setAdmin"><span class="sr-ic">${IC.shield}</span> Admin mode <span class="sr-r">${u.isAdmin?'On':'Off'}</span></div>`;
-      h+=`<div class="settings-row danger" id="setReset"><span class="sr-ic">${IC.out}</span> Log out & reset</div><div style="height:24px"></div>`;
+      if(online())h+=`<div class="settings-row" id="setPass"><span class="sr-ic">${IC.lock2}</span> Set / change password <span class="sr-r">${IC.chev}</span></div>`;
+      h+=`<div class="settings-row danger" id="setReset"><span class="sr-ic">${IC.out}</span> ${online()?'Log out':'Log out & reset'}</div><div style="height:24px"></div>`;
     }
     showSheet(h);
     $('sheet').querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>openMiniProfile(b.dataset.mini));
@@ -1028,7 +1031,8 @@
       $('setTier').onclick=()=>{ u.tier=u.tier==='main'?'lite':'main'; save(); toast(u.tier==='main'?'Upgraded to Main ✦':'Back to Lite'); openProfile(); render(); };
       const sl=$('setLook'); if(sl)sl.onclick=openAppearance;
       $('setAdmin').onclick=()=>{ u.isAdmin=!u.isAdmin; save(); toast(u.isAdmin?'Admin mode on — Overwatch added':'Admin mode off'); if(!u.isAdmin&&state.screen==='overwatch')state.screen='nexus'; openProfile(); render(); };
-      $('setReset').onclick=()=>{ if(confirm('Log out and reset this device? Your local identity and data will be cleared.')){ localStorage.removeItem(LS); location.reload(); } };
+      const sp=$('setPass'); if(sp)sp.onclick=openSetPassword;
+      $('setReset').onclick=()=>{ if(online()){ if(confirm('Log out of your account on this device?')){ db.auth.signOut().finally(()=>{ localStorage.removeItem(LS); location.reload(); }); } return; } if(confirm('Log out and reset this device? Your local identity and data will be cleared.')){ localStorage.removeItem(LS); location.reload(); } };
     } else {
       $('pDm').onclick=()=>{ closeSheet(); openDm(who); };
       $('pFr').onclick=()=>{ if(!state.friends.includes(who)){toast('Friend request sent to @'+u.name);} };
@@ -1060,6 +1064,13 @@
     h+=`<div style="height:24px"></div>`;
     showSheet(h);
     $('sheet').querySelectorAll('[data-dmf]').forEach(b=>b.onclick=()=>{ closeSheet(); openDm(b.dataset.dmf); });
+  }
+  function openSetPassword(){
+    let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Set a password</div><div class="th-sub" style="margin-bottom:16px">Set a password so you can sign in on any device with your email.</div>`;
+    h+=`<div class="field"><label>New password</label><input id="spPass" type="password" placeholder="At least 6 characters" autocomplete="new-password"></div>`;
+    h+=`<button class="btn block" id="spSave">Save password</button><div style="height:16px"></div></div>`;
+    showSheet(h);
+    $('spSave').onclick=async ()=>{ const pw=$('spPass').value||''; if(pw.length<6){ toast('Password must be 6+ characters'); return; } const b=$('spSave'); b.disabled=true; b.textContent='Saving…'; try{ const { error }=await db.auth.setPassword(pw); if(error)throw error; toast('Password set'); closeSheet(); }catch(e){ b.disabled=false; b.textContent='Save password'; toast('Could not set — '+(e.message||'try again')); } };
   }
   function openAppearance(){
     const u=me(); const sel={color:u.color,like:u.likeIcon||'heart'};
@@ -1204,7 +1215,20 @@
 
   /* ═══ AUTH (Supabase email OTP) ═══ */
   function showSupaAuth(){ $('auth').classList.add('hidden'); $('onboard').classList.add('hidden'); $('supaAuth').classList.remove('hidden'); }
-  (function wireSupaAuth(){ const b=$('saSend'); if(!b)return; b.onclick=async ()=>{ const email=($('saEmail').value||'').trim(); if(!/.+@.+\..+/.test(email)){ toast('Enter a valid email'); return; } b.disabled=true; b.textContent='Sending…'; try{ const { error }=await db.auth.signInOtp(email); if(error)throw error; $('saStatus').textContent='Check your email for the magic link.'; b.textContent='Link sent ✓'; }catch(e){ b.disabled=false; b.textContent='Send magic link'; toast('Could not send — '+(e.message||'try again')); } }; })();
+  let saMode='signin';
+  function paintSaMode(){ const si=saMode==='signin'; const t=$('saTitle'); if(!t)return; t.textContent=si?'Sign in to your world.':'Create your account.'; $('saTag').textContent=si?'Your identity, your world — wherever you sign in.':'Pick an email and a password. That’s it.'; $('saGo').textContent=si?'Sign in':'Create account'; $('saToggle').textContent=si?'New here? Create an account':'Have an account? Sign in'; $('saPass').autocomplete=si?'current-password':'new-password'; $('saStatus').textContent=''; }
+  function prettyAuthErr(e){ const m=(e&&e.message||'').toLowerCase(); if(m.includes('invalid login')) return 'Wrong email or password'; if(m.includes('already registered')||m.includes('already exists')) return 'That email already has an account — sign in instead'; if(m.includes('should be at least')) return 'Password must be at least 6 characters'; return e&&e.message||'Something went wrong'; }
+  (function wireSupaAuth(){ const go=$('saGo'); if(!go)return;
+    $('saToggle').onclick=()=>{ saMode=saMode==='signin'?'signup':'signin'; paintSaMode(); };
+    go.onclick=async ()=>{ const email=($('saEmail').value||'').trim(); const pw=$('saPass').value||''; if(!/.+@.+\..+/.test(email)){ toast('Enter a valid email'); return; } if(pw.length<6){ toast('Password must be 6+ characters'); return; }
+      go.disabled=true; go.textContent=saMode==='signin'?'Signing in…':'Creating…';
+      try{
+        if(saMode==='signin'){ const { error }=await db.auth.signIn(email,pw); if(error)throw error; go.textContent='✓'; boot(); }
+        else { const { data, error }=await db.auth.signUp(email,pw); if(error)throw error; if(data&&data.session){ go.textContent='✓'; boot(); } else { $('saStatus').textContent='Account made — check your email to confirm, then sign in. (Or disable email confirmation in Supabase for instant access.)'; go.disabled=false; go.textContent='Create account'; } }
+      }catch(e){ go.disabled=false; paintSaMode(); toast(prettyAuthErr(e)); }
+    };
+    const onEnter=e=>{ if(e.key==='Enter')go.click(); }; $('saEmail').addEventListener('keydown',onEnter); $('saPass').addEventListener('keydown',onEnter);
+  })();
 
   /* ═══ BOOT (EXPANSION intro) ═══ */
   function cleanOnlineState(){ if(state._onlineClean)return; ['friends','dmAccepted','dmRequests','friendRequests','sentDm','likesGiven','postLikes','notifications','servers','joined','topicRooms'].forEach(k=>state[k]=[]); state.msgs={}; state._onlineClean=true; save(); }
