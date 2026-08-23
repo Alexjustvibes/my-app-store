@@ -394,6 +394,35 @@
   };
   function rowToMsg(r){ return { id:r.id, a:r.author_id, t:r.body, time:tstr(r.created_at), replyToId:r.reply_to, edited:r.edited, pin:r.pinned, bot:r.is_system, created_at:r.created_at }; }
   function tstr(iso){ try{ const d=new Date(iso); let h=d.getHours(); const ap=h<12?'AM':'PM'; h=((h+11)%12)+1; return `${h}:${String(d.getMinutes()).padStart(2,'0')} ${ap}`; }catch(e){ return ''; } }
+  db.social = {
+    async myFriendIds(){ await initSB(); const id=me().id; const { data } = await sb.from('friendships').select('user_a,user_b').or(`user_a.eq.${id},user_b.eq.${id}`); return (data||[]).map(r=>r.user_a===id?r.user_b:r.user_a); },
+    async incomingFriendIds(){ await initSB(); const { data } = await sb.from('friend_requests').select('from_id').eq('to_id', me().id).eq('status','pending'); return (data||[]).map(r=>r.from_id); },
+    async outgoingFriendIds(){ await initSB(); const { data } = await sb.from('friend_requests').select('to_id').eq('from_id', me().id).eq('status','pending'); return (data||[]).map(r=>r.to_id); },
+    async sendFriend(other){ await initSB(); return sb.from('friend_requests').upsert({ from_id:me().id, to_id:other, status:'pending' }); },
+    async acceptFriend(from){ await initSB(); return sb.rpc('accept_friend_request', { from_user:from }); },
+    async denyFriend(from){ await initSB(); return sb.from('friend_requests').update({ status:'denied' }).eq('from_id', from).eq('to_id', me().id); },
+    async mutual(other){ await initSB(); const { data } = await sb.rpc('mutual_friends', { other }); return (data||[]).map(rowToProfile); },
+    async myLikeIds(){ await initSB(); const { data } = await sb.from('user_likes').select('liked_id').eq('liker_id', me().id); return (data||[]).map(r=>r.liked_id); },
+    async likeCount(id){ await initSB(); const { count } = await sb.from('user_likes').select('*',{count:'exact',head:true}).eq('liked_id', id); return count||0; },
+    async toggleLike(other){ await initSB(); const id=me().id; const { data } = await sb.from('user_likes').select('liked_id').eq('liker_id',id).eq('liked_id',other).maybeSingle(); if(data){ await sb.from('user_likes').delete().eq('liker_id',id).eq('liked_id',other); return false; } await sb.from('user_likes').insert({ liker_id:id, liked_id:other }); return true; },
+    async incomingDmIds(){ await initSB(); const { data } = await sb.from('dm_requests').select('from_id').eq('to_id', me().id).eq('status','pending'); return (data||[]).map(r=>r.from_id); },
+    async acceptDm(from){ await initSB(); return sb.from('dm_requests').update({ status:'accepted' }).eq('from_id', from).eq('to_id', me().id); },
+    async denyDm(from){ await initSB(); return sb.from('dm_requests').update({ status:'denied' }).eq('from_id', from).eq('to_id', me().id); },
+    async dmState(other){ await initSB(); const id=me().id;
+      if((state.friends||[]).includes(other)) return 'friends';
+      const { data } = await sb.from('dm_requests').select('from_id,to_id,status').or(`and(from_id.eq.${id},to_id.eq.${other}),and(from_id.eq.${other},to_id.eq.${id})`).maybeSingle();
+      if(!data) return 'none';
+      if(data.status==='accepted') return 'accepted';
+      if(data.status==='denied') return 'denied';
+      return data.from_id===id ? 'pending_out' : 'pending_in';
+    },
+    async friendStatus(other){ if((state.friends||[]).includes(other)) return 'friends'; await initSB(); const id=me().id; const { data } = await sb.from('friend_requests').select('from_id,to_id,status').or(`and(from_id.eq.${id},to_id.eq.${other}),and(from_id.eq.${other},to_id.eq.${id})`).maybeSingle(); if(!data) return 'none'; if(data.status==='accepted') return 'friends'; if(data.status==='denied') return 'none'; return data.from_id===id?'outgoing':'incoming'; }
+  };
+  async function loadSocial(){ if(!online()||!me()||!me().id) return; try{
+    const [fids,lids,freq,dreq,ofr] = await Promise.all([db.social.myFriendIds(), db.social.myLikeIds(), db.social.incomingFriendIds(), db.social.incomingDmIds(), db.social.outgoingFriendIds()]);
+    state.friends=fids; state.likesGiven=lids; state.friendRequests=freq; state.dmRequests=dreq; state.sentFriend=ofr;
+    await ensureProfiles([...fids,...lids,...freq,...dreq,...ofr]); save();
+  }catch(e){} }
 
   /* ── static data ── */
   const GOALS = ['Discipline','Wealth','Mastery','Courage','Focus','Health','Creativity','Leadership','Purpose','Freedom'];
@@ -598,7 +627,7 @@
           if(editing){ const id=editing; editing=null; input.value=''; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); const m=(state.msgs[th.key]||[]).find(x=>x.id===id); if(m){m.t=v;m.edited=true;} db.messages.edit(id,v); closeMentions(); renderReplyBar(); repaint(); return; }
           if(!th.roomId){ toast('Room still loading…'); return; }
           const rid=replyTo?replyTo.id:null, rprev=replyTo?{a:replyTo.a,t:(replyTo.t||'').slice(0,60)}:null; replyTo=null; input.value=''; closeMentions(); renderReplyBar();
-          db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(); } }).catch(()=>toast('Send failed'));
+          db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(); } }).catch(()=>toast(th.dmKey?'One message until they accept your request':'Send failed'));
           return;
         }
         if(editing){ const m=list.find(x=>x.id===editing); if(m){m.t=v; m.edited=true;} editing=null; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); }
@@ -821,7 +850,7 @@
       h+=`<div class="sec-title">Friend requests${state.friendRequests.length?' — '+state.friendRequests.length:''}</div><div id="frReqList"></div>`;
       h+=`<div class="sec-title">Find people</div><div class="searchbar">${IC.search}<input id="userSearch" placeholder="Search people by name" autocomplete="off"></div><div id="searchResults"></div>`;
     } else if(t==='dms'){
-      if(!online())h+=`<div class="row" id="dmReq" style="border-bottom:1px solid var(--line)"><div class="av" style="width:42px;height:42px;background:var(--surface-2);color:var(--accent-hi)">${IC.inbox}</div><div class="r-main"><div class="r-name">DM requests</div><div class="r-sub">${state.dmRequests.length} pending</div></div>${state.dmRequests.length?`<span class="rank-badge" style="color:var(--accent-hi);border-color:var(--accent)">${state.dmRequests.length}</span>`:''}${IC.chev}</div>`;
+      h+=`<div class="row" id="dmReq" style="border-bottom:1px solid var(--line)"><div class="av" style="width:42px;height:42px;background:var(--surface-2);color:var(--accent-hi)">${IC.inbox}</div><div class="r-main"><div class="r-name">DM requests</div><div class="r-sub">${state.dmRequests.length} pending</div></div>${state.dmRequests.length?`<span class="rank-badge" style="color:var(--accent-hi);border-color:var(--accent)">${state.dmRequests.length}</span>`:''}${IC.chev}</div>`;
       h+=`<div class="sec-title">Direct messages</div><div id="dmList"></div>`;
       if(!online()){ state.dmAccepted.forEach(k=>{ const key='dm-'+k; const last=(state.msgs[key]||[]).slice(-1)[0]; h+=`<div class="row" data-dm="${k}">${avatar(k,46,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">${last?esc((last.a===me().name?'You: ':'')+last.t):'Say hi'}</div></div></div>`; }); }
       h+=`<div class="empty" style="padding-top:16px">DMs are private. Start one from <b>Search</b>.</div>`;
@@ -850,8 +879,8 @@
   }
   function renderLiked(){ const box=$('likedList'); if(!box)return; if(!state.likesGiven.length){ box.innerHTML='<div class="empty" style="padding:20px">Like people from their profile to keep them here.</div>'; return; } let h=''; state.likesGiven.forEach(k=>{ const p=person(k); h+=`<div class="row" data-user="${attr(k)}">${avatar(k,42,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${likeGlyph()} you liked · tap to view</div></div></div>`; }); box.innerHTML=h; }
   function renderFriendReqs(){ const box=$('frReqList'); if(!box)return; if(!state.friendRequests.length){ box.innerHTML='<div class="empty" style="padding:16px">No friend requests right now.</div>'; return; } let h=''; state.friendRequests.forEach(k=>{ const p=person(k); h+=`<div class="row"><div data-user="${attr(k)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${avatar(k,42,{dot:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${esc(locStr(p))} · wants to be friends</div></div></div><button class="chip on" data-facc="${attr(k)}">Accept</button><button class="chip" data-fden="${attr(k)}" style="margin-left:6px">Deny</button></div>`; }); box.innerHTML=h;
-    box.querySelectorAll('[data-facc]').forEach(b=>b.onclick=()=>{ const k=b.dataset.facc; state.friendRequests=state.friendRequests.filter(x=>x!==k); if(!state.friends.includes(k))state.friends.push(k); pushNotif('friend',k,'is now your friend'); save(); toast('You and @'+person(k).name+' are now friends'); renderConnect(); });
-    box.querySelectorAll('[data-fden]').forEach(b=>b.onclick=()=>{ const k=b.dataset.fden; confirmDialog('Deny the friend request from @'+person(k).name+'?',()=>{ state.friendRequests=state.friendRequests.filter(x=>x!==k); save(); toast('Denied'); renderConnect(); }); });
+    box.querySelectorAll('[data-facc]').forEach(b=>b.onclick=async ()=>{ const k=b.dataset.facc; if(online()){ try{ await db.social.acceptFriend(k); }catch(e){ toast('Could not accept'); return; } } state.friendRequests=state.friendRequests.filter(x=>x!==k); if(!state.friends.includes(k))state.friends.push(k); pushNotif('friend',k,'is now your friend'); save(); toast('You and @'+person(k).name+' are now friends'); renderConnect(); });
+    box.querySelectorAll('[data-fden]').forEach(b=>b.onclick=()=>{ const k=b.dataset.fden; confirmDialog('Deny the friend request from @'+person(k).name+'?',async ()=>{ if(online()){ try{ await db.social.denyFriend(k); }catch(e){} } state.friendRequests=state.friendRequests.filter(x=>x!==k); save(); toast('Denied'); renderConnect(); }); });
   }
   const SEARCH_USERS = Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot);
   let _searchSeq=0;
@@ -867,8 +896,8 @@
     h+=`<div style="height:24px"></div></div>`;
     openSub(h);
     $('drBack').onclick=()=>{ closeSub(); };
-    document.querySelectorAll('#subscreen [data-acc]').forEach(b=>b.onclick=()=>{ const k=b.dataset.acc; state.dmRequests=state.dmRequests.filter(x=>x!==k); if(!state.dmAccepted.includes(k))state.dmAccepted.push(k); state.msgs['dm-'+k]=state.msgs['dm-'+k]||[{a:k,t:'hey — thanks for accepting 🙏',time:nowTime(),id:mid()}]; save(); toast('Accepted @'+person(k).name); closeSub(); state.connectTab='dms'; render(); });
-    document.querySelectorAll('#subscreen [data-den]').forEach(b=>b.onclick=()=>{ const k=b.dataset.den; confirmDialog('Deny the DM request from @'+person(k).name+'?',()=>{ state.dmRequests=state.dmRequests.filter(x=>x!==k); save(); toast('Denied'); openDmRequests(); }); });
+    document.querySelectorAll('#subscreen [data-acc]').forEach(b=>b.onclick=async ()=>{ const k=b.dataset.acc; if(online()){ try{ await db.social.acceptDm(k); }catch(e){ toast('Could not accept'); return; } state.dmRequests=state.dmRequests.filter(x=>x!==k); save(); toast('Accepted @'+person(k).name); closeSub(); state.connectTab='dms'; render(); openDm(k); return; } state.dmRequests=state.dmRequests.filter(x=>x!==k); if(!state.dmAccepted.includes(k))state.dmAccepted.push(k); state.msgs['dm-'+k]=state.msgs['dm-'+k]||[{a:k,t:'hey — thanks for accepting 🙏',time:nowTime(),id:mid()}]; save(); toast('Accepted @'+person(k).name); closeSub(); state.connectTab='dms'; render(); });
+    document.querySelectorAll('#subscreen [data-den]').forEach(b=>b.onclick=()=>{ const k=b.dataset.den; confirmDialog('Deny the DM request from @'+person(k).name+'?',async ()=>{ if(online()){ try{ await db.social.denyDm(k); }catch(e){} } state.dmRequests=state.dmRequests.filter(x=>x!==k); save(); toast('Denied'); openDmRequests(); }); });
   }
 
   /* ═══ SERVERS ═══ */
@@ -916,7 +945,10 @@
     else if(navigator.clipboard){ navigator.clipboard.writeText(url).then(()=>toast('Link copied to clipboard')).catch(()=>toast(url)); }
     else toast(url);
   }
-  function toggleLike(a){ const i=state.likesGiven.indexOf(a); if(i<0){state.likesGiven.push(a); toast('You liked @'+person(a).name);} else {state.likesGiven.splice(i,1); toast('Like removed');} save(); }
+  function toggleLike(a){ const i=state.likesGiven.indexOf(a); const liking=i<0; if(liking)state.likesGiven.push(a); else state.likesGiven.splice(i,1); toast(liking?'You liked @'+person(a).name:'Like removed'); save(); if(online())db.social.toggleLike(a).catch(()=>{}); }
+  function friendLabel(who){ if((state.friends||[]).includes(who)) return 'Friends'; if((state.sentFriend||[]).includes(who)) return 'Requested'; if((state.friendRequests||[]).includes(who)) return 'Accept'; return 'Add'; }
+  async function renderMutual(who){ const box=$('pMutual'); if(!box)return; try{ const mut=await db.social.mutual(who); if(!$('pMutual')||!mut.length)return; cacheProfiles(mut); box.innerHTML=`<div class="trait-group"><div class="tg-k">Mutual friends — ${mut.length}</div><div class="chips">${mut.map(m=>`<span class="chip" data-mini="${attr(m.id)}">${esc(m.name)}</span>`).join('')}</div></div>`; box.querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>openMiniProfile(b.dataset.mini)); }catch(e){} }
+  async function patchLikeCount(id){ try{ const n=await db.social.likeCount(id); const b=$('likeStat'); if(b)b.textContent=n.toLocaleString(); }catch(e){} }
   function openPostViewer(startAuthor,startIdx){
     // flatten all posts into slides
     const slides=[]; Object.keys(POSTS).forEach(a=>POSTS[a].forEach((post,pi)=>slides.push({a,pi,post})));
@@ -1004,11 +1036,13 @@
   /* ═══ PROFILE ═══ */
   function openProfile(who){
     const own=!who||(me()&&who===me().name); const key=own?me().name:who; const u=own?me():person(who);
-    let h=`<div class="sheet-grab"></div><div class="prof-hero"><div class="p-av">${avatar(key,84,{dot:true,ring:true})}</div><h2>${esc(u.name)}</h2><div class="p-since">${esc(locStr(u))} · member since ${own?(u.since||'—'):sinceOf(key)}</div></div>`;
-    h+=`<div class="prof-stats"><div class="ps"><b>${likesOf(key).toLocaleString()}</b><span>${likeGlyph()} likes</span></div><div class="ps"><b>${slikesOf(key).toLocaleString()}</b><span>in servers</span></div></div>`;
+    const sinceStr=(online()||own)?(u.since||'—'):sinceOf(key);
+    let h=`<div class="sheet-grab"></div><div class="prof-hero"><div class="p-av">${avatar(key,84,{dot:true,ring:true})}</div><h2>${esc(u.name)}</h2><div class="p-since">${esc(locStr(u))} · member since ${sinceStr}</div></div>`;
+    h+=`<div class="prof-stats"><div class="ps"><b id="likeStat">${online()?'…':likesOf(key).toLocaleString()}</b><span>${likeGlyph()} likes</span></div><div class="ps"><b>${online()?'0':slikesOf(key).toLocaleString()}</b><span>in servers</span></div></div>`;
     if(u.bio)h+=`<div class="prof-bio">${esc(u.bio)}</div>`;
-    if(!own){ const liked=state.likesGiven.includes(who); h+=`<div class="pad" style="display:flex;gap:8px"><button class="btn" style="flex:1" id="pDm">${IC.chat} Message</button><button class="btn ghost" id="pFr">${state.friends.includes(who)?'Friends':'Add'}</button><button class="btn ghost" id="pLike" style="${liked?'border-color:var(--accent);color:var(--accent-hi)':''}">${likeGlyph()} ${liked?'Liked':'Like'}</button></div>`;
-      const mut=mutualFriends(who); if(mut.length)h+=`<div class="trait-group"><div class="tg-k">Mutual friends — ${mut.length}</div><div class="chips">${mut.map(m=>`<span class="chip" data-mini="${attr(m)}">${esc(person(m).name)}</span>`).join('')}</div></div>`; }
+    if(!own){ const liked=state.likesGiven.includes(who); h+=`<div class="pad" style="display:flex;gap:8px"><button class="btn" style="flex:1" id="pDm">${IC.chat} Message</button><button class="btn ghost" id="pFr">${online()?friendLabel(who):(state.friends.includes(who)?'Friends':'Add')}</button><button class="btn ghost" id="pLike" style="${liked?'border-color:var(--accent);color:var(--accent-hi)':''}">${likeGlyph()} ${liked?'Liked':'Like'}</button></div>`;
+      h+=`<div id="pMutual"></div>`;
+      if(!online()){ const mut=mutualFriends(who); if(mut.length)h+=`<div class="trait-group"><div class="tg-k">Mutual friends — ${mut.length}</div><div class="chips">${mut.map(m=>`<span class="chip" data-mini="${attr(m)}">${esc(person(m).name)}</span>`).join('')}</div></div>`; } }
     h+=traitBlock('◎ Chasing',u.goals||[],'goal','life goals');
     h+=traitBlock('⚑ Escaping',u.fears||[],'fear','fears');
     h+=`<div class="trait-group"><div class="tg-k">✦ Badges</div><div class="muted-note prof-bio" style="padding:0">No badges yet — they’ll mark what ${own?'you':'they'} create &amp; accomplish.</div></div>`;
@@ -1026,6 +1060,7 @@
     }
     showSheet(h);
     $('sheet').querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>openMiniProfile(b.dataset.mini));
+    if(online()){ patchLikeCount(own?me().id:who); if(!own)renderMutual(who); }
     // wire post cells
     $('sheet').querySelectorAll('[data-post]').forEach(b=>b.onclick=()=>{ if(me().tier!=='main'){ upsell('Posts'); return; } const [a,pi]=b.dataset.post.split('|'); closeSheet(); openPostViewer(a,+pi); });
     const ul=$('sheet').querySelector('#unlockPosts'); if(ul)ul.onclick=()=>{ me().tier='main'; save(); toast('Welcome to Main.'); openProfile(who); };
@@ -1038,7 +1073,16 @@
       $('setReset').onclick=()=>{ if(online()){ if(confirm('Log out of your account on this device?')){ db.auth.signOut().finally(()=>{ localStorage.removeItem(LS); location.reload(); }); } return; } if(confirm('Log out and reset this device? Your local identity and data will be cleared.')){ localStorage.removeItem(LS); location.reload(); } };
     } else {
       $('pDm').onclick=()=>{ closeSheet(); openDm(who); };
-      $('pFr').onclick=()=>{ if(!state.friends.includes(who)){toast('Friend request sent to @'+u.name);} };
+      $('pFr').onclick=async ()=>{
+        if((state.friends||[]).includes(who)){ toast('Already friends'); return; }
+        if(online()){
+          if((state.friendRequests||[]).includes(who)){ try{ await db.social.acceptFriend(who); }catch(e){ toast('Could not accept'); return; } state.friendRequests=state.friendRequests.filter(x=>x!==who); if(!state.friends.includes(who))state.friends.push(who); save(); toast('You’re now friends'); openProfile(who); return; }
+          if((state.sentFriend||[]).includes(who)){ toast('Request already sent'); return; }
+          try{ await db.social.sendFriend(who); }catch(e){ toast('Could not send'); return; }
+          (state.sentFriend=state.sentFriend||[]).push(who); save(); toast('Friend request sent'); openProfile(who); return;
+        }
+        toast('Friend request sent to @'+u.name);
+      };
       $('pLike').onclick=()=>{ toggleLike(who); openProfile(who); };
     }
   }
@@ -1243,7 +1287,7 @@
       const sess=await db.auth.session();
       if(!sess){ showSupaAuth(); return; }
       const prof=await db.profiles.mine();
-      if(prof){ state.profile=prof; cacheProfile(prof); save(); enter(); }
+      if(prof){ state.profile=prof; cacheProfile(prof); save(); await loadSocial(); enter(); }
       else startOnboarding();
     }catch(e){ toast('Connection issue — try again'); showSupaAuth(); }
   }
