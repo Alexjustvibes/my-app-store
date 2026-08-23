@@ -445,6 +445,53 @@
       async count(postId){ await initSB(); const { count } = await sb.from('post_comments').select('*',{count:'exact',head:true}).eq('post_id',postId); return count||0; }
     }
   };
+  /* ── servers (rooms of kind 'server') ── */
+  function rowToServer(r){ const m=r.meta||{}; return { id:r.id, name:r.title, category:r.category, bio:m.bio||'', icon:m.icon||(r.title?r.title[0].toUpperCase():'#'), public:r.is_public, owner:r.owner_id }; }
+  db.servers = {
+    async create({title,category,bio,isPublic}){ await initSB(); const { data, error } = await sb.from('rooms').insert({ kind:'server', title, category, is_public:isPublic, owner_id:me().id, meta:{ bio:bio||'', icon:title[0].toUpperCase() } }).select().single(); if(error) throw error; await sb.from('room_members').insert({ room_id:data.id, user_id:me().id, rank:'Owner' }); return rowToServer(data); },
+    async mine(){ await initSB(); const { data } = await sb.from('room_members').select('rank, rooms!inner(id,kind,title,category,is_public,owner_id,meta)').eq('user_id', me().id); return (data||[]).filter(x=>x.rooms&&x.rooms.kind==='server').map(x=>Object.assign(rowToServer(x.rooms),{ myRank:x.rank })); },
+    async browse(q,cat){ await initSB(); let query=sb.from('rooms').select('*').eq('kind','server').eq('is_public',true).order('created_at',{ascending:false}).limit(40); if(cat)query=query.eq('category',cat); if(q)query=query.ilike('title','%'+q+'%'); const { data } = await query; return (data||[]).map(rowToServer); },
+    async join(id){ await initSB(); await sb.from('room_members').upsert({ room_id:id, user_id:me().id, rank:'Initiate' }); },
+    async myRank(id){ await initSB(); const { data } = await sb.from('room_members').select('rank').eq('room_id',id).eq('user_id',me().id).maybeSingle(); return data?data.rank:null; },
+    async setPublic(id,pub){ await initSB(); await sb.from('rooms').update({ is_public:pub }).eq('id',id); },
+    async remove(id){ await initSB(); await sb.from('rooms').delete().eq('id',id); },
+    async members(id){ await initSB(); const { data } = await sb.from('room_members').select('user_id,rank,roles').eq('room_id',id); const list=data||[]; await ensureProfiles(list.map(m=>m.user_id)); return list; },
+    async setRank(id,userId,rank){ await initSB(); await sb.from('room_members').update({ rank }).eq('room_id',id).eq('user_id',userId); }
+  };
+  function openServerOnline(s){ openThread({ key:'srv-'+s.id, roomId:s.id, serverId:s.id, serverOwner:s.owner, title:s.name, sub:(s.category||'server'), kind:'server', roomTag:{ main:s.public?'Public':'Private', sub:esc(s.category||'') }, back:'connect' }); }
+  async function renderMyServers(){ const box=$('srvMine'); if(!box)return; try{ const list=await db.servers.mine(); if(!$('srvMine'))return; if(!list.length){ box.innerHTML='<div class="empty" style="padding:12px">No servers yet — create one or browse public servers.</div>'; return; } box.innerHTML=list.map(s=>`<div class="row" data-osrv="${attr(s.id)}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.owner===me().id?'var(--accent)':'var(--surface-2)'};font-size:18px">${esc(s.icon)}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${esc(s.category||'')}${s.myRank?' · '+esc(s.myRank):''}</div></div></div>`).join(''); box.querySelectorAll('[data-osrv]').forEach(b=>b.onclick=()=>openServerOnline(list.find(x=>x.id===b.dataset.osrv))); }catch(e){ if($('srvMine'))box.innerHTML=''; } }
+  function browsePublicServersOnline(){
+    let cat=null,q='';
+    const draw=async ()=>{ let h=`<div class="sub-head"><button class="back" id="bpBack">${IC.back}</button><div class="st">Public servers</div></div><div class="sub-body"><div class="searchbar" style="margin-top:12px">${IC.search}<input id="bpSearch" placeholder="Search public servers" value="${attr(q)}"></div>`;
+      h+=`<div class="chips" style="padding:14px 16px 4px"><span class="chip ${!cat?'on':''}" data-cat="">All</span>${TOPIC_CATS.map(c=>`<span class="chip ${cat===c?'on':''}" data-cat="${attr(c)}">${c}</span>`).join('')}</div><div class="sec-title">Public servers</div><div id="bpList"><div class="empty" style="padding:16px">Loading…</div></div><div style="height:24px"></div></div>`;
+      openSub(h); $('bpBack').onclick=closeSub;
+      const si=$('bpSearch'); si.oninput=()=>{ q=si.value.trim(); clearTimeout(si._t); si._t=setTimeout(fill,250); };
+      document.querySelectorAll('#subscreen [data-cat]').forEach(c=>c.onclick=()=>{ cat=c.dataset.cat||null; draw(); });
+      fill();
+    };
+    const fill=async ()=>{ const box=$('bpList'); if(!box)return; try{ const list=await db.servers.browse(q,cat); if(!$('bpList'))return; if(!list.length){ box.innerHTML='<div class="empty">No public servers yet — create the first.</div>'; return; } const myr=await Promise.all(list.map(s=>db.servers.myRank(s.id))); box.innerHTML=list.map((s,i)=>`<div class="row"><div data-opensrv="${attr(s.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0"><div class="av" style="width:46px;height:46px;border-radius:16px;background:var(--surface-2);font-size:18px">${esc(s.icon)}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${esc(s.category||'')}</span></div><div class="r-sub">${esc(s.bio||'')}</div></div></div><button class="chip ${myr[i]?'':'on'}" data-joinsrv="${attr(s.id)}">${myr[i]?'Open':'Join'}</button></div>`).join('');
+      box.querySelectorAll('[data-joinsrv]').forEach(b=>b.onclick=async e=>{ e.stopPropagation(); const id=b.dataset.joinsrv; const s=list.find(x=>x.id===id); await db.servers.join(id); toast('Joined '+s.name); closeSub(); openServerOnline(s); });
+      box.querySelectorAll('[data-opensrv]').forEach(b=>b.onclick=()=>{ const s=list.find(x=>x.id===b.dataset.opensrv); closeSub(); openServerOnline(s); });
+    }catch(e){ if($('bpList'))$('bpList').innerHTML='<div class="empty">Couldn’t load servers.</div>'; } };
+    draw();
+  }
+  function serverManageOnline(id, owner){
+    const iOwn = owner===me().id || me().isAdmin;
+    let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Server settings</div><div class="th-sub" style="margin-bottom:16px">Visibility, ranks & moderation.</div>`;
+    h+=`<div class="field"><label>Visibility — switch anytime</label><div class="segmented" style="margin:0"><button id="smPub">Public</button><button id="smPriv">Private</button></div></div>`;
+    h+=`<div class="sec-title" style="margin-left:0">Members & ranks</div><div id="smMembers"><div class="empty" style="padding:12px">Loading…</div></div>`;
+    if(iOwn)h+=`<button class="btn ghost block danger" id="smDel" style="color:var(--accent-hi);border-color:var(--accent);margin-top:12px">${IC.trash} Delete server</button>`;
+    h+=`<div style="height:16px"></div></div>`;
+    $('sheet').className='sheet'; showSheet(h);
+    let pub=null;
+    const setSeg=p=>{ pub=p; $('smPub').classList.toggle('on',p); $('smPriv').classList.toggle('on',!p); };
+    db.servers.members(id).then(mem=>{ const box=$('smMembers'); if(!box)return; box.innerHTML=mem.map(m=>`<div class="row"><div data-user="${attr(m.user_id)}" style="display:flex;gap:11px;align-items:center;flex:1;min-width:0">${avatar(m.user_id,38,{dot:true})}<div class="r-main"><div class="r-name">${esc(person(m.user_id).name)}</div><div class="r-sub">${esc(m.rank)}</div></div></div>${iOwn&&m.user_id!==owner?`<select data-rank="${attr(m.user_id)}" style="background:var(--surface);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:12px;padding:5px">${RANKS.map(r=>`<option ${r===m.rank?'selected':''}>${r}</option>`).join('')}</select>`:''}</div>`).join(''); if(iOwn)box.querySelectorAll('[data-rank]').forEach(sel=>sel.onchange=async ()=>{ await db.servers.setRank(id, sel.dataset.rank, sel.value); toast('Rank updated'); }); });
+    // load current visibility
+    db.servers.mine().then(list=>{ const s=list.find(x=>x.id===id); setSeg(s?s.public:true); });
+    $('smPub').onclick=async ()=>{ setSeg(true); await db.servers.setPublic(id,true); toast('Now Public'); if(active&&active.serverId===id){active.roomTag={main:'Public',sub:active.roomTag.sub}; renderThread();} };
+    $('smPriv').onclick=async ()=>{ setSeg(false); await db.servers.setPublic(id,false); toast('Now Private'); if(active&&active.serverId===id){active.roomTag={main:'Private',sub:active.roomTag.sub}; renderThread();} };
+    const del=$('smDel'); if(del)del.onclick=()=>confirmDialog('Delete this server for everyone?',async ()=>{ await db.servers.remove(id); closeSheet(); $('app').classList.remove('thread-open'); state.screen='connect'; state.connectTab='servers'; render(); toast('Server deleted'); });
+  }
   /* ── notifications (Phase 5) ── */
   const NOTIF_TEXT = { tag:'tagged you', reply:'replied to your message', post_like:'liked your post', like:'liked you', comment:'commented on your post', friend_request:'sent you a friend request', friend:'accepted your friend request' };
   function relTime(iso){ try{ const s=Math.floor((Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }catch(e){ return ''; } }
@@ -636,7 +683,7 @@
     host.classList.add('on');
     const tag=th.roomTag?`<div class="room-tag"><div class="rt-main">${esc(th.roomTag.main)}</div>${th.roomTag.sub?`<div class="rt-sub">${esc(th.roomTag.sub)}</div>`:''}</div>`:'';
     const srv=th.serverId?state.servers.find(x=>x.id===th.serverId):null;
-    const canManage=srv&&(isOwner(srv)||me().isAdmin);
+    const canManage = online() ? !!(th.serverId && (th.serverOwner===me().id || me().isAdmin)) : (srv&&(isOwner(srv)||me().isAdmin));
     let h=`<div class="thread"><div class="thread-head"><button class="back" id="thBack">${IC.back}</button>`;
     if(th.dmKey){ h+=`<div data-user="${attr(th.dmKey)}" style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">${avatar(th.dmKey,34,{dot:true,ring:true})}<div style="min-width:0"><div class="th-name">${esc(th.title)}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div></div>`; }
     else h+=`<div style="min-width:0;flex:1"><div class="th-name">${esc(th.title)} ${isCommons?'<span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span>':''}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div>`;
@@ -654,10 +701,10 @@
     $('app').classList.add('thread-open');
     const sc=$('thScroll'); sc.scrollTop=sc.scrollHeight;
     if(isCommons && online() && !th.roomSlug) th.roomSlug='commons';
-    const onlineRoom = online() && !!(th.roomSlug || th.dmUser || th.topicId);
+    const onlineRoom = online() && !!(th.roomSlug || th.dmUser || th.topicId || th.roomId);
     const repaint=()=>{ const s=$('thScroll'); if(!s)return; const L=state.msgs[th.key]||[]; s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); };
     $('thBack').onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); };
-    if(canManage)$('thManage').onclick=()=>serverManage(th.serverId);
+    if(canManage)$('thManage').onclick=()=> online()?serverManageOnline(th.serverId, th.serverOwner):serverManage(th.serverId);
     if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML='<div class="empty">Loading…</div>'; hydrateOnlineRoom(th); }
     else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
     if(!dmLocked){
@@ -896,15 +943,11 @@
       if(!online()){ state.dmAccepted.forEach(k=>{ const key='dm-'+k; const last=(state.msgs[key]||[]).slice(-1)[0]; h+=`<div class="row" data-dm="${k}">${avatar(k,46,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">${last?esc((last.a===me().name?'You: ':'')+last.t):'Say hi'}</div></div></div>`; }); }
       h+=`<div class="empty" style="padding-top:16px">DMs are private. Start one from <b>Search</b>.</div>`;
     } else {
-      h+=`<div class="sec-title first">Live · public</div><div class="row" data-server="commons"><div class="av" style="width:46px;height:46px;border-radius:16px;background:var(--accent);font-size:18px">◍</div><div class="r-main"><div class="r-name">The Commons <span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span></div><div class="r-sub">everyone signed in · live</div></div></div>`;
-      if(online()){
-        h+=`<div class="empty" style="padding-top:20px">Public servers with ranks & roles are coming in the next update. For now, meet people in the <b>World</b> and trait nexuses.</div>`;
-      } else {
-        h+=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="srvCreate" style="margin-bottom:10px">${IC.plus} Create a server</button><button class="btn ghost block" id="srvBrowse">${IC.search} Browse public servers</button></div>`;
-        const mine=state.servers.filter(s=>state.joined.includes(s.id));
-        h+=`<div class="sec-title">Your servers</div>`;
-        mine.forEach(s=>{ h+=`<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${s.members.length} members · ${esc(s.cat)}</div></div></div>`; });
-      }
+      h+=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="srvCreate" style="margin-bottom:10px">${IC.plus} Create a server</button><button class="btn ghost block" id="srvBrowse">${IC.search} Browse public servers</button></div>`;
+      h+=`<div class="sec-title">Live · public</div><div class="row" data-server="commons"><div class="av" style="width:46px;height:46px;border-radius:16px;background:var(--accent);font-size:18px">◍</div><div class="r-main"><div class="r-name">The Commons <span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span></div><div class="r-sub">everyone signed in · live</div></div></div>`;
+      h+=`<div class="sec-title">Your servers</div><div id="srvMine">`;
+      if(!online()){ const mine=state.servers.filter(s=>state.joined.includes(s.id)); mine.forEach(s=>{ h+=`<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${s.members.length} members · ${esc(s.cat)}</div></div></div>`; }); }
+      h+=`</div>`;
     }
     $('s-connect').innerHTML=h;
     $('s-connect').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ state.connectTab=b.dataset.t; save(); renderConnect(); });
@@ -912,8 +955,9 @@
     $('s-connect').querySelectorAll('[data-server]').forEach(b=>b.onclick=()=>{ b.dataset.server==='commons'?openThread({key:'commons',roomSlug:'commons',title:'The Commons',sub:'everyone signed in · live',back:'connect'}):openServer(b.dataset.server); });
     const dr=$('dmReq'); if(dr)dr.onclick=openDmRequests;
     const sc=$('srvCreate'); if(sc)sc.onclick=createServer;
-    const sb2=$('srvBrowse'); if(sb2)sb2.onclick=browsePublicServers;
+    const sb2=$('srvBrowse'); if(sb2)sb2.onclick=()=> online()?browsePublicServersOnline():browsePublicServers();
     if(online()&&t==='dms')renderDmList();
+    if(online()&&t==='servers')renderMyServers();
     const us=$('userSearch'); if(us){ us.oninput=()=>runSearch(us.value); runSearch(''); }
     const ll=$('likedList'); if(ll)renderLiked();
     const fr=$('frReqList'); if(fr)renderFriendReqs();
@@ -952,7 +996,9 @@
     h+=`<button class="btn block" id="csSave">Create server</button><div style="height:16px"></div></div>`;
     showSheet(h);
     let pub=true; $('csPub').onclick=()=>{pub=true; $('csPub').classList.add('on'); $('csPriv').classList.remove('on');}; $('csPriv').onclick=()=>{pub=false; $('csPriv').classList.add('on'); $('csPub').classList.remove('on');};
-    $('csSave').onclick=()=>{ const title=$('csTitle').value.trim(); if(!title){toast('Give it a title');return;} const id='u'+Date.now(); const chan='srv-'+id+'-general'; const s={id,name:title,icon:title[0].toUpperCase(),color:me().color,public:pub,cat:$('csCat').value,bio:$('csBio').value.trim(),chan,members:[{k:me().name,rank:'Owner'}],roles:{}}; state.servers.push(s); state.joined.push(id); state.msgs[chan]=[{a:'Overwatch',t:'**'+title+'** was created. You’re the Owner — assign ranks and roles from the members list.',bot:true,time:nowTime(),id:mid()}]; save(); closeSheet(); toast('Server created'); openServer(id); };
+    $('csSave').onclick=async ()=>{ const title=$('csTitle').value.trim(); if(!title){toast('Give it a title');return;}
+      if(online()){ const b=$('csSave'); b.disabled=true; b.textContent='Creating…'; try{ const s=await db.servers.create({ title, category:$('csCat').value, bio:$('csBio').value.trim(), isPublic:pub }); closeSheet(); toast('Server created'); openServerOnline(s); }catch(e){ b.disabled=false; b.textContent='Create server'; toast('Could not create — '+(e.message||'try again')); } return; }
+      const id='u'+Date.now(); const chan='srv-'+id+'-general'; const s={id,name:title,icon:title[0].toUpperCase(),color:me().color,public:pub,cat:$('csCat').value,bio:$('csBio').value.trim(),chan,members:[{k:me().name,rank:'Owner'}],roles:{}}; state.servers.push(s); state.joined.push(id); state.msgs[chan]=[{a:'Overwatch',t:'**'+title+'** was created. You’re the Owner — assign ranks and roles from the members list.',bot:true,time:nowTime(),id:mid()}]; save(); closeSheet(); toast('Server created'); openServer(id); };
   }
   function browsePublicServers(){
     let cat=null, q='';
