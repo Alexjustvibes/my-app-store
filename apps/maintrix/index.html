@@ -424,6 +424,7 @@
     state.friends=fids; state.likesGiven=lids; state.friendRequests=freq; state.dmRequests=dreq; state.sentFriend=ofr;
     await ensureProfiles([...fids,...lids,...freq,...dreq,...ofr]); save();
   }catch(e){} }
+  async function setMembership(tier){ me().tier=tier; save(); if(online()){ try{ await db.profiles.update({ tier }); }catch(e){} } }
   /* ── posts / media (Phase 4) ── */
   let MYPL = new Set(); // ids of posts I've liked (loaded with the feed)
   function postMediaUrl(path){ if(!path||!sb) return null; try{ return sb.storage.from('media').getPublicUrl(path).data.publicUrl; }catch(e){ return null; } }
@@ -1108,7 +1109,7 @@
     if(!online()&&!state.msgs[key])state.msgs[key]=[{a:'Overwatch',t:'The **Acolyte Hub** — only acolytes are here. This is where the work gets witnessed.',bot:true,pin:true,time:nowTime(),id:mid()}];
     openThread({key,roomSlug:'acolyte-hub',title:'Acolyte Hub',sub:'the inner room',kind:'topic',roomTag:{main:'Acolytes',sub:'inner room'},back:'lobby'});
   }
-  function lockScreen(id,title,headline,body,feats){ let h=`<div class="lock"><div class="lock-ic">${IC.lock}</div><h2>${esc(headline)}</h2><p>${esc(body)}</p><div class="feat">`; feats.forEach(f=>h+=`<div><span class="fi">${f[0]}</span><span>${esc(f[1])}</span></div>`); h+=`</div><button class="btn block" id="unlockBtn" style="max-width:320px;margin:0 auto">Unlock Maintrix Main</button><div style="margin-top:12px;font-size:12px;color:var(--dim)">Membership · unlock is instant</div></div>`; $(id).innerHTML=h; $('unlockBtn').onclick=()=>{ me().tier='main'; save(); toast('Welcome to Main.'); render(); }; }
+  function lockScreen(id,title,headline,body,feats){ let h=`<div class="lock"><div class="lock-ic">${IC.lock}</div><h2>${esc(headline)}</h2><p>${esc(body)}</p><div class="feat">`; feats.forEach(f=>h+=`<div><span class="fi">${f[0]}</span><span>${esc(f[1])}</span></div>`); h+=`</div><button class="btn block" id="unlockBtn" style="max-width:320px;margin:0 auto">Unlock Maintrix Main</button><div style="margin-top:12px;font-size:12px;color:var(--dim)">Membership · unlock is instant</div></div>`; $(id).innerHTML=h; $('unlockBtn').onclick=async ()=>{ await setMembership('main'); toast('Welcome to Main.'); render(); }; }
   function upsell(f){ toast(f+' is a Main feature — open Feed/Live/Lobby to unlock.'); }
 
   /* ═══ PROFILE ═══ */
@@ -1141,10 +1142,10 @@
     if(online()){ patchLikeCount(own?me().id:who); if(!own)renderMutual(who); if(me().tier==='main')loadProfileGrid(own?me().id:who); }
     // wire post cells
     $('sheet').querySelectorAll('[data-post]').forEach(b=>b.onclick=()=>{ if(me().tier!=='main'){ upsell('Posts'); return; } const [a,pi]=b.dataset.post.split('|'); closeSheet(); openPostViewer(a,+pi); });
-    const ul=$('sheet').querySelector('#unlockPosts'); if(ul)ul.onclick=()=>{ me().tier='main'; save(); toast('Welcome to Main.'); openProfile(who); };
+    const ul=$('sheet').querySelector('#unlockPosts'); if(ul)ul.onclick=async ()=>{ await setMembership('main'); toast('Welcome to Main.'); openProfile(who); };
     if(own){
       $('setFriends').onclick=openFriendList;
-      $('setTier').onclick=()=>{ u.tier=u.tier==='main'?'lite':'main'; save(); toast(u.tier==='main'?'Upgraded to Main ✦':'Back to Lite'); openProfile(); render(); };
+      $('setTier').onclick=async ()=>{ const nt=u.tier==='main'?'lite':'main'; await setMembership(nt); toast(nt==='main'?'Upgraded to Main ✦':'Back to Lite'); openProfile(); render(); };
       const sl=$('setLook'); if(sl)sl.onclick=openAppearance;
       $('setAdmin').onclick=()=>{ u.isAdmin=!u.isAdmin; save(); toast(u.isAdmin?'Admin mode on — Overwatch added':'Admin mode off'); if(!u.isAdmin&&state.screen==='overwatch')state.screen='nexus'; openProfile(); render(); };
       const sp=$('setPass'); if(sp)sp.onclick=openSetPassword;
