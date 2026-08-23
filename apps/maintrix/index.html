@@ -23,7 +23,7 @@
   }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; }
-  body { font-family:var(--font); color:var(--text); background:#0d090a; -webkit-font-smoothing:antialiased; }
+  body { font-family:var(--font); color:var(--text); background:#0d090a; -webkit-font-smoothing:antialiased; position:fixed; inset:0; overflow:hidden; }
   button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
   input,textarea,select { font-family:inherit; }
   svg { display:block; }
@@ -1167,9 +1167,19 @@
   function openAcolyteHubSeed(){ state.msgs['acolyte-hub']=[{a:'Overwatch',t:'The **Acolyte Hub** — only acolytes are here.',bot:true,pin:true,time:nowTime(),id:mid()}]; }
 
   /* ═══ SHEET / SUBSCREEN ═══ */
-  function showSheet(h){ $('sheet').innerHTML=h; $('sheetScrim').classList.add('on'); }
-  function closeSheet(){ $('sheetScrim').classList.remove('on'); $('sheet').className='sheet'; }
+  function showSheet(h){ const s=$('sheet'); s.innerHTML=h; s.style.transform=''; s.style.transition=''; s.scrollTop=0; $('sheetScrim').classList.add('on'); }
+  function closeSheet(){ $('sheetScrim').classList.remove('on'); const s=$('sheet'); s.className='sheet'; s.style.transform=''; }
   $('sheetScrim').onclick=e=>{ if(e.target===$('sheetScrim'))closeSheet(); };
+  /* drag the sheet (profile, etc.) down to dismiss */
+  (function initSheetDrag(){
+    const sheet=$('sheet'); if(!sheet)return; let startY=0,dy=0,dragging=false;
+    sheet.addEventListener('pointerdown',e=>{ if(sheet.scrollTop>2)return; startY=e.clientY; dy=0; dragging=true; sheet.style.transition='none'; },{passive:true});
+    sheet.addEventListener('pointermove',e=>{ if(!dragging)return; dy=e.clientY-startY; if(dy<=0||sheet.scrollTop>0){ dy=0; sheet.style.transform=''; return; } sheet.style.transform='translateY('+dy+'px)'; if(dy>5)e.preventDefault(); },{passive:false});
+    const end=()=>{ if(!dragging)return; dragging=false; sheet.style.transition='transform .22s cubic-bezier(.2,.8,.2,1)'; if(dy>110){ sheet.style.transform='translateY(100%)'; setTimeout(closeSheet,200); } else sheet.style.transform=''; };
+    ['pointerup','pointercancel','pointerleave'].forEach(ev=>sheet.addEventListener(ev,end,{passive:true}));
+  })();
+  /* keep the app sized to the visible viewport so the keyboard never pushes the chat header off-screen */
+  (function fitViewport(){ const vv=window.visualViewport; if(!vv)return; const frame=document.querySelector('.frame'); if(!frame)return; const apply=()=>{ frame.style.height=Math.round(vv.height)+'px'; }; vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply); apply(); })();
   function openSub(h){ $('subscreen').innerHTML=h; $('subscreen').classList.add('on'); }
   function closeSub(){ $('subscreen').classList.remove('on'); $('subscreen').innerHTML=''; }
   $('view').addEventListener('click',e=>{ const t=e.target.closest('[data-user]'); if(!t)return; const u=t.dataset.user; openProfile(me()&&u===me().name?undefined:u); });
