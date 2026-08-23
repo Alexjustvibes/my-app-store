@@ -147,6 +147,50 @@ Private DMs/GCs stay local and never hit the network. Implemented via a plain
 `WebSocket` (`wss://ntfy.sh/<topic>/ws`) for receive + `fetch` POST for send;
 own-echo filtered by a per-session `CLIENT_ID`.
 
+## Build state (as of v0.7)
+
+**v0.7 shipped the front-end half of the "treat it as a functioning web-app" round** (state key
+bumped to `maintrix.v4` — old sessions re-onboard). Done, all front-end/local:
+- **Connect › Search reordered**: **People I like** at top → **Friend requests** (accept/deny, deny
+  confirms) → **Find people** (`friendRequests` in state; accept adds to `friends` + fires a notif).
+- **Chats open TikTok-style**: any thread now takes over full-screen (`#app.thread-open` hides
+  topbar/botnav; `#s-thread.on` slides in). Its own back button restores.
+- **Tappable DM header** (avatar+name carry `data-user` → profile).
+- **Server public/private toggle anytime**: gear in the thread head (owner or admin) → `serverManage`
+  sheet (visibility segmented + delete server).
+- **Post-likes are separate from user-likes**: `state.postLikes` (`author|idx`) drives feed + post-viewer
+  like buttons; the **profile** Like still drives `likesGiven` ("People I like"). New helpers
+  `postLiked/postLikeCount/togglePostLike`.
+- **Share a post**: `sharePost()` → `navigator.share` (native sheet) with clipboard-copy fallback.
+- **Mutual friend → mini-profile**: `openMiniProfile` (compact `.sheet.mini`); mutual chips use
+  `data-mini`, not `data-user`.
+- **Traits only in profile**: removed the per-message trait badge (still shown on profiles + as
+  matchmaking tags in search/acolytes).
+- **Lobby**: added two training rooms — **Paradigm-Broadening** & **Self-Awareness** (`openTraining`) —
+  and the **Acolyte Hub is now its own room** (`openAcolyteHub`, seeded, pinned intro).
+- **Topic rooms**: creator's rooms pinned in a **Your rooms** section at the top; rooms **expire after
+  24h** (`roomExpired`, `createdAt`+`owner` on create) but the owner's stays pinned with a **Renew**.
+- **Overwatch broadcast targeting**: `openAdminTools` picks a target (World / any public server /
+  Acolyte Hub / Everywhere) and posts a **pinned** (`pin:true`) Overwatch message, rendered as a
+  `.pinbar` banner by `renderMsgs`.
+- **Admin delete anything (partial)**: admins can delete **any message** (msg menu), **topic rooms**
+  (browse list), and **servers** (manage sheet).
+- **@-tagging**: mention autocomplete (`wireMentions`) in every room composer + the livestream chat;
+  members scoped by room (`roomMembers`). Mentions render via `fmt`.
+- **Notifications**: bell in the topbar (`#notifBtn`, unread dot via `paintBell`) → `openNotifications`
+  sheet (tags/replies/post-likes/likes). Seeded + event-driven (`pushNotif`; reply/friend events fire).
+- **Livestreams are real screens**: tapping a live room or Go Live opens `#lsScreen` (`openLiveStream`)
+  with an in-stream **chat** (+ tagging). **Go Live uses the camera** via `getUserMedia` (own preview);
+  other people's streams show a topic placeholder until real streaming lands (needs backend/WebRTC).
+- Softened "prototype" copy (not real accounts yet, but no longer framed as a throwaway).
+
+**Still pending the backend (Supabase — next phase, front-end-first was chosen):** everyone-to-everyone
+live messaging across all rooms (only The Commons is real today), the **account databank** / auth /
+persistent cross-device identity, opening *real* other users' profiles, real membership/payments gating,
+delivering tags/replies/likes as real notifications, admin-deleting **posts & livestreams** (both still
+seeded constants — move to state when the data model lands), and **multi-viewer** live video (own camera
+works; broadcasting to others needs WebRTC/LiveKit).
+
 ## Build state (as of v0.6)
 
 **v0.6 shipped the full feedback round:** traits set at signup & locked (+ location);
