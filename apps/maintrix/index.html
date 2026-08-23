@@ -445,6 +445,25 @@
       async count(postId){ await initSB(); const { count } = await sb.from('post_comments').select('*',{count:'exact',head:true}).eq('post_id',postId); return count||0; }
     }
   };
+  /* ── notifications (Phase 5) ── */
+  const NOTIF_TEXT = { tag:'tagged you', reply:'replied to your message', post_like:'liked your post', like:'liked you', comment:'commented on your post', friend_request:'sent you a friend request', friend:'accepted your friend request' };
+  function relTime(iso){ try{ const s=Math.floor((Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }catch(e){ return ''; } }
+  function rowToNotif(r){ return { id:r.id, type:r.type, who:r.actor_id, t:NOTIF_TEXT[r.type]||'', time:relTime(r.created_at), read:r.read, entity:r.entity }; }
+  db.notifs = {
+    async list(){ await initSB(); const { data } = await sb.from('notifications').select('*').eq('user_id', me().id).order('created_at',{ascending:false}).limit(50); return (data||[]).map(rowToNotif); },
+    async markAllRead(){ await initSB(); await sb.from('notifications').update({ read:true }).eq('user_id', me().id).eq('read', false); },
+    subscribe(on){ if(!sb) return null; return sb.channel('notif:'+me().id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+me().id}, p=>on(p.new)).subscribe(); }
+  };
+  let notifChannel=null;
+  async function loadNotifs(){ if(!online()||!me()||!me().id) return; try{ const list=await db.notifs.list(); state.notifications=list; await ensureProfiles(list.map(n=>n.who).filter(Boolean)); save(); paintBell(); if(notifChannel)db.messages.unsubscribe(notifChannel); notifChannel=db.notifs.subscribe(async row=>{ const n=rowToNotif(row); if((state.notifications||[]).some(x=>x.id===n.id))return; await ensureProfiles([n.who]); state.notifications.unshift(n); if(state.notifications.length>60)state.notifications.length=60; save(); paintBell(); }); }catch(e){} }
+  /* ── presence (Phase 5): who's online ── */
+  let ONLINE=new Set(), presenceChannel=null, _presenceSynced=false;
+  function initPresence(){ if(!online()||!sb||!me()||!me().id||presenceChannel) return; const ch=sb.channel('presence-global',{ config:{ presence:{ key: me().id } } });
+    ch.on('presence',{event:'sync'},()=>{ try{ ONLINE=new Set(Object.keys(ch.presenceState())); }catch(e){} if(!_presenceSynced){ _presenceSynced=true; if(state.screen==='connect'||state.screen==='nexus')render(); } });
+    ch.subscribe(async status=>{ if(status==='SUBSCRIBED'){ try{ await ch.track({ id:me().id, at:Date.now() }); }catch(e){} } });
+    presenceChannel=ch;
+  }
+  const isOnlineNow = id => (me()&&id===me().id) || ONLINE.has(id);
 
   /* ── static data ── */
   const GOALS = ['Discipline','Wealth','Mastery','Courage','Focus','Health','Creativity','Leadership','Purpose','Freedom'];
@@ -528,7 +547,7 @@
     {id:mid(),type:'tag',who:'kestrel',t:'tagged you in the World',time:'5h',read:false},
     {id:mid(),type:'reply',who:'dax',t:'replied to your message',time:'1d',read:true}
   ]; }
-  const NOTIF_IC={like:'♥',tag:'@',reply:'↩',friend:'＋'};
+  const NOTIF_IC={like:'♥',post_like:'♥',tag:'@',reply:'↩',comment:'💬',friend:'＋',friend_request:'＋'};
   function pushNotif(type,who,t){ (state.notifications=state.notifications||[]).unshift({id:mid(),type,who,t,time:'now',read:false}); if(state.notifications.length>40)state.notifications.length=40; save(); paintBell(); }
   function unreadNotifs(){ return (state.notifications||[]).filter(n=>!n.read).length; }
   function paintBell(){ const b=$('notifBtn'); if(b)b.innerHTML=IC.bell+(unreadNotifs()?'<span class="nd"></span>':''); }
@@ -572,7 +591,7 @@
   function roomMembers(ctx){ if(!ctx)return []; if(ctx.dmKey)return [ctx.dmKey]; if(ctx.serverId){ const s=state.servers.find(x=>x.id===ctx.serverId); return s?s.members.map(m=>m.k).filter(k=>k!==me().name):[]; } if(ctx.key==='acolyte-hub')return ACOLYTES; return Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot&&k!==me().name); }
 
   function fmt(t){ return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|\s)@([a-z0-9_]+)/gi,'$1<span class="mention">@$2</span>'); }
-  function avatar(a,size,opt){ opt=opt||{}; const p=person(a),s=size||40; const dot=opt.dot?`<span class="dot ${p.status||'online'}" style="width:${s*.3}px;height:${s*.3}px"></span>`:''; const live=(opt.ring&&p.live)?' live':''; const bg=p.bot?'linear-gradient(150deg,#ff4257,#c11d31)':p.color; const inner=p.bot?'<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':`<span style="font-size:${s*.4}px">${(p.name[0]||'?').toUpperCase()}</span>`; return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`; }
+  function avatar(a,size,opt){ opt=opt||{}; const p=person(a),s=size||40; const dotCls=online()?(isOnlineNow(a)?'online':'offline'):(p.status||'online'); const dot=opt.dot?`<span class="dot ${dotCls}" style="width:${s*.3}px;height:${s*.3}px"></span>`:''; const live=(opt.ring&&p.live)?' live':''; const bg=p.bot?'linear-gradient(150deg,#ff4257,#c11d31)':p.color; const inner=p.bot?'<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':`<span style="font-size:${s*.4}px">${(p.name[0]||'?').toUpperCase()}</span>`; return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`; }
   function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
   function confirmDialog(msg,onYes){ const s=$('confirmScrim'); s.innerHTML=`<div class="confirm"><h3>Are you sure?</h3><p>${esc(msg)}</p><div class="row2"><button class="btn ghost" id="cfNo">No</button><button class="btn" id="cfYes">Yes</button></div></div>`; s.classList.add('on'); $('cfNo').onclick=()=>s.classList.remove('on'); $('cfYes').onclick=()=>{ s.classList.remove('on'); onYes(); }; }
 
@@ -690,7 +709,7 @@
     roomChannel=db.messages.subscribe(th.roomId, async payload=>{
       if(!active||active.key!==th.key) return;
       const L=state.msgs[th.key]=state.msgs[th.key]||[];
-      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } L.push(m); if(m.a&&me()&&m.a!==me().id)maybeTagNotif(m); }
+      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } L.push(m); }
       else if(payload.eventType==='UPDATE'){ const m=L.find(x=>x.id===payload.new.id); if(m){ m.t=payload.new.body; m.edited=payload.new.edited; m.pin=payload.new.pinned; } }
       else if(payload.eventType==='DELETE'){ const i=L.findIndex(x=>x.id===(payload.old&&payload.old.id)); if(i>=0)L.splice(i,1); }
       const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; s.innerHTML=renderMsgs(L,th); if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
@@ -766,7 +785,7 @@
   /* ═══ NEXUS HUB ═══ */
   function renderNexus(){
     const u=me(); const gTrait=u.goals[0]||u.fears[0];
-    const worldLabel=online()?'live':(Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot).length+1)+' online';
+    const worldLabel=online()?((_presenceSynced&&ONLINE.size)?ONLINE.size+' online':'live'):(Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot).length+1)+' online';
     let h=`<div class="sec-title first">The one world</div>`;
     h+=`<div class="card" id="nxWorld"><div class="c-k">◍ World · ${worldLabel}</div><div class="c-t">The World</div><div class="c-s">One global room. Everyone in Maintrix, from everywhere, in one place.</div></div>`;
     h+=`<div class="card" id="nxYW"><div class="c-k">◎ Your World${gTrait?' · '+esc(gTrait):''}</div><div class="c-t">Your World</div><div class="c-s">The room of people who share your traits — your "at home" nexus. Global or by location.</div></div>`;
@@ -901,7 +920,7 @@
   }
   function renderLiked(){ const box=$('likedList'); if(!box)return; if(!state.likesGiven.length){ box.innerHTML='<div class="empty" style="padding:20px">Like people from their profile to keep them here.</div>'; return; } let h=''; state.likesGiven.forEach(k=>{ const p=person(k); h+=`<div class="row" data-user="${attr(k)}">${avatar(k,42,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${likeGlyph()} you liked · tap to view</div></div></div>`; }); box.innerHTML=h; }
   function renderFriendReqs(){ const box=$('frReqList'); if(!box)return; if(!state.friendRequests.length){ box.innerHTML='<div class="empty" style="padding:16px">No friend requests right now.</div>'; return; } let h=''; state.friendRequests.forEach(k=>{ const p=person(k); h+=`<div class="row"><div data-user="${attr(k)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${avatar(k,42,{dot:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${esc(locStr(p))} · wants to be friends</div></div></div><button class="chip on" data-facc="${attr(k)}">Accept</button><button class="chip" data-fden="${attr(k)}" style="margin-left:6px">Deny</button></div>`; }); box.innerHTML=h;
-    box.querySelectorAll('[data-facc]').forEach(b=>b.onclick=async ()=>{ const k=b.dataset.facc; if(online()){ try{ await db.social.acceptFriend(k); }catch(e){ toast('Could not accept'); return; } } state.friendRequests=state.friendRequests.filter(x=>x!==k); if(!state.friends.includes(k))state.friends.push(k); pushNotif('friend',k,'is now your friend'); save(); toast('You and @'+person(k).name+' are now friends'); renderConnect(); });
+    box.querySelectorAll('[data-facc]').forEach(b=>b.onclick=async ()=>{ const k=b.dataset.facc; if(online()){ try{ await db.social.acceptFriend(k); }catch(e){ toast('Could not accept'); return; } } state.friendRequests=state.friendRequests.filter(x=>x!==k); if(!state.friends.includes(k))state.friends.push(k); if(!online())pushNotif('friend',k,'is now your friend'); save(); toast('You and @'+person(k).name+' are now friends'); renderConnect(); });
     box.querySelectorAll('[data-fden]').forEach(b=>b.onclick=()=>{ const k=b.dataset.fden; confirmDialog('Deny the friend request from @'+person(k).name+'?',async ()=>{ if(online()){ try{ await db.social.denyFriend(k); }catch(e){} } state.friendRequests=state.friendRequests.filter(x=>x!==k); save(); toast('Denied'); renderConnect(); }); });
   }
   const SEARCH_USERS = Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot);
@@ -973,7 +992,7 @@
   function postMediaHtml(p,cls){ const st='width:100%;height:100%;object-fit:cover'; return p.mediaPath ? (p.mediaKind==='video' ? `<video src="${attr(postMediaUrl(p.mediaPath))}" class="${cls}" playsinline muted loop style="${st}"></video>` : `<img src="${attr(postMediaUrl(p.mediaPath))}" class="${cls}" style="${st}">`) : ''; }
   function feedPostHtml(p){ const au=person(p.a),liked=MYPL.has(p.id);
     const media = p.mediaPath ? `<div class="post-media" data-open="${attr(p.id)}" style="padding:0;overflow:hidden">${postMediaHtml(p,'')}</div>` : `<div class="post-media" data-open="${attr(p.id)}" style="background:linear-gradient(140deg,${p.c},#0d090a)">${esc((p.t||'Post').slice(0,44))}</div>`;
-    return `<div class="post"><div class="post-top"><div data-user="${attr(p.a)}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">${avatar(p.a,40,{ring:true})}<div class="r-main"><div class="r-name">${esc(au.name)}</div><div class="r-sub">@${esc(au.handle||'')}</div></div></div><button class="likebtn ${liked?'on':''}" data-plike="${attr(p.id)}">${likeGlyph()} <span class="plc">·</span></button></div>${p.t?`<div class="post-body">${fmt(p.t)}</div>`:''}${media}<div class="post-actions"><button data-cmt="${attr(p.id)}">${IC.chat} <span class="cc">·</span></button><button data-share="${attr(p.id)}" style="margin-left:auto">${IC.share}</button></div></div>`; }
+    return `<div class="post"><div class="post-top"><div data-user="${attr(p.a)}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">${avatar(p.a,40,{ring:true})}<div class="r-main"><div class="r-name">${esc(au.name)}</div><div class="r-sub">@${esc(au.handle||'')}</div></div></div><button class="likebtn ${liked?'on':''}" data-plike="${attr(p.id)}">${likeGlyph()} <span class="plc">·</span></button></div>${p.t?`<div class="post-body">${fmt(p.t)}</div>`:''}${media}<div class="post-actions"><button data-cmt="${attr(p.id)}">${IC.chat} <span class="cc">·</span></button>${(me().isAdmin||p.a===me().id)?`<button data-pdel="${attr(p.id)}" style="color:var(--accent-hi)">${IC.trash}</button>`:''}<button data-share="${attr(p.id)}" style="margin-left:auto">${IC.share}</button></div></div>`; }
   async function renderFeedOnline(){
     const host=$('s-feed'); host.innerHTML=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="composeBtn">${IC.plus} Create a post</button></div><div id="feedList"><div class="empty" style="padding-top:40px">Loading the feed…</div></div>`;
     $('composeBtn').onclick=openCompose;
@@ -987,6 +1006,7 @@
       box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openPostViewerOnline(posts,b.dataset.open));
       box.querySelectorAll('[data-share]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); sharePostId(b.dataset.share); });
       box.querySelectorAll('[data-cmt]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openComments(b.dataset.cmt); });
+      box.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.pdel; confirmDialog('Delete this post?',async ()=>{ try{ await db.posts.remove(id); toast('Post deleted'); renderFeed(); }catch(err){ toast('Could not delete'); } }); });
       posts.forEach(async p=>{ const [lc,cc]=await Promise.all([db.posts.likeCount(p.id),db.posts.comments.count(p.id)]); const l=box.querySelector('[data-plike="'+p.id+'"] .plc'); if(l)l.textContent=lc; const c=box.querySelector('[data-cmt="'+p.id+'"] .cc'); if(c)c.textContent=cc; });
     }catch(e){ const box=$('feedList'); if(box)box.innerHTML='<div class="empty">Couldn’t load the feed.</div>'; }
   }
@@ -1233,12 +1253,17 @@
     const targets=broadcastTargets();
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">${IC.shield} Overwatch tools</div><div class="th-sub" style="margin-bottom:16px">Broadcast anywhere, delete anything, moderate. Not private DMs.</div>`;
     h+=`<div class="field"><label>Broadcast target</label><select id="admWhere"><option value="ALL">Everywhere (all areas)</option>${targets.map(t=>`<option value="${attr(t.id)}">${esc(t.label)}</option>`).join('')}</select></div>`;
-    h+=`<div class="field"><label>Message — pinned for everyone</label><textarea id="admMsg" placeholder="Ship notes, a rule, a rally cry…"></textarea></div><button class="btn block" id="admSend">📌 Broadcast (pinned)</button><div class="sec-title" style="margin-left:0">Members</div></div>`;
-    ['nova','kestrel','dax','juno','sable','pip'].forEach(k=>{ h+=`<div class="row"><div data-user="${attr(k)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${avatar(k,38,{dot:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">member</div></div></div><button class="chip" data-mute="${k}">Mute</button><button class="chip" data-kick="${k}" style="color:var(--accent-hi);margin-left:6px">Kick</button></div>`; });
-    h+=`<div style="height:24px"></div>`;
+    h+=`<div class="field"><label>Message — pinned for everyone</label><textarea id="admMsg" placeholder="Ship notes, a rule, a rally cry…"></textarea></div><button class="btn block" id="admSend">📌 Broadcast (pinned)</button>`;
+    if(!online()){ h+=`<div class="sec-title" style="margin-left:0">Members</div>`;
+      ['nova','kestrel','dax','juno','sable','pip'].forEach(k=>{ h+=`<div class="row"><div data-user="${attr(k)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${avatar(k,38,{dot:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">member</div></div></div><button class="chip" data-mute="${k}">Mute</button><button class="chip" data-kick="${k}" style="color:var(--accent-hi);margin-left:6px">Kick</button></div>`; }); }
+    else h+=`<div class="th-sub" style="padding:14px 0 4px">Broadcasts post a pinned Overwatch message into the live room. You can delete any message from its long-press menu, and any post from the feed.</div>`;
+    h+=`<div style="height:24px"></div></div>`;
     showSheet(h);
-    $('admSend').onclick=()=>{ const v=$('admMsg').value.trim(); if(!v)return; const where=$('admWhere').value;
+    $('admSend').onclick=async ()=>{ const v=$('admMsg').value.trim(); if(!v)return; const where=$('admWhere').value;
       const dests=where==='ALL'?targets:targets.filter(t=>t.id===where);
+      if(online()){ const b=$('admSend'); b.disabled=true; b.textContent='Broadcasting…';
+        try{ for(const t of dests){ const rid=await db.rooms.bySlug(t.key); if(rid) await db.messages.send(rid, v, {system:true, pinned:true}); } toast('Pinned broadcast sent'); closeSheet(); if(active&&active.roomId)renderThread(); }
+        catch(e){ b.disabled=false; b.textContent='📌 Broadcast (pinned)'; toast('Broadcast failed'); } return; }
       dests.forEach(t=>{ if(t.key==='acolyte-hub'&&!state.msgs['acolyte-hub'])openAcolyteHubSeed(); (state.msgs[t.key]=state.msgs[t.key]||[]).push({a:'Overwatch',t:v,bot:true,pin:true,time:nowTime(),id:mid()}); });
       save(); toast('Pinned broadcast sent to '+(where==='ALL'?'every area':dests[0].label)); closeSheet(); if(active&&dests.some(d=>d.key===active.key))renderThread(); };
     document.querySelectorAll('[data-mute]').forEach(b=>b.onclick=()=>{ toast('Muted @'+b.dataset.mute); b.textContent='Muted'; });
@@ -1316,7 +1341,7 @@
     ns.forEach(n=>{ const nm=person(n.who).name; h+=`<div class="notif ${n.read?'':'unread'}"><div class="n-ic">${NOTIF_IC[n.type]||'•'}</div><div class="n-body"><div class="n-t" data-user="${attr(n.who)}"><b>@${esc(nm)}</b> ${esc(n.t)}</div><div class="n-time">${esc(n.time)}</div></div></div>`; });
     h+=`<div style="height:24px"></div>`;
     $('sheet').className='sheet'; showSheet(h);
-    (state.notifications||[]).forEach(n=>n.read=true); save(); paintBell();
+    (state.notifications||[]).forEach(n=>n.read=true); save(); paintBell(); if(online())db.notifs.markAllRead().catch(()=>{});
   }
   $('profileBtn').onclick=()=>openProfile();
   $('notifBtn').onclick=openNotifications;
@@ -1377,7 +1402,7 @@
       const sess=await db.auth.session();
       if(!sess){ showSupaAuth(); return; }
       const prof=await db.profiles.mine();
-      if(prof){ state.profile=prof; cacheProfile(prof); save(); await loadSocial(); enter(); }
+      if(prof){ state.profile=prof; cacheProfile(prof); save(); await loadSocial(); enter(); loadNotifs(); initPresence(); }
       else startOnboarding();
     }catch(e){ toast('Connection issue — try again'); showSupaAuth(); }
   }
