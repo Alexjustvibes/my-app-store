@@ -207,7 +207,10 @@
 
   /* chat opens like tiktok — full takeover */
   #app.thread-open .topbar, #app.thread-open .botnav { display:none; }
-  #s-thread.on { animation:threadIn .3s cubic-bezier(.2,.8,.2,1); }
+  /* pin the thread to the frame so the header stays put and the composer rides above the keyboard */
+  #s-thread.on { position:absolute; inset:0; z-index:1; animation:threadIn .3s cubic-bezier(.2,.8,.2,1); }
+  #s-thread .thread { height:100%; }
+  #s-thread .thread-head { position:sticky; top:0; background:var(--ground); z-index:2; }
   @keyframes threadIn { from { transform:translateX(100%); } to { transform:none; } }
 
   /* pinned / broadcast message */
