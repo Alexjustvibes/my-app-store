@@ -375,7 +375,8 @@
       async create(p){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) throw new Error('no session'); const { error } = await sb.from('profiles').update({ handle:p.handle, name:p.name, goals:p.goals, fears:p.fears, bio:p.bio, color:p.color, like_icon:p.likeIcon, country:p.loc.country, region:p.loc.region }).eq('id', user.id); if(error) throw error; },
       async update(patch){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) return; await sb.from('profiles').update(patch).eq('id', user.id); },
       async search(q){ await initSB(); q=(q||'').trim(); let query=sb.from('profiles').select('*').not('handle','is',null).neq('id', me().id).limit(30); if(q) query=query.or(`handle.ilike.%${q}%,name.ilike.%${q}%`); const { data } = await query; return (data||[]).map(rowToProfile); },
-      async byIds(ids){ ids=[...new Set((ids||[]).filter(Boolean))]; if(!ids.length) return []; await initSB(); const { data } = await sb.from('profiles').select('*').in('id', ids); return (data||[]).map(rowToProfile); }
+      async byIds(ids){ ids=[...new Set((ids||[]).filter(Boolean))]; if(!ids.length) return []; await initSB(); const { data } = await sb.from('profiles').select('*').in('id', ids); return (data||[]).map(rowToProfile); },
+      async byId(id){ await initSB(); const { data } = await sb.from('profiles').select('*').eq('id', id).maybeSingle(); return data?rowToProfile(data):null; }
     },
     rooms:{
       async bySlug(slug){ await initSB(); const { data } = await sb.from('rooms').select('id').eq('slug', slug).maybeSingle(); return data ? data.id : null; },
@@ -1243,6 +1244,10 @@
 
   /* ═══ PROFILE ═══ */
   function openProfile(who){
+    if(online()){ const id=(!who||who===me().name)?me().id:who; db.profiles.byId(id).then(fresh=>{ if(fresh){ cacheProfile(fresh); if(id===me().id) Object.assign(state.profile,{ name:fresh.name, color:fresh.color, likeIcon:fresh.likeIcon, bio:fresh.bio, loc:fresh.loc }); } renderProfileSheet(who); }).catch(()=>renderProfileSheet(who)); return; }
+    renderProfileSheet(who);
+  }
+  function renderProfileSheet(who){
     const own=!who||(me()&&who===me().name); const key=own?me().name:who; const u=own?me():person(who);
     const sinceStr=(online()||own)?(u.since||'—'):sinceOf(key);
     const glyph=LIKE_ICONS[(u.likeIcon)||'heart']||'♥'; const ac=u.color||'#ed2e44';
@@ -1266,7 +1271,7 @@
       if(online()){ h+=`<div class="settings-row" id="setBio"><span class="sr-ic">${IC.edit}</span> Edit bio <span class="sr-r">${IC.chev}</span></div>`;
         h+=`<div class="settings-row" id="setLoc"><span class="sr-ic">${IC.people}</span> Edit location <span class="sr-r">${esc(locStr(u))||'set'} ${IC.chev}</span></div>`; }
       h+=`<div class="settings-row" id="setLook"><span class="sr-ic">${IC.spark}</span> Appearance <span class="sr-r">color · likes</span></div>`;
-      h+=`<div class="settings-row" id="setAdmin"><span class="sr-ic">${IC.shield}</span> Admin mode <span class="sr-r">${u.isAdmin?'On':'Off'}</span></div>`;
+      if(!online())h+=`<div class="settings-row" id="setAdmin"><span class="sr-ic">${IC.shield}</span> Admin mode <span class="sr-r">${u.isAdmin?'On':'Off'}</span></div>`;
       if(online())h+=`<div class="settings-row" id="setPass"><span class="sr-ic">${IC.lock2}</span> Set / change password <span class="sr-r">${IC.chev}</span></div>`;
       h+=`<div class="settings-row danger" id="setReset"><span class="sr-ic">${IC.out}</span> ${online()?'Log out':'Log out & reset'}</div><div style="height:24px"></div>`;
     }
@@ -1283,7 +1288,7 @@
       $('setFriends').onclick=openFriendList;
       { const sb3=$('setBio'); if(sb3)sb3.onclick=openEditBio; const sl2=$('setLoc'); if(sl2)sl2.onclick=openEditLocation; }
       const sl=$('setLook'); if(sl)sl.onclick=openAppearance;
-      $('setAdmin').onclick=()=>{ u.isAdmin=!u.isAdmin; save(); toast(u.isAdmin?'Admin mode on — Overwatch added':'Admin mode off'); if(!u.isAdmin&&state.screen==='overwatch')state.screen='nexus'; openProfile(); render(); };
+      { const sa2=$('setAdmin'); if(sa2)sa2.onclick=()=>{ u.isAdmin=!u.isAdmin; save(); toast(u.isAdmin?'Admin mode on — Overwatch added':'Admin mode off'); if(!u.isAdmin&&state.screen==='overwatch')state.screen='nexus'; openProfile(); render(); }; }
       const sp=$('setPass'); if(sp)sp.onclick=openSetPassword;
       $('setReset').onclick=()=>{ if(online()){ if(confirm('Log out of your account on this device?')){ db.auth.signOut().finally(()=>{ localStorage.removeItem(LS); location.reload(); }); } return; } if(confirm('Log out and reset this device? Your local identity and data will be cleared.')){ localStorage.removeItem(LS); location.reload(); } };
     } else {
