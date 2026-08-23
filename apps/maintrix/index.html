@@ -212,6 +212,7 @@
 
   /* chat opens like tiktok — full takeover */
   #app.thread-open .topbar, #app.thread-open .botnav { display:none; }
+  #app.thread-open #view { overflow:hidden; }
   /* pin the thread to the frame so the header stays put and the composer rides above the keyboard */
   #s-thread.on { position:absolute; inset:0; z-index:1; animation:threadIn .3s cubic-bezier(.2,.8,.2,1); }
   #s-thread .thread { height:100%; }
@@ -751,8 +752,8 @@
         if(th.dmKey&&!dmFree(th.dmKey))renderThread();
       };
       input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!mentionOpen())doSend(); });
-      // keep the message list where it is when the keyboard opens (don't jump)
-      input.addEventListener('focus',()=>{ const keep=sc.scrollTop; requestAnimationFrame(()=>{ sc.scrollTop=keep; }); setTimeout(()=>{ sc.scrollTop=keep; },300); });
+      // on focus, keep the list pinned to the newest so the composer stays in view (never jump to the top)
+      input.addEventListener('focus',()=>{ const toB=()=>{ if(sc)sc.scrollTop=sc.scrollHeight; }; toB(); requestAnimationFrame(toB); setTimeout(toB,120); setTimeout(toB,320); setTimeout(toB,550); });
       $('thSend').onclick=doSend;
       const af=$('thAttach'), ff=$('thFile'), mic=$('thMic');
       if(af&&ff){ af.onclick=()=>ff.click(); ff.onchange=()=>{ const f=ff.files[0]; if(f)sendMedia(th,f); ff.value=''; }; }
@@ -1440,7 +1441,7 @@
     ['pointerup','pointercancel','pointerleave'].forEach(ev=>sheet.addEventListener(ev,end,{passive:true}));
   })();
   /* keep the app sized to the visible viewport so the keyboard never pushes the chat header off-screen */
-  (function fitViewport(){ const vv=window.visualViewport; if(!vv)return; const frame=document.querySelector('.frame'); if(!frame)return; const apply=()=>{ frame.style.height=Math.round(vv.height)+'px'; }; vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply); apply(); })();
+  (function fitViewport(){ const vv=window.visualViewport; if(!vv)return; const frame=document.querySelector('.frame'); if(!frame)return; const apply=()=>{ frame.style.height=Math.round(vv.height)+'px'; const ae=document.activeElement; if(ae&&ae.id==='thInput'){ const s=$('thScroll'); if(s)s.scrollTop=s.scrollHeight; } }; vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply); apply(); })();
   function openSub(h){ $('subscreen').innerHTML=h; $('subscreen').classList.add('on'); }
   function closeSub(){ $('subscreen').classList.remove('on'); $('subscreen').innerHTML=''; }
   $('view').addEventListener('click',e=>{ const t=e.target.closest('[data-user]'); if(!t)return; const u=t.dataset.user; openProfile(me()&&u===me().name?undefined:u); });
