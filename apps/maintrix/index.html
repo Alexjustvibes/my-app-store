@@ -424,6 +424,26 @@
     state.friends=fids; state.likesGiven=lids; state.friendRequests=freq; state.dmRequests=dreq; state.sentFriend=ofr;
     await ensureProfiles([...fids,...lids,...freq,...dreq,...ofr]); save();
   }catch(e){} }
+  /* ── posts / media (Phase 4) ── */
+  let MYPL = new Set(); // ids of posts I've liked (loaded with the feed)
+  function postMediaUrl(path){ if(!path||!sb) return null; try{ return sb.storage.from('media').getPublicUrl(path).data.publicUrl; }catch(e){ return null; } }
+  function rowToPost(r){ return { id:r.id, a:r.author_id, t:r.body||'', mediaKind:r.media_kind, mediaPath:r.media_path, c:r.color||'#3a0f18', created_at:r.created_at }; }
+  db.posts = {
+    async feed(limit=40){ await initSB(); const { data } = await sb.from('posts').select('*').order('created_at',{ascending:false}).limit(limit); const posts=(data||[]).map(rowToPost); await ensureProfiles(posts.map(p=>p.a)); return posts; },
+    async byAuthor(id){ await initSB(); const { data } = await sb.from('posts').select('*').eq('author_id', id).order('created_at',{ascending:false}); return (data||[]).map(rowToPost); },
+    async create({body,color,file}){ await initSB(); let media_kind='text', media_path=null;
+      if(file){ const ext=(file.name.split('.').pop()||'jpg').toLowerCase(); const path=me().id+'/'+Date.now()+'.'+ext; const { error:up } = await sb.storage.from('media').upload(path, file, { upsert:false, contentType:file.type||undefined }); if(up) throw up; media_kind=(file.type||'').startsWith('video')?'video':'image'; media_path=path; }
+      const { data, error } = await sb.from('posts').insert({ author_id:me().id, body:body||'', media_kind, media_path, color:color||null }).select().single(); if(error) throw error; return rowToPost(data); },
+    async remove(id){ await initSB(); await sb.from('posts').delete().eq('id', id); },
+    async likeCount(id){ await initSB(); const { count } = await sb.from('post_likes').select('*',{count:'exact',head:true}).eq('post_id', id); return count||0; },
+    async likedByMe(ids){ if(!ids.length) return []; await initSB(); const { data } = await sb.from('post_likes').select('post_id').eq('user_id', me().id).in('post_id', ids); return (data||[]).map(r=>r.post_id); },
+    async toggleLike(id){ await initSB(); const uid=me().id; const { data } = await sb.from('post_likes').select('post_id').eq('post_id',id).eq('user_id',uid).maybeSingle(); if(data){ await sb.from('post_likes').delete().eq('post_id',id).eq('user_id',uid); return false; } await sb.from('post_likes').insert({ post_id:id, user_id:uid }); return true; },
+    comments:{
+      async list(postId){ await initSB(); const { data } = await sb.from('post_comments').select('*').eq('post_id',postId).order('created_at',{ascending:true}); const c=(data||[]).map(r=>({id:r.id,a:r.author_id,t:r.body,created_at:r.created_at})); await ensureProfiles(c.map(x=>x.a)); return c; },
+      async add(postId,body){ await initSB(); const { data, error } = await sb.from('post_comments').insert({ post_id:postId, author_id:me().id, body }).select().single(); if(error) throw error; return {id:data.id,a:data.author_id,t:data.body}; },
+      async count(postId){ await initSB(); const { count } = await sb.from('post_comments').select('*',{count:'exact',head:true}).eq('post_id',postId); return count||0; }
+    }
+  };
 
   /* ── static data ── */
   const GOALS = ['Discipline','Wealth','Mastery','Courage','Focus','Health','Creativity','Leadership','Purpose','Freedom'];
@@ -933,7 +953,7 @@
   /* ═══ FEED / LIVE / LOBBY ═══ */
   function renderFeed(){
     if(me().tier!=='main')return lockScreen('s-feed','For You','A feed that knows what you’re becoming','Ideas and people matched to your goals and fears — direction, not doomscroll. Post your own.',[['◎','Matched to your goals'],[likeGlyph(),'Like the minds worth learning from'],['▶','Post your own']]);
-    if(online()){ $('s-feed').innerHTML='<div class="empty" style="padding-top:60px">The feed is warming up. Posting & media land in the next update — for now, meet people live in the <b>World</b> and nexus rooms.</div>'; return; }
+    if(online()){ renderFeedOnline(); return; }
     const authors=Object.keys(POSTS); let h='';
     authors.forEach(a=>{ POSTS[a].forEach((post,pi)=>{ const p=person(a); const liked=postLiked(a,pi); h+=`<div class="post"><div class="post-top"><div data-user="${attr(a)}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">${avatar(a,40,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${esc(locStr(p))}</div></div></div><button class="likebtn ${liked?'on':''}" data-plike="${attr(a)}|${pi}">${likeGlyph()} ${postLikeCount(a,pi)}</button></div><div class="post-body">${fmt(post.t)}</div><div class="post-media" data-open="${attr(a)}|${pi}" style="background:linear-gradient(140deg,${post.c},#0d090a)">${esc(post.media)}</div><div class="post-actions"><button>${IC.chat} ${20+hashNum(a+pi,90)}</button><button data-share="${attr(a)}|${pi}" style="margin-left:auto">${IC.share}</button></div></div>`; }); });
     $('s-feed').innerHTML=h;
@@ -947,6 +967,63 @@
     else toast(url);
   }
   function toggleLike(a){ const i=state.likesGiven.indexOf(a); const liking=i<0; if(liking)state.likesGiven.push(a); else state.likesGiven.splice(i,1); toast(liking?'You liked @'+person(a).name:'Like removed'); save(); if(online())db.social.toggleLike(a).catch(()=>{}); }
+  /* ── online feed / posts ── */
+  function sharePostId(id){ const url=location.origin+location.pathname+'?post='+encodeURIComponent(id); const data={title:'Maintrix',text:'A post on Maintrix',url}; if(navigator.share)navigator.share(data).catch(()=>{}); else if(navigator.clipboard)navigator.clipboard.writeText(url).then(()=>toast('Link copied to clipboard')).catch(()=>toast(url)); else toast(url); }
+  function postMediaHtml(p,cls){ const st='width:100%;height:100%;object-fit:cover'; return p.mediaPath ? (p.mediaKind==='video' ? `<video src="${attr(postMediaUrl(p.mediaPath))}" class="${cls}" playsinline muted loop style="${st}"></video>` : `<img src="${attr(postMediaUrl(p.mediaPath))}" class="${cls}" style="${st}">`) : ''; }
+  function feedPostHtml(p){ const au=person(p.a),liked=MYPL.has(p.id);
+    const media = p.mediaPath ? `<div class="post-media" data-open="${attr(p.id)}" style="padding:0;overflow:hidden">${postMediaHtml(p,'')}</div>` : `<div class="post-media" data-open="${attr(p.id)}" style="background:linear-gradient(140deg,${p.c},#0d090a)">${esc((p.t||'Post').slice(0,44))}</div>`;
+    return `<div class="post"><div class="post-top"><div data-user="${attr(p.a)}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">${avatar(p.a,40,{ring:true})}<div class="r-main"><div class="r-name">${esc(au.name)}</div><div class="r-sub">@${esc(au.handle||'')}</div></div></div><button class="likebtn ${liked?'on':''}" data-plike="${attr(p.id)}">${likeGlyph()} <span class="plc">·</span></button></div>${p.t?`<div class="post-body">${fmt(p.t)}</div>`:''}${media}<div class="post-actions"><button data-cmt="${attr(p.id)}">${IC.chat} <span class="cc">·</span></button><button data-share="${attr(p.id)}" style="margin-left:auto">${IC.share}</button></div></div>`; }
+  async function renderFeedOnline(){
+    const host=$('s-feed'); host.innerHTML=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="composeBtn">${IC.plus} Create a post</button></div><div id="feedList"><div class="empty" style="padding-top:40px">Loading the feed…</div></div>`;
+    $('composeBtn').onclick=openCompose;
+    try{
+      const posts=await db.posts.feed(); if(state.screen!=='feed')return;
+      MYPL=new Set(await db.posts.likedByMe(posts.map(p=>p.id)));
+      const box=$('feedList'); if(!box)return;
+      if(!posts.length){ box.innerHTML='<div class="empty" style="padding-top:40px">No posts yet — be the first. Tap “Create a post”.</div>'; return; }
+      box.innerHTML=posts.map(feedPostHtml).join('');
+      box.querySelectorAll('[data-plike]').forEach(b=>b.onclick=async e=>{ e.stopPropagation(); const id=b.dataset.plike; const r=await db.posts.toggleLike(id).catch(()=>null); if(r===null)return; if(r)MYPL.add(id);else MYPL.delete(id); b.classList.toggle('on',r); const s=b.querySelector('.plc'); if(s)s.textContent=await db.posts.likeCount(id); });
+      box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openPostViewerOnline(posts,b.dataset.open));
+      box.querySelectorAll('[data-share]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); sharePostId(b.dataset.share); });
+      box.querySelectorAll('[data-cmt]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openComments(b.dataset.cmt); });
+      posts.forEach(async p=>{ const [lc,cc]=await Promise.all([db.posts.likeCount(p.id),db.posts.comments.count(p.id)]); const l=box.querySelector('[data-plike="'+p.id+'"] .plc'); if(l)l.textContent=lc; const c=box.querySelector('[data-cmt="'+p.id+'"] .cc'); if(c)c.textContent=cc; });
+    }catch(e){ const box=$('feedList'); if(box)box.innerHTML='<div class="empty">Couldn’t load the feed.</div>'; }
+  }
+  function openPostViewerOnline(posts,startId){
+    let idx=Math.max(0,posts.findIndex(p=>p.id===startId)); const scr=$('pvScreen');
+    let h=`<button class="pv-close" id="pvClose">${IC.back}</button><div class="pv-scroll" id="pvScroll">`;
+    posts.forEach(p=>{ const au=person(p.a),liked=MYPL.has(p.id); const bg=p.mediaPath?'#000':`radial-gradient(120% 80% at 50% 30%,${p.c},#000)`;
+      const media=p.mediaPath?`<div style="position:absolute;inset:0">${postMediaHtml(p,'').replace('object-fit:cover','object-fit:contain;width:100%;height:100%;background:#000')}</div>`:`<div class="pv-text">${esc((p.t||'').slice(0,140))}</div>`;
+      h+=`<div class="pv-slide" style="background:${bg}">${media}<div class="pv-rail"><button data-pvlike="${attr(p.id)}"><span class="big">${liked?likeGlyph():'♡'}</span><span class="plc">·</span></button><button data-pvcmt="${attr(p.id)}">${IC.chat}<span class="cc">·</span></button><button data-pvshare="${attr(p.id)}">${IC.share}</button></div><div class="pv-overlay"><div class="pv-author" data-user="${attr(p.a)}">${avatar(p.a,40,{ring:true})}<div class="r-name">@${esc(au.handle||au.name)}</div></div>${p.mediaPath&&p.t?`<div class="pv-body">${fmt(p.t)}</div>`:''}</div></div>`; });
+    h+=`</div>`; scr.innerHTML=h; scr.classList.add('on');
+    const ps=$('pvScroll'); ps.scrollTop=idx*ps.clientHeight;
+    $('pvClose').onclick=()=>{ scr.classList.remove('on'); scr.innerHTML=''; };
+    scr.querySelectorAll('[data-pvlike]').forEach(b=>b.onclick=async ()=>{ const id=b.dataset.pvlike; const r=await db.posts.toggleLike(id).catch(()=>null); if(r===null)return; if(r)MYPL.add(id);else MYPL.delete(id); b.querySelector('.big').textContent=r?likeGlyph():'♡'; b.querySelector('.plc').textContent=await db.posts.likeCount(id); });
+    scr.querySelectorAll('[data-pvshare]').forEach(b=>b.onclick=()=>sharePostId(b.dataset.pvshare));
+    scr.querySelectorAll('[data-pvcmt]').forEach(b=>b.onclick=()=>openComments(b.dataset.pvcmt));
+    scr.querySelectorAll('[data-user]').forEach(b=>b.onclick=()=>{ scr.classList.remove('on'); openProfile(b.dataset.user===me().id?undefined:b.dataset.user); });
+    posts.forEach(async p=>{ const [lc,cc]=await Promise.all([db.posts.likeCount(p.id),db.posts.comments.count(p.id)]); const l=scr.querySelector('[data-pvlike="'+p.id+'"] .plc'); if(l)l.textContent=lc; const c=scr.querySelector('[data-pvcmt="'+p.id+'"] .cc'); if(c)c.textContent=cc; });
+  }
+  async function openComments(postId){
+    let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px">Comments</div></div><div id="cmtList" style="max-height:52vh;overflow-y:auto;padding-bottom:6px"><div class="empty" style="padding:16px">Loading…</div></div><div class="composer" style="position:relative"><div id="mentionPop"></div><div class="box"><input id="cmtInput" placeholder="Comment… @tag a friend" autocomplete="off"><button class="send" id="cmtSend">${IC.send}</button></div></div>`;
+    $('sheet').className='sheet'; showSheet(h);
+    const load=async ()=>{ let list=[]; try{ list=await db.posts.comments.list(postId); }catch(e){} const box=$('cmtList'); if(!box)return; box.innerHTML=list.length?list.map(c=>`<div class="row" style="align-items:flex-start"><div data-user="${attr(c.a)}">${avatar(c.a,36,{ring:true})}</div><div class="r-main"><div class="r-name" style="font-size:14px">${esc(person(c.a).name)}</div><div style="font-size:14px;color:var(--text);line-height:1.4">${fmt(c.t)}</div></div></div>`).join(''):'<div class="empty" style="padding:16px">No comments yet. Say the first thing.</div>'; box.querySelectorAll('[data-user]').forEach(b=>b.onclick=()=>{ closeSheet(); openProfile(b.dataset.user===me().id?undefined:b.dataset.user); }); box.scrollTop=box.scrollHeight; };
+    await load();
+    const input=$('cmtInput'); wireMentions(input,{key:'cmt'});
+    const send=async ()=>{ const v=input.value.trim(); if(!v)return; input.value=''; closeMentions(); try{ await db.posts.comments.add(postId,v); await load(); }catch(e){ toast('Could not comment'); } };
+    input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!mentionOpen())send(); });
+    $('cmtSend').onclick=send; setTimeout(()=>input.focus(),60);
+  }
+  function openCompose(){
+    if(me().tier!=='main'){ upsell('Posts'); return; }
+    let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:12px">Create a post</div>`;
+    h+=`<div class="field"><label>Say something</label><textarea id="cpBody" placeholder="What are you becoming?"></textarea></div>`;
+    h+=`<div class="field"><label>Photo / video — optional</label><input id="cpFile" type="file" accept="image/*,video/*" style="color:var(--muted);font-size:14px;padding:8px 0"></div>`;
+    h+=`<button class="btn block" id="cpPost">Post</button><div style="height:16px"></div></div>`;
+    $('sheet').className='sheet'; showSheet(h);
+    $('cpPost').onclick=async ()=>{ const body=$('cpBody').value.trim(); const file=$('cpFile').files[0]; if(!body&&!file){ toast('Write something or add media'); return; } const b=$('cpPost'); b.disabled=true; b.textContent='Posting…'; try{ const cols=['#3a0f18','#2a1810','#0f2033','#2a1020','#12241a']; await db.posts.create({ body, file, color:cols[Math.floor(Math.random()*cols.length)] }); closeSheet(); toast('Posted'); if(state.screen==='feed')renderFeed(); }catch(e){ b.disabled=false; b.textContent='Post'; toast('Could not post — '+(e.message||'try again')); } };
+  }
+  async function loadProfileGrid(id){ const box=$('pGrid'); if(!box)return; try{ const posts=await db.posts.byAuthor(id); if(!$('pGrid'))return; if(!posts.length){ box.innerHTML='<div class="prof-bio" style="padding:0 16px 16px;text-align:left;color:var(--dim);font-size:14px">No posts yet.</div>'; return; } box.innerHTML=`<div class="posts-grid">`+posts.map(p=>`<div class="post-cell" data-opost="${attr(p.id)}" style="background:${p.mediaPath?'#000':'radial-gradient(120% 90% at 50% 30%,'+p.c+',#0d090a)'}">${p.mediaPath?postMediaHtml(p,''):esc((p.t||'').slice(0,30))}</div>`).join('')+`</div>`; box.querySelectorAll('[data-opost]').forEach(b=>b.onclick=()=>{ closeSheet(); openPostViewerOnline(posts,b.dataset.opost); }); }catch(e){} }
   function friendLabel(who){ if((state.friends||[]).includes(who)) return 'Friends'; if((state.sentFriend||[]).includes(who)) return 'Requested'; if((state.friendRequests||[]).includes(who)) return 'Accept'; return 'Add'; }
   async function renderMutual(who){ const box=$('pMutual'); if(!box)return; try{ const mut=await db.social.mutual(who); if(!$('pMutual')||!mut.length)return; cacheProfiles(mut); box.innerHTML=`<div class="trait-group"><div class="tg-k">Mutual friends — ${mut.length}</div><div class="chips">${mut.map(m=>`<span class="chip" data-mini="${attr(m.id)}">${esc(m.name)}</span>`).join('')}</div></div>`; box.querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>openMiniProfile(b.dataset.mini)); }catch(e){} }
   async function patchLikeCount(id){ try{ const n=await db.social.likeCount(id); const b=$('likeStat'); if(b)b.textContent=n.toLocaleString(); }catch(e){} }
@@ -1061,7 +1138,7 @@
     }
     showSheet(h);
     $('sheet').querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>openMiniProfile(b.dataset.mini));
-    if(online()){ patchLikeCount(own?me().id:who); if(!own)renderMutual(who); }
+    if(online()){ patchLikeCount(own?me().id:who); if(!own)renderMutual(who); if(me().tier==='main')loadProfileGrid(own?me().id:who); }
     // wire post cells
     $('sheet').querySelectorAll('[data-post]').forEach(b=>b.onclick=()=>{ if(me().tier!=='main'){ upsell('Posts'); return; } const [a,pi]=b.dataset.post.split('|'); closeSheet(); openPostViewer(a,+pi); });
     const ul=$('sheet').querySelector('#unlockPosts'); if(ul)ul.onclick=()=>{ me().tier='main'; save(); toast('Welcome to Main.'); openProfile(who); };
@@ -1097,6 +1174,7 @@
     $('mpFull').onclick=()=>{ $('sheet').className='sheet'; openProfile(who); };
   }
   function renderPostsGrid(key,own){
+    if(online()){ if(me().tier!=='main'){ return `<div style="position:relative;min-height:150px"><div class="posts-lock" style="position:static;backdrop-filter:none;background:transparent"><div class="plk">${IC.lock}</div><p>Posts are a Main feature. Unlock to view and post.</p><button class="btn" id="unlockPosts" style="padding:10px 18px">Unlock Main</button></div></div>`; } return `<div id="pGrid"><div class="empty" style="padding:16px">Loading…</div></div>`; }
     const posts=POSTS[key]||[];
     if(!posts.length)return `<div class="prof-bio" style="padding:0 16px 16px;text-align:left;color:var(--dim);font-size:14px">No posts yet.</div>`;
     let h=`<div class="posts-grid">`;
