@@ -45,8 +45,9 @@
   [data-user] { cursor:pointer; }
 
   /* auth / onboarding */
-  #auth,#onboard { position:absolute; inset:0; z-index:60; display:flex; flex-direction:column; padding:max(28px,env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom)); }
-  #auth { justify-content:center; text-align:center; background:radial-gradient(70% 55% at 50% 12%,#7a0f1e 0%,transparent 60%),radial-gradient(80% 60% at 50% 108%,#3a0a12 0%,transparent 55%),linear-gradient(180deg,#1a0b0e,#0d090a); }
+  #auth,#onboard,#supaAuth { position:absolute; inset:0; z-index:60; display:flex; flex-direction:column; padding:max(28px,env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom)); }
+  #auth,#supaAuth { justify-content:center; text-align:center; background:radial-gradient(70% 55% at 50% 12%,#7a0f1e 0%,transparent 60%),radial-gradient(80% 60% at 50% 108%,#3a0a12 0%,transparent 55%),linear-gradient(180deg,#1a0b0e,#0d090a); }
+  #supaAuth.hidden { display:none !important; }
   .logo-mark { width:60px; height:60px; border-radius:18px; background:linear-gradient(150deg,var(--accent-hi),var(--accent-press)); display:grid; place-items:center; margin:0 auto 22px; box-shadow:0 10px 40px #ed2e4455; }
   #auth .eyebrow { font-family:var(--mono); font-size:12px; letter-spacing:.28em; text-transform:uppercase; color:var(--accent-hi); margin-bottom:14px; }
   #auth h1 { font-family:var(--display); font-weight:900; font-size:40px; line-height:1.02; letter-spacing:-.02em; color:var(--text-hi); text-wrap:balance; margin-bottom:14px; }
@@ -274,12 +275,26 @@
     <div class="fine">Your identity is saved on this device.</div>
   </div>
 
+  <div id="supaAuth" class="hidden">
+    <a class="store" href="../../index.html">← Store</a>
+    <div class="logo-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="eyebrow">Maintrix</div>
+    <h1>Sign in to your world.</h1>
+    <p class="tag">Enter your email and we'll send a <b>magic link</b>. No passwords.</p>
+    <div style="max-width:340px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:10px">
+      <div class="field" style="margin:0;text-align:left"><input id="saEmail" type="email" placeholder="you@email.com" autocomplete="email" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--text);font-size:16px;padding:13px;outline:none"></div>
+      <button class="btn block" id="saSend">Send magic link</button>
+    </div>
+    <div class="fine" id="saStatus">We'll email you a one-tap sign-in link.</div>
+  </div>
+
   <div id="onboard" class="hidden">
     <div class="ob-head"><div class="ob-bar"><i id="obBar"></i></div></div>
     <div class="ob-step on" data-step="0">
       <div class="ob-k">Identity · 1 of 3</div><h2>Who walks in?</h2>
       <p class="sub">Your name and where you're from. Your location shows near you in the world rooms.</p>
       <div class="field"><label>Display name</label><input id="obName" placeholder="Choose a name" maxlength="20" autocomplete="off"></div>
+      <div class="field"><label>@handle — permanent, for mentions</label><input id="obHandle" placeholder="handle" maxlength="20" autocomplete="off"></div>
       <div class="field"><label>Country</label><select id="obCountry"></select></div>
       <div class="field"><label>State / Region</label><input id="obRegion" placeholder="e.g. California" maxlength="24" autocomplete="off"></div>
     </div>
@@ -326,6 +341,29 @@
   const attr = s => esc(s).replace(/"/g,'&quot;');
   const LS = 'maintrix.v4';
   const DAY = 86400000;
+
+  /* ═══ SUPABASE (Phase 1: identity & auth) ═══
+     Paste your project's URL + anon PUBLIC key below to go live. Leave both blank
+     to run in local mode (no accounts — identical to before). The anon key is
+     safe to ship in the client; NEVER put the service_role key here.
+     Backend plan + SQL: see BACKEND.md and supabase/migrations/. */
+  const SUPA = { url:'', anonKey:'' };
+  const online = () => !!(SUPA.url && SUPA.anonKey);
+  let sb = null;
+  async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
+  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], bio:r.bio||'Becoming.', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', tier:r.tier||'lite', isAdmin:!!r.is_admin, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
+  // db.* is the swap seam for later phases; Phase 1 implements profiles/auth.
+  const db = {
+    auth:{
+      async session(){ await initSB(); const { data } = await sb.auth.getSession(); return data.session; },
+      async signInOtp(email){ await initSB(); return sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split('#')[0] } }); },
+      async signOut(){ if(sb) await sb.auth.signOut(); }
+    },
+    profiles:{
+      async mine(){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) return null; const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle(); return (data && data.handle) ? rowToProfile(data) : null; },
+      async create(p){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) throw new Error('no session'); const { error } = await sb.from('profiles').update({ handle:p.handle, name:p.name, goals:p.goals, fears:p.fears, bio:p.bio, color:p.color, like_icon:p.likeIcon, country:p.loc.country, region:p.loc.region }).eq('id', user.id); if(error) throw error; }
+    }
+  };
 
   /* ── static data ── */
   const GOALS = ['Discipline','Wealth','Mastery','Courage','Focus','Health','Creativity','Leadership','Purpose','Freedom'];
@@ -1024,25 +1062,44 @@
     $('obFears').innerHTML=FEARS.map(f=>`<span class="chip" data-f="${f}">${f}</span>`).join('');
     $('obGoals').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ toggle(ob.goals,b.dataset.g); b.classList.toggle('on'); });
     $('obFears').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ toggle(ob.fears,b.dataset.f); b.classList.toggle('on'); });
+    const hb=$('obHandle'); $('obName').oninput=()=>{ if(hb&&!hb.dataset.touched)hb.value=cleanHandle($('obName').value); }; if(hb)hb.oninput=()=>{ hb.dataset.touched='1'; hb.value=cleanHandle(hb.value); };
   }
   function obShow(n){ ob.step=n; $('obBar').style.width=((n+1)/3*100)+'%'; document.querySelectorAll('.ob-step').forEach(s=>s.classList.toggle('on',+s.dataset.step===n)); $('obBack').style.visibility=n===0?'hidden':'visible'; $('obNext').textContent=n===2?'Enter Maintrix':'Continue'; }
-  $('beginBtn').onclick=()=>{ $('auth').classList.add('hidden'); $('onboard').classList.remove('hidden'); buildOb(); obShow(0); };
+  const cleanHandle=s=>String(s||'').trim().toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20);
+  function startOnboarding(){ $('auth').classList.add('hidden'); const sa=$('supaAuth'); if(sa)sa.classList.add('hidden'); $('onboard').classList.remove('hidden'); buildOb(); obShow(0); }
+  $('beginBtn').onclick=startOnboarding;
   $('obBack').onclick=()=>obShow(Math.max(0,ob.step-1));
   $('obNext').onclick=()=>{
-    if(ob.step===0){ if(!$('obName').value.trim()){ $('obName').focus(); toast('Pick a name'); return; } }
+    if(ob.step===0){ if(!$('obName').value.trim()){ $('obName').focus(); toast('Pick a name'); return; } const h=cleanHandle($('obHandle').value); if(h.length<3){ $('obHandle').focus(); toast('Pick an @handle — 3+ letters, numbers or _'); return; } $('obHandle').value=h; }
     if(ob.step===1){ if(!ob.goals.length){ toast('Pick at least one goal'); return; } }
     if(ob.step===2){ if(!ob.fears.length){ toast('Pick at least one fear'); return; } finishOb(); return; }
     obShow(ob.step+1);
   };
-  function finishOb(){
+  async function finishOb(){
     const now=new Date();
-    state.profile={ name:$('obName').value.trim().slice(0,20), goals:ob.goals, fears:ob.fears, bio:$('obBio').value.trim()||'Becoming.', color:'#ed2e44', likeIcon:'heart', tier:'lite', live:false, isAdmin:true, baseLikes:300, loc:{country:$('obCountry').value,region:$('obRegion').value.trim()}, since:`${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}` };
-    state.screen='nexus'; save(); enter();
+    const prof={ name:$('obName').value.trim().slice(0,20), handle:cleanHandle($('obHandle').value), goals:ob.goals, fears:ob.fears, bio:$('obBio').value.trim()||'Becoming.', color:'#ed2e44', likeIcon:'heart', tier:'lite', live:false, isAdmin:!online(), baseLikes:300, loc:{country:$('obCountry').value,region:$('obRegion').value.trim()}, since:`${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()}` };
+    if(online()){ const btn=$('obNext'); btn.disabled=true; btn.textContent='Saving…'; try{ await db.profiles.create(prof); }catch(e){ btn.disabled=false; btn.textContent='Enter Maintrix'; toast(/duplicate|unique/i.test(e.message||'')?'That @handle is taken':'Could not save — '+(e.message||'try again')); return; } }
+    state.profile=prof; state.screen='nexus'; save(); enter();
   }
-  function enter(){ $('auth').classList.add('hidden'); $('onboard').classList.add('hidden'); $('app').classList.add('on'); render(); if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+  function enter(){ $('auth').classList.add('hidden'); const sa=$('supaAuth'); if(sa)sa.classList.add('hidden'); $('onboard').classList.add('hidden'); $('app').classList.add('on'); render(); if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+
+  /* ═══ AUTH (Supabase email OTP) ═══ */
+  function showSupaAuth(){ $('auth').classList.add('hidden'); $('onboard').classList.add('hidden'); $('supaAuth').classList.remove('hidden'); }
+  (function wireSupaAuth(){ const b=$('saSend'); if(!b)return; b.onclick=async ()=>{ const email=($('saEmail').value||'').trim(); if(!/.+@.+\..+/.test(email)){ toast('Enter a valid email'); return; } b.disabled=true; b.textContent='Sending…'; try{ const { error }=await db.auth.signInOtp(email); if(error)throw error; $('saStatus').textContent='Check your email for the magic link.'; b.textContent='Link sent ✓'; }catch(e){ b.disabled=false; b.textContent='Send magic link'; toast('Could not send — '+(e.message||'try again')); } }; })();
 
   /* ═══ BOOT (EXPANSION intro) ═══ */
-  (function runIntro(){ const intro=$('intro'); if(me()&&me().name)enter(); const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches; let done=false; const finish=()=>{ if(done)return; done=true; intro.classList.add('gone'); setTimeout(()=>{intro.style.display='none';},650); }; const t=setTimeout(finish,reduce?1200:2700); intro.addEventListener('click',()=>{ clearTimeout(t); finish(); }); })();
+  async function boot(){
+    if(!online()){ if(me()&&me().name)enter(); return; }   // local mode — unchanged
+    $('auth').classList.add('hidden');
+    try{
+      const sess=await db.auth.session();
+      if(!sess){ showSupaAuth(); return; }
+      const prof=await db.profiles.mine();
+      if(prof){ state.profile=prof; save(); enter(); }
+      else startOnboarding();
+    }catch(e){ toast('Connection issue — try again'); showSupaAuth(); }
+  }
+  (function runIntro(){ const intro=$('intro'); const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches; let done=false; const finish=()=>{ if(done)return; done=true; intro.classList.add('gone'); setTimeout(()=>{intro.style.display='none';},650); }; const t=setTimeout(finish,reduce?1200:2700); intro.addEventListener('click',()=>{ clearTimeout(t); finish(); }); boot(); })();
 })();
 </script>
 </body>
