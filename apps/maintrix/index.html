@@ -210,7 +210,8 @@
   /* pin the thread to the frame so the header stays put and the composer rides above the keyboard */
   #s-thread.on { position:absolute; inset:0; z-index:1; animation:threadIn .3s cubic-bezier(.2,.8,.2,1); }
   #s-thread .thread { height:100%; }
-  #s-thread .thread-head { position:sticky; top:0; background:var(--ground); z-index:2; }
+  /* reserve the iOS status-bar / notch space so the back arrow never hides under the clock in standalone PWA mode */
+  #s-thread .thread-head { position:sticky; top:0; background:var(--ground); z-index:2; padding-top:calc(10px + env(safe-area-inset-top)); }
   @keyframes threadIn { from { transform:translateX(100%); } to { transform:none; } }
 
   /* pinned / broadcast message */
