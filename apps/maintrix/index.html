@@ -347,7 +347,7 @@
      to run in local mode (no accounts — identical to before). The anon key is
      safe to ship in the client; NEVER put the service_role key here.
      Backend plan + SQL: see BACKEND.md and supabase/migrations/. */
-  const SUPA = { url:'', anonKey:'' };
+  const SUPA = { url:'https://uwvgfxnwtgnwcwostwxs.supabase.co', anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3dmdmeG53dGdud2N3b3N0d3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0Mzk4MjUsImV4cCI6MjEwMzAxNTgyNX0.4fZ6D7OrNYWfy7vKWPHOhdbo94dJi4edZXbtb1Onta8' };
   const online = () => !!(SUPA.url && SUPA.anonKey);
   let sb = null;
   async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
