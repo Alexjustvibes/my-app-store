@@ -1433,10 +1433,10 @@
   $('sheetScrim').onclick=e=>{ if(e.target===$('sheetScrim'))closeSheet(); };
   /* drag the sheet (profile, etc.) down to dismiss */
   (function initSheetDrag(){
-    const sheet=$('sheet'); if(!sheet)return; let startY=0,dy=0,dragging=false;
-    sheet.addEventListener('pointerdown',e=>{ if(sheet.scrollTop>2)return; startY=e.clientY; dy=0; dragging=true; sheet.style.transition='none'; },{passive:true});
-    sheet.addEventListener('pointermove',e=>{ if(!dragging)return; dy=e.clientY-startY; if(dy<=0||sheet.scrollTop>0){ dy=0; sheet.style.transform=''; return; } sheet.style.transform='translateY('+dy+'px)'; if(dy>5)e.preventDefault(); },{passive:false});
-    const end=()=>{ if(!dragging)return; dragging=false; sheet.style.transition='transform .22s cubic-bezier(.2,.8,.2,1)'; if(dy>110){ sheet.style.transform='translateY(100%)'; setTimeout(closeSheet,200); } else sheet.style.transform=''; };
+    const sheet=$('sheet'); if(!sheet)return; let startY=0,dy=0,dragging=false,lastY=0,lastT=0,vel=0;
+    sheet.addEventListener('pointerdown',e=>{ if(sheet.scrollTop>2)return; startY=e.clientY; lastY=e.clientY; lastT=performance.now(); dy=0; vel=0; dragging=true; sheet.style.transition='none'; },{passive:true});
+    sheet.addEventListener('pointermove',e=>{ if(!dragging)return; const now=performance.now(); dy=e.clientY-startY; if(dy<=0||sheet.scrollTop>0){ dy=0; sheet.style.transform=''; lastY=e.clientY; lastT=now; return; } const dt=now-lastT; if(dt>0)vel=(e.clientY-lastY)/dt; lastY=e.clientY; lastT=now; sheet.style.transform='translateY('+dy+'px)'; if(dy>3)e.preventDefault(); },{passive:false});
+    const end=()=>{ if(!dragging)return; dragging=false; sheet.style.transition='transform .2s cubic-bezier(.2,.8,.2,1)'; const flick=vel>0.4; if(dy>55 || (flick && dy>14)){ sheet.style.transform='translateY(100%)'; setTimeout(closeSheet,180); } else sheet.style.transform=''; };
     ['pointerup','pointercancel','pointerleave'].forEach(ev=>sheet.addEventListener(ev,end,{passive:true}));
   })();
   /* keep the app sized to the visible viewport so the keyboard never pushes the chat header off-screen */
