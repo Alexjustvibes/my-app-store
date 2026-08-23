@@ -22,7 +22,7 @@
     --font:'Hanken Grotesk',system-ui,-apple-system,sans-serif; --display:'Fraunces',Georgia,serif; --mono:'JetBrains Mono',ui-monospace,monospace;
   }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-  html,body { height:100%; }
+  html,body { height:100%; overflow:hidden; overscroll-behavior:none; }
   body { font-family:var(--font); color:var(--text); background:#0d090a; -webkit-font-smoothing:antialiased; position:fixed; inset:0; overflow:hidden; }
   button { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
   input,textarea,select { font-family:inherit; }
@@ -752,8 +752,8 @@
         if(th.dmKey&&!dmFree(th.dmKey))renderThread();
       };
       input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!mentionOpen())doSend(); });
-      // on focus, keep the list pinned to the newest so the composer stays in view (never jump to the top)
-      input.addEventListener('focus',()=>{ const toB=()=>{ if(sc)sc.scrollTop=sc.scrollHeight; }; toB(); requestAnimationFrame(toB); setTimeout(toB,120); setTimeout(toB,320); setTimeout(toB,550); });
+      // on focus (keyboard opens): fight iOS's scroll-into-view for ~900ms — keep the page at 0 and the list pinned to the newest so the composer stays visible
+      input.addEventListener('focus',()=>{ const t0=performance.now(); (function pin(){ if(window.scrollX||window.scrollY)window.scrollTo(0,0); if(sc)sc.scrollTop=sc.scrollHeight; if(performance.now()-t0<900)requestAnimationFrame(pin); })(); });
       $('thSend').onclick=doSend;
       const af=$('thAttach'), ff=$('thFile'), mic=$('thMic');
       if(af&&ff){ af.onclick=()=>ff.click(); ff.onchange=()=>{ const f=ff.files[0]; if(f)sendMedia(th,f); ff.value=''; }; }
@@ -1442,6 +1442,8 @@
   })();
   /* keep the app sized to the visible viewport so the keyboard never pushes the chat header off-screen */
   (function fitViewport(){ const vv=window.visualViewport; if(!vv)return; const frame=document.querySelector('.frame'); if(!frame)return; const apply=()=>{ frame.style.height=Math.round(vv.height)+'px'; const ae=document.activeElement; if(ae&&ae.id==='thInput'){ const s=$('thScroll'); if(s)s.scrollTop=s.scrollHeight; } }; vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply); apply(); })();
+  // iOS keyboard can scroll the whole page to reveal a focused input — snap it back so the app never shifts up
+  window.addEventListener('scroll',()=>{ if(window.scrollX||window.scrollY)window.scrollTo(0,0); },{passive:true});
   function openSub(h){ $('subscreen').innerHTML=h; $('subscreen').classList.add('on'); }
   function closeSub(){ $('subscreen').classList.remove('on'); $('subscreen').innerHTML=''; }
   $('view').addEventListener('click',e=>{ const t=e.target.closest('[data-user]'); if(!t)return; const u=t.dataset.user; openProfile(me()&&u===me().name?undefined:u); });
