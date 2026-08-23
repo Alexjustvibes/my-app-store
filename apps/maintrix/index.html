@@ -361,9 +361,34 @@
     },
     profiles:{
       async mine(){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) return null; const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle(); return (data && data.handle) ? rowToProfile(data) : null; },
-      async create(p){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) throw new Error('no session'); const { error } = await sb.from('profiles').update({ handle:p.handle, name:p.name, goals:p.goals, fears:p.fears, bio:p.bio, color:p.color, like_icon:p.likeIcon, country:p.loc.country, region:p.loc.region }).eq('id', user.id); if(error) throw error; }
+      async create(p){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) throw new Error('no session'); const { error } = await sb.from('profiles').update({ handle:p.handle, name:p.name, goals:p.goals, fears:p.fears, bio:p.bio, color:p.color, like_icon:p.likeIcon, country:p.loc.country, region:p.loc.region }).eq('id', user.id); if(error) throw error; },
+      async update(patch){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) return; await sb.from('profiles').update(patch).eq('id', user.id); },
+      async search(q){ await initSB(); q=(q||'').trim(); let query=sb.from('profiles').select('*').not('handle','is',null).neq('id', me().id).limit(30); if(q) query=query.or(`handle.ilike.%${q}%,name.ilike.%${q}%`); const { data } = await query; return (data||[]).map(rowToProfile); },
+      async byIds(ids){ ids=[...new Set((ids||[]).filter(Boolean))]; if(!ids.length) return []; await initSB(); const { data } = await sb.from('profiles').select('*').in('id', ids); return (data||[]).map(rowToProfile); }
+    },
+    rooms:{
+      async bySlug(slug){ await initSB(); const { data } = await sb.from('rooms').select('id').eq('slug', slug).maybeSingle(); return data ? data.id : null; },
+      async createTopic({title,category}){ await initSB(); const exp=new Date(Date.now()+86400000).toISOString(); const { data, error } = await sb.from('rooms').insert({ kind:'topic', title, category, owner_id:me().id, expires_at:exp, is_public:true }).select().single(); if(error) throw error; await sb.from('room_members').insert({ room_id:data.id, user_id:me().id, rank:'Owner' }); return data; },
+      async listTopics(category){ await initSB(); const { data } = await sb.from('rooms').select('*').eq('kind','topic').eq('category',category).gt('expires_at', new Date().toISOString()).order('created_at',{ascending:false}); return data||[]; },
+      async myTopics(){ await initSB(); const { data } = await sb.from('rooms').select('*').eq('kind','topic').eq('owner_id', me().id).order('created_at',{ascending:false}); return data||[]; },
+      async renew(id){ await initSB(); await sb.from('rooms').update({ expires_at:new Date(Date.now()+86400000).toISOString() }).eq('id', id); },
+      async remove(id){ await initSB(); await sb.from('rooms').delete().eq('id', id); }
+    },
+    dm:{
+      async getOrCreate(otherId){ await initSB(); const { data, error } = await sb.rpc('get_or_create_dm', { other:otherId }); if(error) throw error; return data; },
+      async list(){ await initSB(); const meId=me().id; const { data } = await sb.from('rooms').select('id,slug').eq('kind','dm'); const mine=(data||[]).map(r=>{ const p=(r.slug||'').split(':'); const other=p[1]===meId?p[2]:p[1]; return {roomId:r.id, otherId:other}; }).filter(x=>x.otherId&&x.otherId!==meId); await ensureProfiles(mine.map(x=>x.otherId)); return mine; }
+    },
+    messages:{
+      async list(roomId){ await initSB(); const { data } = await sb.from('messages').select('*').eq('room_id', roomId).order('created_at',{ascending:true}).limit(300); return (data||[]).map(rowToMsg); },
+      async send(roomId, body, opt){ opt=opt||{}; await initSB(); const { data, error } = await sb.from('messages').insert({ room_id:roomId, author_id:me().id, body, reply_to:opt.replyTo||null, pinned:!!opt.pinned, is_system:!!opt.system }).select().single(); if(error) throw error; return rowToMsg(data); },
+      async edit(id, body){ await initSB(); await sb.from('messages').update({ body, edited:true }).eq('id', id); },
+      async remove(id){ await initSB(); await sb.from('messages').delete().eq('id', id); },
+      subscribe(roomId, on){ if(!sb) return null; const ch=sb.channel('room:'+roomId).on('postgres_changes',{event:'*',schema:'public',table:'messages',filter:'room_id=eq.'+roomId}, payload=>on(payload)).subscribe(); return ch; },
+      async unsubscribe(ch){ if(ch&&sb) await sb.removeChannel(ch); }
     }
   };
+  function rowToMsg(r){ return { id:r.id, a:r.author_id, t:r.body, time:tstr(r.created_at), replyToId:r.reply_to, edited:r.edited, pin:r.pinned, bot:r.is_system, created_at:r.created_at }; }
+  function tstr(iso){ try{ const d=new Date(iso); let h=d.getHours(); const ap=h<12?'AM':'PM'; h=((h+11)%12)+1; return `${h}:${String(d.getMinutes()).padStart(2,'0')} ${ap}`; }catch(e){ return ''; } }
 
   /* ── static data ── */
   const GOALS = ['Discipline','Wealth','Mastery','Courage','Focus','Health','Creativity','Leadership','Purpose','Freedom'];
@@ -458,7 +483,19 @@
 
   const me = () => state.profile;
   const dmFree = k => state.friends.includes(k) || state.dmAccepted.includes(k);
-  function person(a){ if(PEOPLE[a]) return PEOPLE[a]; if(me()&&a===me().name) return me(); return {name:a,color:'#86636b',status:'online',goals:[],fears:[],loc:{country:'—',region:''},friends:[]}; }
+  /* live profile cache (online): keyed by user id and by handle */
+  const PC={}, PCH={};
+  function cacheProfile(p){ if(!p||!p.id)return; PC[p.id]=p; if(p.handle)PCH[p.handle]=p; }
+  function cacheProfiles(list){ (list||[]).forEach(cacheProfile); }
+  async function ensureProfiles(ids){ const miss=[...new Set((ids||[]).filter(id=>id&&!PC[id]&&(!me()||id!==me().id)))]; if(!miss.length)return; try{ cacheProfiles(await db.profiles.byIds(miss)); }catch(e){} }
+  function person(a){
+    if(!a) return {name:'?',color:'#86636b',status:'online',goals:[],fears:[],loc:{country:'—',region:''},friends:[]};
+    const u=me(); if(u && (a===u.id||a===u.name||a===u.handle)) return u;
+    if(PC[a]) return PC[a]; if(PCH[a]) return PCH[a];
+    if(!online() && PEOPLE[a]) return PEOPLE[a];
+    const isId=typeof a==='string'&&/^[0-9a-f-]{36}$/i.test(a);
+    return {name:isId?'member':a,color:'#86636b',status:'online',goals:[],fears:[],loc:{country:'—',region:''},friends:[]};
+  }
   function shared(p){ const u=me(); if(!u)return null; const g=(p.goals||[]).find(x=>u.goals.includes(x)); if(g)return{k:'goal',v:g}; const f=(p.fears||[]).find(x=>u.fears.includes(x)); if(f)return{k:'fear',v:f}; return null; }
   function traitsOf(p){ return [].concat(p.goals||[],p.fears||[]); }
   function locStr(p){ const l=p.loc||{}; if(!l.country||l.country==='—')return ''; return ccode(l.country)+(l.region?' · '+l.region:''); }
@@ -541,14 +578,24 @@
     host.innerHTML=h;
     $('app').classList.add('thread-open');
     const sc=$('thScroll'); sc.scrollTop=sc.scrollHeight;
-    if(isCommons)connectCommons();
-    $('thBack').onclick=()=>{ $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); };
+    if(isCommons && online() && !th.roomSlug) th.roomSlug='commons';
+    const onlineRoom = online() && !!(th.roomSlug || th.dmUser || th.topicId);
+    const repaint=()=>{ const s=$('thScroll'); if(!s)return; const L=state.msgs[th.key]||[]; s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); };
+    $('thBack').onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); };
     if(canManage)$('thManage').onclick=()=>serverManage(th.serverId);
-    wireMsgMenu(sc,list,th);
+    if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML='<div class="empty">Loading…</div>'; hydrateOnlineRoom(th); }
+    else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
     if(!dmLocked){
       const input=$('thInput');
       wireMentions(input,th);
       const doSend=()=>{ const v=input.value.trim(); if(!v)return;
+        if(onlineRoom){
+          if(editing){ const id=editing; editing=null; input.value=''; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); const m=(state.msgs[th.key]||[]).find(x=>x.id===id); if(m){m.t=v;m.edited=true;} db.messages.edit(id,v); closeMentions(); renderReplyBar(); repaint(); return; }
+          if(!th.roomId){ toast('Room still loading…'); return; }
+          const rid=replyTo?replyTo.id:null, rprev=replyTo?{a:replyTo.a,t:(replyTo.t||'').slice(0,60)}:null; replyTo=null; input.value=''; closeMentions(); renderReplyBar();
+          db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(); } }).catch(()=>toast('Send failed'));
+          return;
+        }
         if(editing){ const m=list.find(x=>x.id===editing); if(m){m.t=v; m.edited=true;} editing=null; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); }
         else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg);
           if(th.dmKey && !dmFree(th.dmKey)){ state.sentDm.push(th.dmKey); save(); toast('DM request sent — one message until they accept'); setTimeout(()=>simAcceptDm(th.dmKey),4000); } }
@@ -563,21 +610,56 @@
     }
     updateChrome();
   }
+  /* ═══ online room hydration + realtime ═══ */
+  let roomChannel=null;
+  function leaveRoom(){ if(roomChannel){ db.messages.unsubscribe(roomChannel); roomChannel=null; } }
+  async function hydrateOnlineRoom(th){
+    try{
+      if(!th.roomId){
+        if(th.roomSlug) th.roomId=await db.rooms.bySlug(th.roomSlug);
+        else if(th.dmUser) th.roomId=await db.dm.getOrCreate(th.dmUser);
+        else if(th.topicId) th.roomId=th.topicId;
+      }
+      if(!th.roomId){ if(active&&active.key===th.key){ const s=$('thScroll'); if(s)s.innerHTML='<div class="empty">This room isn’t available yet.</div>'; } return; }
+      const msgs=await db.messages.list(th.roomId);
+      await ensureProfiles(msgs.map(m=>m.a));
+      msgs.forEach(m=>{ if(m.replyToId){ const rm=msgs.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } });
+      state.msgs[th.key]=msgs;
+      if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(msgs,th)||'<div class="empty">Be the first to speak here.</div>'; s.scrollTop=s.scrollHeight; wireMsgMenu(s,msgs,th); } }
+      subscribeRoom(th);
+    }catch(e){ if(active&&active.key===th.key){ const s=$('thScroll'); if(s)s.innerHTML='<div class="empty">Couldn’t load this room.</div>'; } }
+  }
+  function subscribeRoom(th){
+    leaveRoom();
+    roomChannel=db.messages.subscribe(th.roomId, async payload=>{
+      if(!active||active.key!==th.key) return;
+      const L=state.msgs[th.key]=state.msgs[th.key]||[];
+      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } L.push(m); if(m.a&&me()&&m.a!==me().id)maybeTagNotif(m); }
+      else if(payload.eventType==='UPDATE'){ const m=L.find(x=>x.id===payload.new.id); if(m){ m.t=payload.new.body; m.edited=payload.new.edited; m.pin=payload.new.pinned; } }
+      else if(payload.eventType==='DELETE'){ const i=L.findIndex(x=>x.id===(payload.old&&payload.old.id)); if(i>=0)L.splice(i,1); }
+      const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; s.innerHTML=renderMsgs(L,th); if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
+    });
+  }
+  function maybeTagNotif(m){ const h=me().handle; if(h && new RegExp('@'+h+'\\b','i').test(m.t||'')){ pushNotif('tag',m.a,'tagged you'); } }
   /* @-mention autocomplete */
   let _mentionSel=0,_mentionList=[];
   const mentionOpen=()=>_mentionList.length>0;
   function closeMentions(){ _mentionList=[]; const p=$('mentionPop'); if(p)p.innerHTML=''; }
   function wireMentions(input,th){
     const members=roomMembers(th);
-    const draw=()=>{ const pop=$('mentionPop'); if(!pop)return; const v=input.value, caret=input.selectionStart;
+    const tagOf=k=>{ const p=person(k); return p.handle||p.name; };
+    const draw=async ()=>{ const pop=$('mentionPop'); if(!pop)return; const v=input.value, caret=input.selectionStart;
       const m=v.slice(0,caret).match(/@([a-z0-9_]*)$/i);
       if(!m){ closeMentions(); return; }
-      const q=m[1].toLowerCase(); _mentionList=members.filter(k=>person(k).name.toLowerCase().includes(q)).slice(0,6); _mentionSel=0;
+      const q=m[1].toLowerCase();
+      if(online()){ try{ const list=await db.profiles.search(q); cacheProfiles(list); _mentionList=list.map(p=>p.id).slice(0,6); }catch(e){ _mentionList=[]; } }
+      else { _mentionList=members.filter(k=>person(k).name.toLowerCase().includes(q)).slice(0,6); }
+      _mentionSel=0; if(!$('mentionPop'))return;
       if(!_mentionList.length){ pop.innerHTML=''; return; }
-      pop.innerHTML=`<div class="mention-pop">${_mentionList.map((k,i)=>`<button data-mi="${i}" class="${i===_mentionSel?'sel':''}">${avatar(k,26)}<span>@${esc(person(k).name)}</span></button>`).join('')}</div>`;
+      pop.innerHTML=`<div class="mention-pop">${_mentionList.map((k,i)=>`<button data-mi="${i}" class="${i===_mentionSel?'sel':''}">${avatar(k,26)}<span>@${esc(tagOf(k))}</span></button>`).join('')}</div>`;
       pop.querySelectorAll('[data-mi]').forEach(b=>b.onmousedown=e=>{ e.preventDefault(); pick(+b.dataset.mi); });
     };
-    const pick=i=>{ const k=_mentionList[i]; if(!k)return; const v=input.value,caret=input.selectionStart; const before=v.slice(0,caret).replace(/@([a-z0-9_]*)$/i,'@'+person(k).name+' '); input.value=before+v.slice(caret); input.selectionStart=input.selectionEnd=before.length; closeMentions(); input.focus(); };
+    const pick=i=>{ const k=_mentionList[i]; if(!k)return; const v=input.value,caret=input.selectionStart; const before=v.slice(0,caret).replace(/@([a-z0-9_]*)$/i,'@'+tagOf(k)+' '); input.value=before+v.slice(caret); input.selectionStart=input.selectionEnd=before.length; closeMentions(); input.focus(); };
     input.addEventListener('input',draw);
     input.addEventListener('keydown',e=>{ if(!mentionOpen())return; if(e.key==='ArrowDown'){e.preventDefault(); e.stopImmediatePropagation(); _mentionSel=(_mentionSel+1)%_mentionList.length; draw();} else if(e.key==='ArrowUp'){e.preventDefault(); e.stopImmediatePropagation(); _mentionSel=(_mentionSel-1+_mentionList.length)%_mentionList.length; draw();} else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault(); e.stopImmediatePropagation(); pick(_mentionSel);} else if(e.key==='Escape'){e.stopImmediatePropagation(); closeMentions();} });
   }
@@ -605,7 +687,7 @@
   }
   function showMsgMenu(x,y,m,list,th){
     document.querySelectorAll('.msg-menu').forEach(n=>n.remove());
-    const mine=m.a===me().name;
+    const mine=m.a===me().name||(me()&&m.a===me().id);
     let h=`<button data-act="reply">${IC.reply} Reply</button>`;
     if(mine){ h+=`<button data-act="edit">${IC.edit} Edit</button><button class="danger" data-act="del">${IC.trash} Delete</button>`; }
     else if(me().isAdmin){ h+=`<button class="danger" data-act="del">${IC.shield} Delete (admin)</button>`; }
@@ -616,9 +698,9 @@
     const onDoc=e=>{ if(!menu.contains(e.target))close(); };
     setTimeout(()=>document.addEventListener('pointerdown',onDoc,true),0);
     menu.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{ const a=b.dataset.act; close();
-      if(a==='reply'){ replyTo={a:person(m.a).name,t:m.t}; renderReplyBar(); const i=$('thInput'); if(i)i.focus(); }
+      if(a==='reply'){ replyTo={a:person(m.a).name,t:m.t,id:m.id}; renderReplyBar(); const i=$('thInput'); if(i)i.focus(); }
       else if(a==='edit'){ editing=m.id; const i=$('thInput'); if(i){i.value=m.t; i.focus(); i.placeholder='Editing…';} renderReplyBar(); }
-      else if(a==='del'){ const idx=list.indexOf(m); if(idx>=0)list.splice(idx,1); save(); $('thScroll').innerHTML=renderMsgs(list,th); wireMsgMenu($('thScroll'),list,th); toast('Message deleted'); }
+      else if(a==='del'){ const idx=list.indexOf(m); if(idx>=0)list.splice(idx,1); if(online()&&th.roomId)db.messages.remove(m.id); else save(); $('thScroll').innerHTML=renderMsgs(list,th); wireMsgMenu($('thScroll'),list,th); toast('Message deleted'); }
     });
   }
   const REPLIES=['ha, true','say more','oh that’s good','holding you to it 🔒','agreed','let’s go','proud of you honestly'];
@@ -628,15 +710,15 @@
   /* ═══ NEXUS HUB ═══ */
   function renderNexus(){
     const u=me(); const gTrait=u.goals[0]||u.fears[0];
-    const worldCount=Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot).length+1;
+    const worldLabel=online()?'live':(Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot).length+1)+' online';
     let h=`<div class="sec-title first">The one world</div>`;
-    h+=`<div class="card" id="nxWorld"><div class="c-k">◍ World · ${worldCount} online</div><div class="c-t">The World</div><div class="c-s">One global room. Everyone in Maintrix, from everywhere, in one place.</div></div>`;
+    h+=`<div class="card" id="nxWorld"><div class="c-k">◍ World · ${worldLabel}</div><div class="c-t">The World</div><div class="c-s">One global room. Everyone in Maintrix, from everywhere, in one place.</div></div>`;
     h+=`<div class="card" id="nxYW"><div class="c-k">◎ Your World${gTrait?' · '+esc(gTrait):''}</div><div class="c-t">Your World</div><div class="c-s">The room of people who share your traits — your "at home" nexus. Global or by location.</div></div>`;
     h+=`<div class="sec-title">Explore ${u.tier!=='main'?'· <span style="color:var(--gold)">Main</span>':''}</div>`;
     h+=`<div class="card ${u.tier!=='main'?'locked':''}" id="nxTrait">${u.tier!=='main'?'<span class="lockmini">'+IC.lock2+'</span>':''}<div class="c-k">✦ Trait Nexus Browsing</div><div class="c-t">Enter other worlds</div><div class="c-s">Join the nexus of any trait — sit in rooms of people chasing what you lack.</div></div>`;
     h+=`<div class="card ${u.tier!=='main'?'locked':''}" id="nxTopic">${u.tier!=='main'?'<span class="lockmini">'+IC.lock2+'</span>':''}<div class="c-k">◈ Nexus Topic Rooms</div><div class="c-t">Rooms by topic</div><div class="c-s">Create a room around a topic, or drop into one someone else made.</div></div>`;
     $('s-nexus').innerHTML=h;
-    $('nxWorld').onclick=()=>openThread({key:'world',title:'The World',sub:'everyone, everywhere',kind:'world',roomTag:{main:'World',sub:worldCount+' online'},back:'nexus'});
+    $('nxWorld').onclick=()=>openThread({key:'world',roomSlug:'world',title:'The World',sub:'everyone, everywhere',kind:'world',roomTag:{main:'World',sub:'live'},back:'nexus'});
     $('nxYW').onclick=()=>openYourWorld();
     $('nxTrait').onclick=()=> u.tier==='main'?openTraitBrowse():upsell('Trait Nexus Browsing');
     $('nxTopic').onclick=()=> u.tier==='main'?openTopicRooms():upsell('Nexus Topic Rooms');
@@ -648,8 +730,8 @@
     h+=`<button class="btn block" id="ywG" style="margin-bottom:10px">🌍 Global — everyone with your traits</button>`;
     h+=`<button class="btn ghost block" id="ywL">📍 ${esc(ccode(u.loc.country))}${u.loc.region?' · '+esc(u.loc.region):''} — your traits, near you</button><div style="height:14px"></div></div>`;
     showSheet(h);
-    $('ywG').onclick=()=>{ closeSheet(); openThread({key:'yw-'+t,title:'Your World',sub:'global · your traits',kind:'trait',roomTrait:t,roomTag:{main:esc(t),sub:'your world · global'},back:'nexus'}); };
-    $('ywL').onclick=()=>{ closeSheet(); openThread({key:'yw-'+t+'-loc',title:'Your World',sub:ccode(u.loc.country)+' · your traits',kind:'trait',roomTrait:t,roomTag:{main:esc(t),sub:'your world · '+esc(ccode(u.loc.country))},back:'nexus'}); };
+    $('ywG').onclick=()=>{ closeSheet(); openThread({key:'yw-'+t,roomSlug:'trait:'+t,title:'Your World',sub:'global · your traits',kind:'trait',roomTrait:t,roomTag:{main:esc(t),sub:'your world · global'},back:'nexus'}); };
+    $('ywL').onclick=()=>{ closeSheet(); openThread({key:'yw-'+t+'-loc',roomSlug:'trait:'+t,title:'Your World',sub:ccode(u.loc.country)+' · your traits',kind:'trait',roomTrait:t,roomTag:{main:esc(t),sub:'your world · '+esc(ccode(u.loc.country))},back:'nexus'}); };
   }
   function openTraitBrowse(){
     const u=me();
@@ -662,29 +744,51 @@
     openSub(h);
     $('tbBack').onclick=closeSub;
     document.querySelectorAll('#subscreen [data-trait]').forEach(r=>r.onclick=()=>{ const tr=r.dataset.trait, loc=r.dataset.loc==='1'; closeSub();
-      openThread({key:'trait-'+tr+(loc?'-loc':''),title:tr,sub:(loc?ccode(u.loc.country)+' · ':'global · ')+'trait nexus',kind:'trait',roomTrait:tr,roomTag:{main:esc(tr),sub:(loc?ccode(u.loc.country):'global')+' trait nexus'},back:'nexus'}); });
+      openThread({key:'trait-'+tr+(loc?'-loc':''),roomSlug:'trait:'+tr,title:tr,sub:(loc?ccode(u.loc.country)+' · ':'global · ')+'trait nexus',kind:'trait',roomTrait:tr,roomTag:{main:esc(tr),sub:(loc?ccode(u.loc.country):'global')+' trait nexus'},back:'nexus'}); });
   }
+  function topicAv(bg){ return `<div class="av" style="width:40px;height:40px;border-radius:12px;background:${bg};font-size:16px">◈</div>`; }
   function openTopicRooms(){
+    const on=online();
     let h=`<div class="sub-head"><button class="back" id="trBack">${IC.back}</button><div class="st">Nexus Topic Rooms</div></div><div class="sub-body">`;
     h+=`<div class="pad"><button class="btn block" id="trCreate">${IC.plus} Create a nexus room</button></div>`;
-    const mine=(state.topicRooms||[]).filter(r=>r.owner===me().name);
-    if(mine.length){ h+=`<div class="sec-title">Your rooms</div>`;
-      mine.forEach(r=>{ const exp=roomExpired(r); h+=`<div class="row"><div data-myroom="${attr(r.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0"><div class="av" style="width:40px;height:40px;border-radius:12px;background:${exp?'var(--surface-2)':'var(--accent)'};font-size:16px">◈</div><div class="r-main"><div class="r-name">${esc(r.title)} ${exp?'<span class="label-foreign">expired</span>':'<span class="label-home">active</span>'}</div><div class="r-sub">${esc(r.cat)} · ${exp?'expired — renew to reopen':'expires within 24h'}</div></div></div>${exp?`<button class="chip on" data-renew="${attr(r.id)}">Renew</button>`:''}</div>`; }); }
+    if(on){ h+=`<div id="trMine"></div>`; }
+    else { const mine=(state.topicRooms||[]).filter(r=>r.owner===me().name);
+      if(mine.length){ h+=`<div class="sec-title">Your rooms</div>`;
+        mine.forEach(r=>{ const exp=roomExpired(r); h+=`<div class="row"><div data-myroom="${attr(r.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${topicAv(exp?'var(--surface-2)':'var(--accent)')}<div class="r-main"><div class="r-name">${esc(r.title)} ${exp?'<span class="label-foreign">expired</span>':'<span class="label-home">active</span>'}</div><div class="r-sub">${esc(r.cat)} · ${exp?'expired — renew to reopen':'expires within 24h'}</div></div></div>${exp?`<button class="chip on" data-renew="${attr(r.id)}">Renew</button>`:''}</div>`; }); } }
     h+=`<div class="sec-title">Browse by topic</div>`;
-    TOPIC_CATS.forEach(c=>{ const rooms=(state.topicRooms||[]).filter(r=>r.cat===c&&!roomExpired(r)); h+=`<div class="row" data-cat="${attr(c)}"><div class="av" style="width:40px;height:40px;border-radius:12px;background:var(--surface-2);font-size:16px">◈</div><div class="r-main"><div class="r-name">${esc(c)}</div><div class="r-sub">${rooms.length} active room${rooms.length===1?'':'s'}</div></div>${IC.chev}</div>`; });
+    TOPIC_CATS.forEach(c=>{ const rooms=on?null:(state.topicRooms||[]).filter(r=>r.cat===c&&!roomExpired(r)); h+=`<div class="row" data-cat="${attr(c)}">${topicAv('var(--surface-2)')}<div class="r-main"><div class="r-name">${esc(c)}</div><div class="r-sub">${on?'topic rooms':(rooms.length+' active room'+(rooms.length===1?'':'s'))}</div></div>${IC.chev}</div>`; });
     h+=`<div style="height:24px"></div></div>`;
     openSub(h);
     $('trBack').onclick=closeSub;
     $('trCreate').onclick=createTopicRoom;
     document.querySelectorAll('#subscreen [data-cat]').forEach(r=>r.onclick=()=>browseTopicCat(r.dataset.cat));
+    if(on){ renderMyTopics(); return; }
     document.querySelectorAll('#subscreen [data-myroom]').forEach(r=>r.onclick=()=>{ const room=state.topicRooms.find(x=>x.id===r.dataset.myroom); if(roomExpired(room)){toast('Renew this room to reopen it'); return;} closeSub(); openThread({key:'topic-'+room.id,title:room.title,sub:room.cat+' · topic room',kind:'topic',roomTag:{main:esc(room.title),sub:esc(room.cat)},back:'nexus'}); });
     document.querySelectorAll('#subscreen [data-renew]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const room=state.topicRooms.find(x=>x.id===b.dataset.renew); room.createdAt=Date.now(); save(); toast('Renewed for another 24h'); openTopicRooms(); });
   }
+  const topicExpired=r=>r.expires_at&&new Date(r.expires_at).getTime()<Date.now();
+  function openOnlineTopic(r){ closeSub(); openThread({key:'topic-'+r.id,topicId:r.id,title:r.title,sub:(r.category||'')+' · topic room',kind:'topic',roomTag:{main:esc(r.title),sub:esc(r.category||'')},back:'nexus'}); }
+  async function renderMyTopics(){ const box=$('trMine'); if(!box)return; try{ const rooms=await db.rooms.myTopics(); if(!$('trMine'))return; if(!rooms.length){ box.innerHTML=''; return; } let h=`<div class="sec-title">Your rooms</div>`;
+    rooms.forEach(r=>{ const exp=topicExpired(r); h+=`<div class="row"><div data-otopic="${attr(r.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${topicAv(exp?'var(--surface-2)':'var(--accent)')}<div class="r-main"><div class="r-name">${esc(r.title)} ${exp?'<span class="label-foreign">expired</span>':'<span class="label-home">active</span>'}</div><div class="r-sub">${esc(r.category||'')} · ${exp?'expired — renew to reopen':'expires within 24h'}</div></div></div>${exp?`<button class="chip on" data-orenew="${attr(r.id)}">Renew</button>`:''}</div>`; });
+    box.innerHTML=h;
+    box.querySelectorAll('[data-otopic]').forEach(b=>b.onclick=()=>{ const r=rooms.find(x=>x.id===b.dataset.otopic); if(topicExpired(r)){toast('Renew to reopen');return;} openOnlineTopic(r); });
+    box.querySelectorAll('[data-orenew]').forEach(b=>b.onclick=async e=>{ e.stopPropagation(); await db.rooms.renew(b.dataset.orenew); toast('Renewed for another 24h'); renderMyTopics(); });
+  }catch(e){} }
   function browseTopicCat(cat){
+    if(online()){
+      let h=`<div class="sub-head"><button class="back" id="bcBack">${IC.back}</button><div class="st">${esc(cat)}</div></div><div class="sub-body"><div id="bcList"><div class="empty" style="padding:20px">Loading…</div></div></div>`;
+      openSub(h); $('bcBack').onclick=()=>openTopicRooms();
+      db.rooms.listTopics(cat).then(rooms=>{ const box=$('bcList'); if(!box)return; if(!rooms.length){ box.innerHTML=`<div class="empty">No active rooms in ${esc(cat)} yet — create the first.</div>`; return; }
+        box.innerHTML=rooms.map(r=>{ const own=r.owner_id===me().id; const del=own||me().isAdmin; return `<div class="row"><div data-oroom="${attr(r.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${topicAv('var(--accent-soft)')}<div class="r-main"><div class="r-name">${esc(r.title)}</div><div class="r-sub">${esc(cat)} · topic room${own?' · yours':''}</div></div></div>${del?`<button class="chip" data-odel="${attr(r.id)}" style="color:var(--accent-hi)">${me().isAdmin&&!own?'Delete (admin)':'Delete'}</button>`:''}</div>`; }).join('');
+        box.querySelectorAll('[data-oroom]').forEach(b=>b.onclick=()=>{ const r=rooms.find(x=>x.id===b.dataset.oroom); openOnlineTopic(r); });
+        box.querySelectorAll('[data-odel]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const id=b.dataset.odel; confirmDialog('Delete this topic room?',async ()=>{ await db.rooms.remove(id); toast('Room deleted'); browseTopicCat(cat); }); });
+      }).catch(()=>{ const box=$('bcList'); if(box)box.innerHTML='<div class="empty">Couldn’t load rooms.</div>'; });
+      return;
+    }
     let rooms=(state.topicRooms||[]).filter(r=>r.cat===cat&&!roomExpired(r));
     if(!rooms.length) rooms=[{id:'seed-'+cat,cat,title:'The '+cat+' Circle',seed:true}];
     let h=`<div class="sub-head"><button class="back" id="bcBack">${IC.back}</button><div class="st">${esc(cat)}</div></div><div class="sub-body">`;
-    rooms.forEach(r=>{ const own=r.owner===me().name; const del=canDelete(own)&&!r.seed; h+=`<div class="row"><div data-room="${attr(r.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0"><div class="av" style="width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent-hi);font-size:16px">◈</div><div class="r-main"><div class="r-name">${esc(r.title)}</div><div class="r-sub">${esc(cat)} · topic room${own?' · yours':''}</div></div></div>${del?`<button class="chip" data-delroom="${attr(r.id)}" style="color:var(--accent-hi)">${me().isAdmin&&!own?'Delete (admin)':'Delete'}</button>`:''}</div>`; });
+    rooms.forEach(r=>{ const own=r.owner===me().name; const del=canDelete(own)&&!r.seed; h+=`<div class="row"><div data-room="${attr(r.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${topicAv('var(--accent-soft)')}<div class="r-main"><div class="r-name">${esc(r.title)}</div><div class="r-sub">${esc(cat)} · topic room${own?' · yours':''}</div></div></div>${del?`<button class="chip" data-delroom="${attr(r.id)}" style="color:var(--accent-hi)">${me().isAdmin&&!own?'Delete (admin)':'Delete'}</button>`:''}</div>`; });
     h+=`<div style="height:24px"></div></div>`;
     openSub(h);
     $('bcBack').onclick=()=>openTopicRooms();
@@ -698,7 +802,9 @@
     h+=`<div class="th-sub" style="margin-bottom:14px">Topic rooms stay open for 24 hours. Yours stays pinned at the top so you can renew it anytime.</div>`;
     h+=`<button class="btn block" id="ntSave">Create room</button><div style="height:16px"></div></div>`;
     showSheet(h);
-    $('ntSave').onclick=()=>{ const title=$('ntTitle').value.trim(); if(!title){toast('Give it a title');return;} const r={id:'r'+Date.now(),cat:$('ntCat').value,title,owner:me().name,createdAt:Date.now()}; state.topicRooms.push(r); save(); closeSheet(); openThread({key:'topic-'+r.id,title:r.title,sub:r.cat+' · topic room',kind:'topic',roomTag:{main:esc(r.title),sub:esc(r.cat)},back:'nexus'}); };
+    $('ntSave').onclick=async ()=>{ const title=$('ntTitle').value.trim(); if(!title){toast('Give it a title');return;}
+      if(online()){ const btn=$('ntSave'); btn.disabled=true; btn.textContent='Creating…'; try{ const r=await db.rooms.createTopic({title,category:$('ntCat').value}); closeSheet(); openOnlineTopic(r); }catch(e){ btn.disabled=false; btn.textContent='Create room'; toast('Could not create room'); } return; }
+      const r={id:'r'+Date.now(),cat:$('ntCat').value,title,owner:me().name,createdAt:Date.now()}; state.topicRooms.push(r); save(); closeSheet(); openThread({key:'topic-'+r.id,title:r.title,sub:r.cat+' · topic room',kind:'topic',roomTag:{main:esc(r.title),sub:esc(r.cat)},back:'nexus'}); };
   }
 
   /* ═══ CONNECT ═══ */
@@ -710,24 +816,29 @@
       h+=`<div class="sec-title">Friend requests${state.friendRequests.length?' — '+state.friendRequests.length:''}</div><div id="frReqList"></div>`;
       h+=`<div class="sec-title">Find people</div><div class="searchbar">${IC.search}<input id="userSearch" placeholder="Search people by name" autocomplete="off"></div><div id="searchResults"></div>`;
     } else if(t==='dms'){
-      h+=`<div class="row" id="dmReq" style="border-bottom:1px solid var(--line)"><div class="av" style="width:42px;height:42px;background:var(--surface-2);color:var(--accent-hi)">${IC.inbox}</div><div class="r-main"><div class="r-name">DM requests</div><div class="r-sub">${state.dmRequests.length} pending</div></div>${state.dmRequests.length?`<span class="rank-badge" style="color:var(--accent-hi);border-color:var(--accent)">${state.dmRequests.length}</span>`:''}${IC.chev}</div>`;
-      h+=`<div class="sec-title">Direct messages</div>`;
-      state.dmAccepted.forEach(k=>{ const key='dm-'+k; const last=(state.msgs[key]||[]).slice(-1)[0]; h+=`<div class="row" data-dm="${k}">${avatar(k,46,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">${last?esc((last.a===me().name?'You: ':'')+last.t):'Say hi'}</div></div></div>`; });
-      h+=`<div class="empty" style="padding-top:16px">DMs are private — even Overwatch can’t see them.</div>`;
+      if(!online())h+=`<div class="row" id="dmReq" style="border-bottom:1px solid var(--line)"><div class="av" style="width:42px;height:42px;background:var(--surface-2);color:var(--accent-hi)">${IC.inbox}</div><div class="r-main"><div class="r-name">DM requests</div><div class="r-sub">${state.dmRequests.length} pending</div></div>${state.dmRequests.length?`<span class="rank-badge" style="color:var(--accent-hi);border-color:var(--accent)">${state.dmRequests.length}</span>`:''}${IC.chev}</div>`;
+      h+=`<div class="sec-title">Direct messages</div><div id="dmList"></div>`;
+      if(!online()){ state.dmAccepted.forEach(k=>{ const key='dm-'+k; const last=(state.msgs[key]||[]).slice(-1)[0]; h+=`<div class="row" data-dm="${k}">${avatar(k,46,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">${last?esc((last.a===me().name?'You: ':'')+last.t):'Say hi'}</div></div></div>`; }); }
+      h+=`<div class="empty" style="padding-top:16px">DMs are private. Start one from <b>Search</b>.</div>`;
     } else {
-      h+=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="srvCreate" style="margin-bottom:10px">${IC.plus} Create a server</button><button class="btn ghost block" id="srvBrowse">${IC.search} Browse public servers</button></div>`;
-      const mine=state.servers.filter(s=>state.joined.includes(s.id));
-      h+=`<div class="sec-title">Your servers</div>`;
-      mine.forEach(s=>{ h+=`<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${s.members.length} members · ${esc(s.cat)}</div></div></div>`; });
-      h+=`<div class="sec-title">Live · public</div><div class="row" data-server="commons"><div class="av" style="width:46px;height:46px;border-radius:16px;background:var(--accent);font-size:18px">◍</div><div class="r-main"><div class="r-name">The Commons <span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span></div><div class="r-sub">everyone on the internet · live</div></div></div>`;
+      h+=`<div class="sec-title first">Live · public</div><div class="row" data-server="commons"><div class="av" style="width:46px;height:46px;border-radius:16px;background:var(--accent);font-size:18px">◍</div><div class="r-main"><div class="r-name">The Commons <span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span></div><div class="r-sub">everyone signed in · live</div></div></div>`;
+      if(online()){
+        h+=`<div class="empty" style="padding-top:20px">Public servers with ranks & roles are coming in the next update. For now, meet people in the <b>World</b> and trait nexuses.</div>`;
+      } else {
+        h+=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="srvCreate" style="margin-bottom:10px">${IC.plus} Create a server</button><button class="btn ghost block" id="srvBrowse">${IC.search} Browse public servers</button></div>`;
+        const mine=state.servers.filter(s=>state.joined.includes(s.id));
+        h+=`<div class="sec-title">Your servers</div>`;
+        mine.forEach(s=>{ h+=`<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${s.members.length} members · ${esc(s.cat)}</div></div></div>`; });
+      }
     }
     $('s-connect').innerHTML=h;
     $('s-connect').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ state.connectTab=b.dataset.t; save(); renderConnect(); });
     $('s-connect').querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>openDm(b.dataset.dm));
-    $('s-connect').querySelectorAll('[data-server]').forEach(b=>b.onclick=()=>{ b.dataset.server==='commons'?openThread({key:'commons',title:'The Commons',sub:'everyone on the internet · live',back:'connect'}):openServer(b.dataset.server); });
+    $('s-connect').querySelectorAll('[data-server]').forEach(b=>b.onclick=()=>{ b.dataset.server==='commons'?openThread({key:'commons',roomSlug:'commons',title:'The Commons',sub:'everyone signed in · live',back:'connect'}):openServer(b.dataset.server); });
     const dr=$('dmReq'); if(dr)dr.onclick=openDmRequests;
     const sc=$('srvCreate'); if(sc)sc.onclick=createServer;
-    const sb=$('srvBrowse'); if(sb)sb.onclick=browsePublicServers;
+    const sb2=$('srvBrowse'); if(sb2)sb2.onclick=browsePublicServers;
+    if(online()&&t==='dms')renderDmList();
     const us=$('userSearch'); if(us){ us.oninput=()=>runSearch(us.value); runSearch(''); }
     const ll=$('likedList'); if(ll)renderLiked();
     const fr=$('frReqList'); if(fr)renderFriendReqs();
@@ -738,8 +849,12 @@
     box.querySelectorAll('[data-fden]').forEach(b=>b.onclick=()=>{ const k=b.dataset.fden; confirmDialog('Deny the friend request from @'+person(k).name+'?',()=>{ state.friendRequests=state.friendRequests.filter(x=>x!==k); save(); toast('Denied'); renderConnect(); }); });
   }
   const SEARCH_USERS = Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot);
-  function runSearch(q){ const box=$('searchResults'); if(!box)return; q=(q||'').trim().toLowerCase(); const res=SEARCH_USERS.filter(k=>person(k).name.toLowerCase().includes(q)); let h=q?'':'<div class="sec-title">Suggested people</div>'; if(q&&!res.length){box.innerHTML=`<div class="empty">No one found for “${esc(q)}”.</div>`;return;} res.forEach(k=>{ const p=person(k),sh=shared(p); h+=`<div class="row" data-user="${attr(k)}">${avatar(k,42,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh?`<span class="tag-shared">${sh.k==='goal'?'◎':'⚑'} ${esc(sh.v)}</span>`:''}</div><div class="r-sub">${esc(locStr(p))} · tap to view</div></div>${state.friends.includes(k)?'<span class="rank-badge">friend</span>':`<button class="chip" data-add="${k}">Add</button>`}</div>`; }); box.innerHTML=h; box.querySelectorAll('[data-add]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); toast('Friend request sent to @'+b.dataset.add); b.textContent='Sent'; }); }
-  function openDm(k){ if(!state.dmAccepted.includes(k)&&!state.sentDm.includes(k)&&!state.friends.includes(k)){ /* first-contact allowed, becomes request on send */ } openThread({key:'dm-'+k,title:person(k).name,dmKey:k,back:'connect'}); }
+  let _searchSeq=0;
+  function runSearch(q){ const box=$('searchResults'); if(!box)return;
+    if(online()){ const seq=++_searchSeq; box.innerHTML='<div class="empty" style="padding:16px">Searching…</div>'; db.profiles.search(q).then(list=>{ if(seq!==_searchSeq||!$('searchResults'))return; cacheProfiles(list); if(!list.length){ box.innerHTML=`<div class="empty">${(q||'').trim()?'No one found.':'No other members yet — you’re early. Invite people.'}</div>`; return; } let h=''; list.forEach(p=>{ const sh=shared(p); h+=`<div class="row" data-user="${attr(p.id)}">${avatar(p.id,42,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh?`<span class="tag-shared">${sh.k==='goal'?'◎':'⚑'} ${esc(sh.v)}</span>`:''}</div><div class="r-sub">@${esc(p.handle||'')}${locStr(p)?' · '+esc(locStr(p)):''}</div></div><button class="chip" data-dmuser="${attr(p.id)}">Message</button></div>`; }); box.innerHTML=h; box.querySelectorAll('[data-dmuser]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openDm(b.dataset.dmuser); }); }).catch(()=>{ if($('searchResults'))box.innerHTML='<div class="empty">Search failed — try again.</div>'; }); return; }
+    q=(q||'').trim().toLowerCase(); const res=SEARCH_USERS.filter(k=>person(k).name.toLowerCase().includes(q)); let h=q?'':'<div class="sec-title">Suggested people</div>'; if(q&&!res.length){box.innerHTML=`<div class="empty">No one found for “${esc(q)}”.</div>`;return;} res.forEach(k=>{ const p=person(k),sh=shared(p); h+=`<div class="row" data-user="${attr(k)}">${avatar(k,42,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh?`<span class="tag-shared">${sh.k==='goal'?'◎':'⚑'} ${esc(sh.v)}</span>`:''}</div><div class="r-sub">${esc(locStr(p))} · tap to view</div></div>${state.friends.includes(k)?'<span class="rank-badge">friend</span>':`<button class="chip" data-add="${k}">Add</button>`}</div>`; }); box.innerHTML=h; box.querySelectorAll('[data-add]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); toast('Friend request sent to @'+b.dataset.add); b.textContent='Sent'; }); }
+  async function renderDmList(){ const box=$('dmList'); if(!box)return; try{ const dms=await db.dm.list(); if(!$('dmList'))return; if(!dms.length){ box.innerHTML=''; return; } box.innerHTML=dms.map(d=>`<div class="row" data-dmid="${attr(d.otherId)}">${avatar(d.otherId,46,{ring:true})}<div class="r-main"><div class="r-name">${esc(person(d.otherId).name)}</div><div class="r-sub">@${esc(person(d.otherId).handle||'')} · tap to open</div></div></div>`).join(''); box.querySelectorAll('[data-dmid]').forEach(b=>b.onclick=()=>openDm(b.dataset.dmid)); }catch(e){} }
+  function openDm(k){ if(online()){ openThread({key:'dm-'+k,dmUser:k,dmKey:k,title:person(k).name,sub:'@'+(person(k).handle||''),back:'connect'}); return; } openThread({key:'dm-'+k,title:person(k).name,dmKey:k,back:'connect'}); }
   function openDmRequests(){
     let h=`<div class="sub-head"><button class="back" id="drBack">${IC.back}</button><div class="st">DM requests</div></div><div class="sub-body">`;
     if(!state.dmRequests.length) h+=`<div class="empty">No requests right now.</div>`;
@@ -783,6 +898,7 @@
   /* ═══ FEED / LIVE / LOBBY ═══ */
   function renderFeed(){
     if(me().tier!=='main')return lockScreen('s-feed','For You','A feed that knows what you’re becoming','Ideas and people matched to your goals and fears — direction, not doomscroll. Post your own and go live.',[['◎','Matched to your goals'],[likeGlyph(),'Like the minds worth learning from'],['▶','Post & go live yourself']]);
+    if(online()){ $('s-feed').innerHTML='<div class="empty" style="padding-top:60px">The feed is warming up. Posting & media land in the next update — for now, meet people live in the <b>World</b> and nexus rooms.</div>'; return; }
     const authors=Object.keys(POSTS); let h='';
     authors.forEach(a=>{ POSTS[a].forEach((post,pi)=>{ const p=person(a); const liked=postLiked(a,pi); h+=`<div class="post"><div class="post-top"><div data-user="${attr(a)}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">${avatar(a,40,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">${esc(locStr(p))}</div></div></div><button class="likebtn ${liked?'on':''}" data-plike="${attr(a)}|${pi}">${likeGlyph()} ${postLikeCount(a,pi)}</button></div><div class="post-body">${fmt(post.t)}</div><div class="post-media" data-open="${attr(a)}|${pi}" style="background:linear-gradient(140deg,${post.c},#0d090a)">${esc(post.media)}</div><div class="post-actions"><button>${IC.chat} ${20+hashNum(a+pi,90)}</button><button data-share="${attr(a)}|${pi}" style="margin-left:auto">${IC.share}</button></div></div>`; }); });
     $('s-feed').innerHTML=h;
@@ -814,7 +930,8 @@
   function renderLive(){
     if(me().tier!=='main')return lockScreen('s-live','Live','Rooms built around a topic, not a face','Every room leads with the topic, not the streamer. Join, or tap Go Live to start your own.',[['◉','Topic-first rooms'],['◎','Rooms around your goals'],['▶','Go live yourself']]);
     let h=`<div class="pad" style="padding-bottom:0"><button class="go-live-btn ${me().live?'on':''}" id="goLive">${me().live?'● You’re live — tap to open your stream':'● Go live'}</button></div><div class="sec-title">Live now — topic first</div>`;
-    LIVE_ROOMS.forEach((r,i)=>{ h+=`<div class="live-card" data-room="${i}"><div class="live-thumb" style="background:linear-gradient(140deg,${r.c},#0d090a)"><div class="live-badge"><i></i>LIVE</div><div class="live-topic">${esc(r.topic)}</div></div><div class="live-foot"><span data-user="${attr(r.host)}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">${avatar(r.host,30,{ring:true})}<span class="lf-host">${esc(person(r.host).name)}</span></span><div class="lf-count">${IC.eye} ${r.count}</div></div></div>`; });
+    if(online()){ h+=`<div class="empty">No one is live right now. Tap <b>Go live</b> to start a room — multi-viewer streaming arrives in a later update.</div>`; }
+    else LIVE_ROOMS.forEach((r,i)=>{ h+=`<div class="live-card" data-room="${i}"><div class="live-thumb" style="background:linear-gradient(140deg,${r.c},#0d090a)"><div class="live-badge"><i></i>LIVE</div><div class="live-topic">${esc(r.topic)}</div></div><div class="live-foot"><span data-user="${attr(r.host)}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">${avatar(r.host,30,{ring:true})}<span class="lf-host">${esc(person(r.host).name)}</span></span><div class="lf-count">${IC.eye} ${r.count}</div></div></div>`; });
     $('s-live').innerHTML=h;
     $('goLive').onclick=()=>{ if(me().live){ openLiveStream({own:true,topic:me().liveTopic||'My live room',host:me().name,count:1,c:'#3a0f18'}); return; } startGoLive(); };
     $('s-live').querySelectorAll('[data-room]').forEach(b=>b.onclick=e=>{ if(e.target.closest('[data-user]'))return; const r=LIVE_ROOMS[+b.dataset.room]; openLiveStream({own:false,topic:r.topic,host:r.host,count:r.count,c:r.c}); });
@@ -856,8 +973,10 @@
     h+=`<div class="sec-title">Train</div>`;
     h+=`<div class="card" data-train="paradigm"><div class="c-k">◍ Training · 1</div><div class="c-t">Paradigm-Broadening</div><div class="c-s">Break the frame you see through. Sit with ideas that stretch how you think.</div></div>`;
     h+=`<div class="card" data-train="awareness"><div class="c-k">◎ Training · 2</div><div class="c-t">Self-Awareness</div><div class="c-s">Turn the lens inward. Notice your patterns before they run you.</div></div>`;
-    h+=`<div class="pad" style="padding-top:20px"><button class="btn block" id="toHub">${IC.door} Step into the acolyte hub</button></div><div class="sec-title">Acolytes in the hub — ${ACOLYTES.length}</div>`;
-    ACOLYTES.forEach(k=>{ const p=person(k),sh=shared(p); h+=`<div class="row" data-user="${k}">${avatar(k,40,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh?`<span class="tag-shared">${sh.k==='goal'?'◎':'⚑'} ${esc(sh.v)}</span>`:''}</div><div class="r-sub">on the same path</div></div></div>`; });
+    h+=`<div class="pad" style="padding-top:20px"><button class="btn block" id="toHub">${IC.door} Step into the acolyte hub</button></div>`;
+    if(online()){ h+=`<div class="sec-title">The hub</div><div class="empty" style="padding:16px 24px">The acolyte hub is a live room — step in to see who’s doing the work right now.</div>`; }
+    else { h+=`<div class="sec-title">Acolytes in the hub — ${ACOLYTES.length}</div>`;
+      ACOLYTES.forEach(k=>{ const p=person(k),sh=shared(p); h+=`<div class="row" data-user="${k}">${avatar(k,40,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh?`<span class="tag-shared">${sh.k==='goal'?'◎':'⚑'} ${esc(sh.v)}</span>`:''}</div><div class="r-sub">on the same path</div></div></div>`; }); }
     $('s-lobby').innerHTML=h;
     $('s-lobby').querySelectorAll('[data-task]').forEach(b=>b.onclick=()=>{ const t=state.tasks.find(x=>x.id===b.dataset.task); t.done=!t.done; save(); renderLobby(); });
     $('s-lobby').querySelectorAll('[data-train]').forEach(b=>b.onclick=()=>openTraining(b.dataset.train));
@@ -866,13 +985,13 @@
   function openTraining(kind){
     const T={paradigm:{title:'Paradigm-Broadening',sub:'training · broaden the frame'},awareness:{title:'Self-Awareness',sub:'training · turn the lens inward'}}[kind];
     const key='train-'+kind;
-    if(!state.msgs[key])state.msgs[key]=[{a:'Overwatch',t:'**'+T.title+'** — a training room. The program lands here soon. For now, train together: share what shifted for you today.',bot:true,pin:true,time:nowTime(),id:mid()}];
-    openThread({key,title:T.title,sub:T.sub,kind:'topic',roomTag:{main:'Training',sub:T.title},back:'lobby'});
+    if(!online()&&!state.msgs[key])state.msgs[key]=[{a:'Overwatch',t:'**'+T.title+'** — a training room. The program lands here soon. For now, train together: share what shifted for you today.',bot:true,pin:true,time:nowTime(),id:mid()}];
+    openThread({key,roomSlug:'training:'+kind,title:T.title,sub:T.sub,kind:'topic',roomTag:{main:'Training',sub:T.title},back:'lobby'});
   }
   function openAcolyteHub(){
     const key='acolyte-hub';
-    if(!state.msgs[key])state.msgs[key]=[{a:'Overwatch',t:'The **Acolyte Hub** — only acolytes are here. This is where the work gets witnessed.',bot:true,pin:true,time:nowTime(),id:mid()},{a:'juno',t:'checking in. did the hard thing before noon.',time:nowTime(),id:mid()},{a:'sable',t:'proud of you. i’m 3 days into the reset.',time:nowTime(),id:mid()}];
-    openThread({key,title:'Acolyte Hub',sub:ACOLYTES.length+' acolytes · the inner room',kind:'topic',roomTag:{main:'Acolytes',sub:'inner room'},back:'lobby'});
+    if(!online()&&!state.msgs[key])state.msgs[key]=[{a:'Overwatch',t:'The **Acolyte Hub** — only acolytes are here. This is where the work gets witnessed.',bot:true,pin:true,time:nowTime(),id:mid()}];
+    openThread({key,roomSlug:'acolyte-hub',title:'Acolyte Hub',sub:'the inner room',kind:'topic',roomTag:{main:'Acolytes',sub:'inner room'},back:'lobby'});
   }
   function lockScreen(id,title,headline,body,feats){ let h=`<div class="lock"><div class="lock-ic">${IC.lock}</div><h2>${esc(headline)}</h2><p>${esc(body)}</p><div class="feat">`; feats.forEach(f=>h+=`<div><span class="fi">${f[0]}</span><span>${esc(f[1])}</span></div>`); h+=`</div><button class="btn block" id="unlockBtn" style="max-width:320px;margin:0 auto">Unlock Maintrix Main</button><div style="margin-top:12px;font-size:12px;color:var(--dim)">Membership · unlock is instant</div></div>`; $(id).innerHTML=h; $('unlockBtn').onclick=()=>{ me().tier='main'; save(); toast('Welcome to Main.'); render(); }; }
   function upsell(f){ toast(f+' is a Main feature — open Feed/Live/Lobby to unlock.'); }
@@ -1088,14 +1207,15 @@
   (function wireSupaAuth(){ const b=$('saSend'); if(!b)return; b.onclick=async ()=>{ const email=($('saEmail').value||'').trim(); if(!/.+@.+\..+/.test(email)){ toast('Enter a valid email'); return; } b.disabled=true; b.textContent='Sending…'; try{ const { error }=await db.auth.signInOtp(email); if(error)throw error; $('saStatus').textContent='Check your email for the magic link.'; b.textContent='Link sent ✓'; }catch(e){ b.disabled=false; b.textContent='Send magic link'; toast('Could not send — '+(e.message||'try again')); } }; })();
 
   /* ═══ BOOT (EXPANSION intro) ═══ */
+  function cleanOnlineState(){ if(state._onlineClean)return; ['friends','dmAccepted','dmRequests','friendRequests','sentDm','likesGiven','postLikes','notifications','servers','joined','topicRooms'].forEach(k=>state[k]=[]); state.msgs={}; state._onlineClean=true; save(); }
   async function boot(){
     if(!online()){ if(me()&&me().name)enter(); return; }   // local mode — unchanged
-    $('auth').classList.add('hidden');
+    $('auth').classList.add('hidden'); cleanOnlineState();
     try{
       const sess=await db.auth.session();
       if(!sess){ showSupaAuth(); return; }
       const prof=await db.profiles.mine();
-      if(prof){ state.profile=prof; save(); enter(); }
+      if(prof){ state.profile=prof; cacheProfile(prof); save(); enter(); }
       else startOnboarding();
     }catch(e){ toast('Connection issue — try again'); showSupaAuth(); }
   }
