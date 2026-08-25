@@ -63,6 +63,10 @@
   .ob-step h2 { font-family:var(--display); font-weight:700; font-size:27px; color:var(--text-hi); letter-spacing:-.01em; margin-bottom:6px; text-wrap:balance; }
   .ob-step p.sub { color:var(--muted); font-size:15px; margin-bottom:22px; line-height:1.5; }
   .chips { display:flex; flex-wrap:wrap; gap:9px; }
+  .trait-opt { display:block; width:100%; text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:9px; cursor:pointer; transition:all .12s; }
+  .trait-opt.on { background:var(--accent-soft); border-color:var(--accent); }
+  .trait-opt .to-name { font-weight:700; font-size:16px; color:var(--text-hi); }
+  .trait-opt .to-desc { font-size:13px; color:var(--muted); margin-top:2px; }
   .field { margin-bottom:16px; } .field label { display:block; font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
   .field input,.field textarea,.field select { width:100%; background:var(--surface); border:1px solid var(--line); border-radius:12px; color:var(--text); font-size:16px; padding:13px; outline:none; transition:border-color .12s; }
   .field input:focus,.field textarea:focus,.field select:focus { border-color:var(--accent); } .field textarea { resize:none; min-height:70px; line-height:1.5; }
@@ -136,6 +140,12 @@
 
   /* message action menu */
   .msg-menu { position:absolute; z-index:75; background:var(--elevated); border:1px solid var(--line); border-radius:12px; box-shadow:0 8px 30px #000a; overflow:hidden; min-width:150px; }
+  .react-quick { display:flex; gap:3px; padding:7px 8px; border-bottom:1px solid var(--line); }
+  .react-quick button { font-size:19px; width:36px; height:36px; border-radius:9px; display:grid; place-items:center; } .react-quick button:hover { background:var(--hover); }
+  .reacts { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; }
+  .react { font-size:12px; background:var(--surface-2); border:1px solid var(--line); border-radius:20px; padding:2px 9px; cursor:pointer; user-select:none; }
+  .react.on { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-hi); }
+  .emoji-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; } .emoji-grid button { font-size:24px; height:46px; border-radius:10px; } .emoji-grid button:hover { background:var(--hover); }
   .msg-menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:12px 14px; font-size:14px; color:var(--text); }
   .msg-menu button:hover { background:var(--hover); } .msg-menu button.danger { color:var(--accent-hi); }
 
@@ -310,12 +320,12 @@
     </div>
     <div class="ob-step" data-step="1">
       <div class="ob-k">Identity · 2 of 3</div><h2>What are you chasing?</h2>
-      <p class="sub">Your life goals. These are permanent — they place you in your world and match you to people chasing the same. Pick at least one.</p>
-      <div class="chips" id="obGoals"></div>
+      <p class="sub">The one thing you're psychologically drawn to. Permanent — it places you in your world and matches you to people chasing the same. Pick one.</p>
+      <div id="obGoals"></div>
     </div>
     <div class="ob-step" data-step="2">
       <div class="ob-k">Identity · 3 of 3</div><h2>What are you escaping?</h2>
-      <p class="sub">Your fears. Also permanent. Pick at least one, then a line about who you're becoming.</p>
+      <p class="sub">What you're psychologically afraid of. Also permanent. Pick up to two, then a line about who you're becoming.</p>
       <div class="chips" id="obFears" style="margin-bottom:18px"></div>
       <div class="field"><label>Bio</label><textarea id="obBio" placeholder="Who are you becoming?"></textarea></div>
     </div>
@@ -361,7 +371,7 @@
   const online = () => !!(SUPA.url && SUPA.anonKey);
   let sb = null;
   async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
-  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], bio:r.bio||'Becoming.', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', tier:r.tier||'lite', isAdmin:!!r.is_admin, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
+  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], bio:r.bio||'Becoming.', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, tier:r.tier||'lite', isAdmin:!!r.is_admin, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
   // db.* is the swap seam for later phases; Phase 1 implements profiles/auth.
   const db = {
     auth:{
@@ -377,7 +387,8 @@
       async update(patch){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) return; await sb.from('profiles').update(patch).eq('id', user.id); },
       async search(q){ await initSB(); q=(q||'').trim(); let query=sb.from('profiles').select('*').not('handle','is',null).neq('id', me().id).limit(30); if(q) query=query.or(`handle.ilike.%${q}%,name.ilike.%${q}%`); const { data } = await query; return (data||[]).map(rowToProfile); },
       async byIds(ids){ ids=[...new Set((ids||[]).filter(Boolean))]; if(!ids.length) return []; await initSB(); const { data } = await sb.from('profiles').select('*').in('id', ids); return (data||[]).map(rowToProfile); },
-      async byId(id){ await initSB(); const { data } = await sb.from('profiles').select('*').eq('id', id).maybeSingle(); return data?rowToProfile(data):null; }
+      async byId(id){ await initSB(); const { data } = await sb.from('profiles').select('*').eq('id', id).maybeSingle(); return data?rowToProfile(data):null; },
+      async byHandle(h){ await initSB(); const { data } = await sb.from('profiles').select('*').eq('handle', String(h).toLowerCase()).maybeSingle(); return data?rowToProfile(data):null; }
     },
     rooms:{
       async bySlug(slug){ await initSB(); const { data } = await sb.from('rooms').select('id').eq('slug', slug).maybeSingle(); return data ? data.id : null; },
@@ -450,15 +461,26 @@
     async byHashtag(tag){ await initSB(); const { data } = await sb.from('post_hashtags').select('posts!inner(*)').eq('tag', tag.toLowerCase()).limit(40); const posts=(data||[]).map(r=>rowToPost(r.posts)).sort((a,b)=>a.created_at<b.created_at?1:-1); await ensureProfiles(posts.map(p=>p.a)); return posts; },
     async toggleLike(id){ await initSB(); const uid=me().id; const { data } = await sb.from('post_likes').select('post_id').eq('post_id',id).eq('user_id',uid).maybeSingle(); if(data){ await sb.from('post_likes').delete().eq('post_id',id).eq('user_id',uid); return false; } await sb.from('post_likes').insert({ post_id:id, user_id:uid }); return true; },
     comments:{
-      async list(postId){ await initSB(); const { data } = await sb.from('post_comments').select('*').eq('post_id',postId).order('created_at',{ascending:true}); const c=(data||[]).map(r=>({id:r.id,a:r.author_id,t:r.body,created_at:r.created_at})); await ensureProfiles(c.map(x=>x.a)); return c; },
-      async add(postId,body){ await initSB(); const { data, error } = await sb.from('post_comments').insert({ post_id:postId, author_id:me().id, body }).select().single(); if(error) throw error; return {id:data.id,a:data.author_id,t:data.body}; },
-      async count(postId){ await initSB(); const { count } = await sb.from('post_comments').select('*',{count:'exact',head:true}).eq('post_id',postId); return count||0; }
+      async list(postId){ await initSB(); const { data } = await sb.from('post_comments').select('*').eq('post_id',postId).order('created_at',{ascending:true}); const c=(data||[]).map(r=>({id:r.id,a:r.author_id,t:r.body,parentId:r.parent_id,created_at:r.created_at})); await ensureProfiles(c.map(x=>x.a));
+        const ids=c.map(x=>x.id); if(ids.length){ const [lk,mn]=await Promise.all([ sb.from('comment_likes').select('comment_id').in('comment_id',ids), sb.from('comment_likes').select('comment_id').eq('user_id',me().id).in('comment_id',ids) ]); const cnt={}; (lk.data||[]).forEach(l=>cnt[l.comment_id]=(cnt[l.comment_id]||0)+1); const mine=new Set((mn.data||[]).map(l=>l.comment_id)); c.forEach(x=>{ x.likes=cnt[x.id]||0; x.liked=mine.has(x.id); }); }
+        return c; },
+      async add(postId,body,parentId){ await initSB(); const { data, error } = await sb.from('post_comments').insert({ post_id:postId, author_id:me().id, body, parent_id:parentId||null }).select().single(); if(error) throw error; return {id:data.id,a:data.author_id,t:data.body,parentId:data.parent_id}; },
+      async count(postId){ await initSB(); const { count } = await sb.from('post_comments').select('*',{count:'exact',head:true}).eq('post_id',postId); return count||0; },
+      async toggleLike(commentId){ await initSB(); const uid=me().id; const { data } = await sb.from('comment_likes').select('comment_id').eq('comment_id',commentId).eq('user_id',uid).maybeSingle(); if(data){ await sb.from('comment_likes').delete().eq('comment_id',commentId).eq('user_id',uid); return false; } await sb.from('comment_likes').insert({comment_id:commentId,user_id:uid}); return true; }
     }
   };
+  db.reactions = {
+    async forMessages(ids){ if(!ids||!ids.length) return {}; await initSB(); const { data } = await sb.from('message_reactions').select('message_id,user_id,emoji').in('message_id', ids); const map={}; (data||[]).forEach(r=>{ (map[r.message_id]=map[r.message_id]||[]).push(r); }); return map; },
+    async toggle(messageId, emoji){ await initSB(); const uid=me().id; const { data } = await sb.from('message_reactions').select('emoji').eq('message_id',messageId).eq('user_id',uid).eq('emoji',emoji).maybeSingle(); if(data){ await sb.from('message_reactions').delete().eq('message_id',messageId).eq('user_id',uid).eq('emoji',emoji); return false; } await sb.from('message_reactions').insert({ message_id:messageId, user_id:uid, emoji }); return true; },
+    subscribe(roomIdUnused, on){ if(!sb) return null; return sb.channel('reacts:'+Math.random().toString(36).slice(2)).on('postgres_changes',{event:'*',schema:'public',table:'message_reactions'}, p=>on(p)).subscribe(); }
+  };
   /* ── servers (rooms of kind 'server') ── */
-  function rowToServer(r){ const m=r.meta||{}; return { id:r.id, name:r.title, category:r.category, bio:m.bio||'', icon:m.icon||(r.title?r.title[0].toUpperCase():'#'), public:r.is_public, owner:r.owner_id }; }
+  function rowToServer(r){ const m=r.meta||{}; return { id:r.id, name:r.title, category:r.category, bio:m.bio||'', icon:m.icon||(r.title?r.title[0].toUpperCase():'#'), iconPath:m.icon_path||null, public:r.is_public, owner:r.owner_id }; }
+  function serverIconHtml(s,size){ const rad=size>=44?16:12; if(s.iconPath){ return `<div class="av" style="width:${size}px;height:${size}px;border-radius:${rad}px;overflow:hidden;background:#000"><img src="${attr(postMediaUrl(s.iconPath))}" style="width:100%;height:100%;object-fit:cover"></div>`; } return `<div class="av" style="width:${size}px;height:${size}px;border-radius:${rad}px;background:${s.owner===me().id?'var(--accent)':'var(--surface-2)'};font-size:${Math.round(size*0.4)}px">${esc(s.icon)}</div>`; }
   db.servers = {
-    async create({title,category,bio,isPublic}){ await initSB(); const { data, error } = await sb.from('rooms').insert({ kind:'server', title, category, is_public:isPublic, owner_id:me().id, meta:{ bio:bio||'', icon:title[0].toUpperCase() } }).select().single(); if(error) throw error; await sb.from('room_members').insert({ room_id:data.id, user_id:me().id, rank:'Owner' }); return rowToServer(data); },
+    async create({title,category,bio,isPublic,iconPath}){ await initSB(); const { data, error } = await sb.from('rooms').insert({ kind:'server', title, category, is_public:isPublic, owner_id:me().id, meta:{ bio:bio||'', icon:title[0].toUpperCase(), icon_path:iconPath||null } }).select().single(); if(error) throw error; await sb.from('room_members').insert({ room_id:data.id, user_id:me().id, rank:'Owner' }); return rowToServer(data); },
+    async update(id, fields){ await initSB(); const upd={}; if(fields.title!==undefined)upd.title=fields.title; if(fields.category!==undefined)upd.category=fields.category; if(fields.meta!==undefined)upd.meta=fields.meta; await sb.from('rooms').update(upd).eq('id', id); },
+    async get(id){ await initSB(); const { data } = await sb.from('rooms').select('*').eq('id',id).maybeSingle(); return data?rowToServer(data):null; },
     async mine(){ await initSB(); const { data } = await sb.from('room_members').select('rank, rooms!inner(id,kind,title,category,is_public,owner_id,meta)').eq('user_id', me().id); return (data||[]).filter(x=>x.rooms&&x.rooms.kind==='server').map(x=>Object.assign(rowToServer(x.rooms),{ myRank:x.rank })); },
     async browse(q,cat){ await initSB(); let query=sb.from('rooms').select('*').eq('kind','server').eq('is_public',true).order('created_at',{ascending:false}).limit(40); if(cat)query=query.eq('category',cat); if(q)query=query.ilike('title','%'+q+'%'); const { data } = await query; return (data||[]).map(rowToServer); },
     async join(id){ await initSB(); await sb.from('room_members').upsert({ room_id:id, user_id:me().id, rank:'Initiate' }); },
@@ -471,17 +493,17 @@
     async mutual(other){ await initSB(); const mineList=await this.mine(); const ids=mineList.map(s=>s.id); if(!ids.length) return []; const { data } = await sb.from('room_members').select('room_id').eq('user_id', other).in('room_id', ids); const set=new Set((data||[]).map(r=>r.room_id)); return mineList.filter(s=>set.has(s.id)); }
   };
   function openServerOnline(s){ openThread({ key:'srv-'+s.id, roomId:s.id, serverId:s.id, serverOwner:s.owner, title:s.name, sub:(s.category||'server'), kind:'server', roomTag:{ main:s.public?'Public':'Private', sub:esc(s.category||'') }, back:'connect' }); }
-  async function renderMyServers(){ const box=$('srvMine'); if(!box)return; try{ const list=await db.servers.mine(); if(!$('srvMine'))return; if(!list.length){ box.innerHTML='<div class="empty" style="padding:12px">No servers yet — create one or browse public servers.</div>'; return; } box.innerHTML=list.map(s=>`<div class="row" data-osrv="${attr(s.id)}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.owner===me().id?'var(--accent)':'var(--surface-2)'};font-size:18px">${esc(s.icon)}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${esc(s.category||'')}${s.myRank?' · '+esc(s.myRank):''}</div></div></div>`).join(''); box.querySelectorAll('[data-osrv]').forEach(b=>b.onclick=()=>openServerOnline(list.find(x=>x.id===b.dataset.osrv))); }catch(e){ if($('srvMine'))box.innerHTML=''; } }
+  async function renderMyServers(){ const box=$('srvMine'); if(!box)return; try{ const list=await db.servers.mine(); if(!$('srvMine'))return; if(!list.length){ box.innerHTML='<div class="empty" style="padding:12px">No servers yet — create one or browse public servers.</div>'; return; } box.innerHTML=list.map(s=>`<div class="row" data-osrv="${attr(s.id)}">${serverIconHtml(s,46)}<div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${esc(s.category||'')}${s.myRank?' · '+esc(s.myRank):''}</div></div></div>`).join(''); box.querySelectorAll('[data-osrv]').forEach(b=>b.onclick=()=>openServerOnline(list.find(x=>x.id===b.dataset.osrv))); }catch(e){ if($('srvMine'))box.innerHTML=''; } }
   function browsePublicServersOnline(){
     let cat=null,q='';
     const draw=async ()=>{ let h=`<div class="sub-head"><button class="back" id="bpBack">${IC.back}</button><div class="st">Public servers</div></div><div class="sub-body"><div class="searchbar" style="margin-top:12px">${IC.search}<input id="bpSearch" placeholder="Search public servers" value="${attr(q)}"></div>`;
-      h+=`<div class="chips" style="padding:14px 16px 4px"><span class="chip ${!cat?'on':''}" data-cat="">All</span>${TOPIC_CATS.map(c=>`<span class="chip ${cat===c?'on':''}" data-cat="${attr(c)}">${c}</span>`).join('')}</div><div class="sec-title">Public servers</div><div id="bpList"><div class="empty" style="padding:16px">Loading…</div></div><div style="height:24px"></div></div>`;
+      h+=`<div class="chips" style="padding:14px 16px 4px"><span class="chip ${!cat?'on':''}" data-cat="">All</span>${SERVER_CATS.map(c=>`<span class="chip ${cat===c?'on':''}" data-cat="${attr(c)}">${c}</span>`).join('')}</div><div class="sec-title">Public servers</div><div id="bpList"><div class="empty" style="padding:16px">Loading…</div></div><div style="height:24px"></div></div>`;
       openSub(h); $('bpBack').onclick=closeSub;
       const si=$('bpSearch'); si.oninput=()=>{ q=si.value.trim(); clearTimeout(si._t); si._t=setTimeout(fill,250); };
       document.querySelectorAll('#subscreen [data-cat]').forEach(c=>c.onclick=()=>{ cat=c.dataset.cat||null; draw(); });
       fill();
     };
-    const fill=async ()=>{ const box=$('bpList'); if(!box)return; try{ const list=await db.servers.browse(q,cat); if(!$('bpList'))return; if(!list.length){ box.innerHTML='<div class="empty">No public servers yet — create the first.</div>'; return; } const myr=await Promise.all(list.map(s=>db.servers.myRank(s.id))); box.innerHTML=list.map((s,i)=>`<div class="row"><div data-opensrv="${attr(s.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0"><div class="av" style="width:46px;height:46px;border-radius:16px;background:var(--surface-2);font-size:18px">${esc(s.icon)}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${esc(s.category||'')}</span></div><div class="r-sub">${esc(s.bio||'')}</div></div></div><button class="chip ${myr[i]?'':'on'}" data-joinsrv="${attr(s.id)}">${myr[i]?'Open':'Join'}</button></div>`).join('');
+    const fill=async ()=>{ const box=$('bpList'); if(!box)return; try{ const list=await db.servers.browse(q,cat); if(!$('bpList'))return; if(!list.length){ box.innerHTML='<div class="empty">No public servers yet — create the first.</div>'; return; } const myr=await Promise.all(list.map(s=>db.servers.myRank(s.id))); box.innerHTML=list.map((s,i)=>`<div class="row"><div data-opensrv="${attr(s.id)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${serverIconHtml(s,46)}<div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${esc(s.category||'')}</span></div><div class="r-sub">${esc(s.bio||'')}</div></div></div><button class="chip ${myr[i]?'':'on'}" data-joinsrv="${attr(s.id)}">${myr[i]?'Open':'Join'}</button></div>`).join('');
       box.querySelectorAll('[data-joinsrv]').forEach(b=>b.onclick=async e=>{ e.stopPropagation(); const id=b.dataset.joinsrv; const s=list.find(x=>x.id===id); await db.servers.join(id); toast('Joined '+s.name); closeSub(); openServerOnline(s); });
       box.querySelectorAll('[data-opensrv]').forEach(b=>b.onclick=()=>{ const s=list.find(x=>x.id===b.dataset.opensrv); closeSub(); openServerOnline(s); });
     }catch(e){ if($('bpList'))$('bpList').innerHTML='<div class="empty">Couldn’t load servers.</div>'; } };
@@ -491,13 +513,25 @@
     const iOwn = owner===me().id || me().isAdmin;
     const myRank = await db.servers.myRank(id);
     const iMember = !!myRank;
+    const srv = iOwn ? await db.servers.get(id) : null; let picFile=null;
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Server settings</div><div class="th-sub" style="margin-bottom:16px">${esc(name||'')}</div>`;
-    if(iOwn)h+=`<div class="field"><label>Visibility — switch anytime</label><div class="segmented" style="margin:0"><button id="smPub">Public</button><button id="smPriv">Private</button></div></div>`;
+    if(iOwn && srv){
+      h+=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div id="sePicPrev" style="cursor:pointer">${serverIconHtml(srv,60)}</div><div><div style="font-weight:600">Server picture</div><div style="font-size:13px;color:var(--muted)">Tap to change</div></div><input id="sePic" type="file" accept="image/*" style="display:none"></div>`;
+      h+=`<div class="field"><label>Name</label><input id="seName" value="${attr(srv.name)}" maxlength="30"></div>`;
+      h+=`<div class="field"><label>Category</label><select id="seCat">${SERVER_CATS.map(c=>`<option ${c===srv.category?'selected':''}>${c}</option>`).join('')}</select></div>`;
+      h+=`<button class="btn ghost block" id="seSave" style="margin-bottom:10px">Save changes</button>`;
+      h+=`<div class="field"><label>Visibility — switch anytime</label><div class="segmented" style="margin:0"><button id="smPub">Public</button><button id="smPriv">Private</button></div></div>`;
+    }
     h+=`<div class="sec-title" style="margin-left:0">Members & ranks</div><div id="smMembers"><div class="empty" style="padding:12px">Loading…</div></div>`;
     if(iMember && !iOwn && owner!==me().id)h+=`<button class="btn ghost block" id="smLeave" style="margin-top:12px">Leave server</button>`;
     if(iOwn)h+=`<button class="btn ghost block danger" id="smDel" style="color:var(--accent-hi);border-color:var(--accent);margin-top:8px">${IC.trash} Delete server</button>`;
     h+=`<div style="height:16px"></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
+    if(iOwn && srv){
+      $('sePicPrev').onclick=()=>$('sePic').click();
+      $('sePic').onchange=()=>{ picFile=$('sePic').files[0]; if(picFile){ const u=URL.createObjectURL(picFile); $('sePicPrev').innerHTML=`<div class="av" style="width:60px;height:60px;border-radius:18px;overflow:hidden;background:#000"><img src="${u}" style="width:100%;height:100%;object-fit:cover"></div>`; } };
+      $('seSave').onclick=async ()=>{ const b=$('seSave'); b.disabled=true; b.textContent='Saving…'; try{ let iconPath=srv.iconPath; if(picFile){ const up=await uploadMedia(picFile,'image'); iconPath=up.path; } const newName=$('seName').value.trim()||srv.name; await db.servers.update(id, { title:newName, category:$('seCat').value, meta:{ bio:srv.bio||'', icon:newName[0].toUpperCase(), icon_path:iconPath||null } }); toast('Server updated'); closeSheet(); if(active&&active.serverId===id){ active.title=newName; renderThread(); } if(state.screen==='connect')renderConnect(); }catch(e){ b.disabled=false; b.textContent='Save changes'; toast('Could not save'); } };
+    }
     const setSeg=p=>{ if($('smPub'))$('smPub').classList.toggle('on',p); if($('smPriv'))$('smPriv').classList.toggle('on',!p); };
     db.servers.members(id).then(mem=>{ const box=$('smMembers'); if(!box)return; box.innerHTML=mem.map(m=>`<div class="row"><div data-user="${attr(m.user_id)}" style="display:flex;gap:11px;align-items:center;flex:1;min-width:0">${avatar(m.user_id,38,{dot:true})}<div class="r-main"><div class="r-name">${esc(person(m.user_id).name)}${m.user_id===owner?' · owner':''}</div><div class="r-sub">${esc(m.rank)}</div></div></div>${iOwn&&m.user_id!==owner?`<select data-rank="${attr(m.user_id)}" style="background:var(--surface);border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:12px;padding:5px">${RANKS.map(r=>`<option ${r===m.rank?'selected':''}>${r}</option>`).join('')}</select>`:''}</div>`).join(''); if(iOwn)box.querySelectorAll('[data-rank]').forEach(sel=>sel.onchange=async ()=>{ await db.servers.setRank(id, sel.dataset.rank, sel.value); toast('Rank updated'); }); });
     if(iOwn){ db.servers.mine().then(list=>{ const s=list.find(x=>x.id===id); setSeg(s?s.public:true); });
@@ -527,12 +561,14 @@
   const isOnlineNow = id => (me()&&id===me().id) || ONLINE.has(id);
 
   /* ── static data ── */
-  const GOALS = ['Discipline','Wealth','Mastery','Courage','Focus','Health','Creativity','Leadership','Purpose','Freedom'];
-  const FEARS = ['Wasted potential','Irrelevance','Failure','Rejection','Mediocrity','Being forgotten','Running out of time','Loneliness'];
+  const GOALS = ['Freedom','Value','Stability'];
+  const FEARS = ['Mediocrity','Rejection','Chaos','Boredom','Incompetence'];
+  const TRAIT_DESC = { Freedom:'Free from limitation', Value:'Being deemed worthy, commendable', Stability:'A sense of order and direction in life' };
   const SWATCH = ['#ed2e44','#f0663b','#f0b232','#3ba55d','#4a9eff','#a855f7','#eb459e'];
   const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦' };
   const RANKS = ['Initiate','Operator','Architect','Owner'];
   const TOPIC_CATS = ['Philosophy','Psychology','Entrepreneurship','Fitness','Creativity','Technology','Spirituality','Finance'];
+  const SERVER_CATS = ['Psychology','Philosophy','Spirituality','Other'];
   const COUNTRIES = { 'United States':'US','United Kingdom':'UK','Canada':'CA','Australia':'AU','Germany':'DE','India':'IN','Nigeria':'NG','Brazil':'BR','Japan':'JP','Other':'—' };
   const ccode = c => COUNTRIES[c] || '—';
   const REGIONS = {
@@ -658,8 +694,8 @@
   const canDelete=authorOrOwner=>me().isAdmin||authorOrOwner;
   function roomMembers(ctx){ if(!ctx)return []; if(ctx.dmKey)return [ctx.dmKey]; if(ctx.serverId){ const s=state.servers.find(x=>x.id===ctx.serverId); return s?s.members.map(m=>m.k).filter(k=>k!==me().name):[]; } if(ctx.key==='acolyte-hub')return ACOLYTES; return Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot&&k!==me().name); }
 
-  function fmt(t){ return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|\s)@([a-z0-9_]+)/gi,'$1<span class="mention">@$2</span>').replace(/(^|\s)#([a-z0-9_]+)/gi,'$1<span class="mention hashtag" data-hashtag="$2">#$2</span>'); }
-  function avatar(a,size,opt){ opt=opt||{}; const p=person(a),s=size||40; const dotCls=online()?(isOnlineNow(a)?'online':'offline'):(p.status||'online'); const dot=opt.dot?`<span class="dot ${dotCls}" style="width:${s*.3}px;height:${s*.3}px"></span>`:''; const live=(opt.ring&&p.live)?' live':''; const bg=p.bot?'linear-gradient(150deg,#ff4257,#c11d31)':p.color; const inner=p.bot?'<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':`<span style="font-size:${s*.4}px">${(p.name[0]||'?').toUpperCase()}</span>`; return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`; }
+  function fmt(t){ return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|\s)@([a-z0-9_]+)/gi,'$1<span class="mention" data-mention="$2">@$2</span>').replace(/(^|\s)#([a-z0-9_]+)/gi,'$1<span class="mention hashtag" data-hashtag="$2">#$2</span>'); }
+  function avatar(a,size,opt){ opt=opt||{}; const p=person(a),s=size||40; const dotCls=online()?(isOnlineNow(a)?'online':'offline'):(p.status||'online'); const dot=opt.dot?`<span class="dot ${dotCls}" style="width:${s*.3}px;height:${s*.3}px"></span>`:''; const live=(opt.ring&&p.live)?' live':''; const bg=p.bot?'linear-gradient(150deg,#ff4257,#c11d31)':p.color; const inner=p.avatarPath?`<img src="${attr(postMediaUrl(p.avatarPath))}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:(p.bot?'<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':`<span style="font-size:${s*.4}px">${(p.name[0]||'?').toUpperCase()}</span>`); return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`; }
   function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
   function confirmDialog(msg,onYes){ const s=$('confirmScrim'); s.innerHTML=`<div class="confirm"><h3>Are you sure?</h3><p>${esc(msg)}</p><div class="row2"><button class="btn ghost" id="cfNo">No</button><button class="btn" id="cfYes">Yes</button></div></div>`; s.classList.add('on'); $('cfNo').onclick=()=>s.classList.remove('on'); $('cfYes').onclick=()=>{ s.classList.remove('on'); onYes(); }; }
   function confirmType(msg,match,onYes){ const s=$('confirmScrim'); s.innerHTML=`<div class="confirm"><h3>Delete?</h3><p>${esc(msg)}</p><input id="ctIn" placeholder="Type “${attr(match)}” to confirm" autocomplete="off" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;padding:11px;margin-bottom:14px;outline:none"><div class="row2"><button class="btn ghost" id="ctNo">Cancel</button><button class="btn" id="ctYes" disabled style="opacity:.4">Delete</button></div></div>`; s.classList.add('on'); const inp=$('ctIn'),yes=$('ctYes'); inp.oninput=()=>{ const ok=inp.value.trim()===match; yes.disabled=!ok; yes.style.opacity=ok?'1':'.4'; }; $('ctNo').onclick=()=>s.classList.remove('on'); yes.onclick=()=>{ if(inp.value.trim()!==match)return; s.classList.remove('on'); onYes(); }; setTimeout(()=>inp.focus(),50); }
@@ -678,6 +714,14 @@
     const has=traitsOf(person(a)).includes(active.roomTrait);
     return has?'<span class="label-home">at home</span>':'<span class="label-foreign">foreigner</span>';
   }
+  let REACT={};
+  const EMOJI_SET = ['❤️','🔥','👍','😂','😮','😢','🙏','💯','👀','😍','🤔','👏','💪','✨','🎉','😅','🥰','😎','🤯','💀','🫡','🙌'];
+  function reactChipsHtml(mid){ const list=REACT[mid]; if(!list||!list.length)return ''; const by={}; list.forEach(r=>{ (by[r.emoji]=by[r.emoji]||[]).push(r.user_id); }); return `<div class="reacts">`+Object.keys(by).map(e=>{ const users=by[e]; const mine=me()&&users.includes(me().id); return `<span class="react ${mine?'on':''}" data-react="${attr(mid)}|${attr(e)}">${e} ${users.length}</span>`; }).join('')+`</div>`; }
+  function bumpRecent(emoji){ let rec=(state.recentEmojis||[]).filter(e=>e!==emoji); rec.unshift(emoji); state.recentEmojis=rec.slice(0,6); save(); }
+  function quickEmojis(){ const rec=(state.recentEmojis||[]).filter(e=>e!=='❤️'); return ['❤️', rec[0]||'🔥', rec[1]||'👍']; }
+  async function applyReaction(mid,emoji){ const r=await db.reactions.toggle(mid,emoji).catch(()=>null); if(r===null)return; const l=REACT[mid]=REACT[mid]||[]; const i=l.findIndex(x=>x.user_id===me().id&&x.emoji===emoji); if(r&&i<0)l.push({user_id:me().id,emoji}); else if(!r&&i>=0)l.splice(i,1); bumpRecent(emoji); repaintThread(); }
+  function repaintThread(){ if(!active)return; const sc=$('thScroll'); if(!sc)return; const L=state.msgs[active.key]||[]; const keep=sc.scrollTop; sc.innerHTML=renderMsgs(L,active); sc.scrollTop=keep; wireMsgMenu(sc,L,active); }
+  function openEmojiPicker(mid){ let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:18px;margin-bottom:12px">Pick a reaction</div><div class="emoji-grid">${EMOJI_SET.map(e=>`<button data-emoji="${attr(e)}">${e}</button>`).join('')}</div><div style="height:16px"></div></div>`; $('sheet').className='sheet'; showSheet(h); $('sheet').querySelectorAll('[data-emoji]').forEach(b=>b.onclick=()=>{ closeSheet(); applyReaction(mid,b.dataset.emoji); }); }
   function renderMsgs(list,ctx){
     let h='',prev=null;
     (list||[]).forEach(mm=>{
@@ -692,8 +736,9 @@
       const ed = mm.edited?'<span class="m-edited">(edited)</span>':'';
       const med = mm.mediaPath?msgMediaHtml(mm):'';
       const txt = mm.t?`<div class="m-text">${fmt(mm.t)} ${ed}</div>`:(ed?`<div class="m-text">${ed}</div>`:'');
-      if(grouped){ h+=`<div class="msg grouped" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${med}</div></div>`; }
-      else h+=`<div class="msg" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${med}</div></div>`;
+      const rc = mm.id?reactChipsHtml(mm.id):'';
+      if(grouped){ h+=`<div class="msg grouped" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${med}${rc}</div></div>`; }
+      else h+=`<div class="msg" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${med}${rc}</div></div>`;
       prev=mm;
     });
     return h;
@@ -768,8 +813,8 @@
   async function sendMedia(th, file, kindHint){ if(!online()||!th.roomId){ toast('Media isn’t available here'); return; } try{ toast('Uploading…'); const { path, kind } = await uploadMedia(file, kindHint); const m=await db.messages.send(th.roomId, '', { mediaPath:path, mediaKind:kind }); const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); } } } }catch(e){ toast('Upload failed — '+((e&&e.message)||'try again')); } }
   async function toggleRecord(th, btn){ if(mediaRec){ try{ mediaRec.stop(); }catch(e){} return; } if(!navigator.mediaDevices||!window.MediaRecorder){ toast('Recording not supported'); return; } try{ const stream=await navigator.mediaDevices.getUserMedia({audio:true}); recChunks=[]; mediaRec=new MediaRecorder(stream); mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); }; mediaRec.onstop=async ()=>{ stream.getTracks().forEach(t=>t.stop()); if(btn)btn.classList.remove('rec'); const blob=new Blob(recChunks,{type:'audio/webm'}); mediaRec=null; if(blob.size<600){ toast('Too short'); return; } await sendMedia(th, blob, 'audio'); }; mediaRec.start(); if(btn)btn.classList.add('rec'); toast('Recording… tap mic again to send'); }catch(e){ toast('Mic not available'); mediaRec=null; } }
   /* ═══ online room hydration + realtime ═══ */
-  let roomChannel=null;
-  function leaveRoom(){ if(roomChannel){ db.messages.unsubscribe(roomChannel); roomChannel=null; } }
+  let roomChannel=null, reactChannel=null;
+  function leaveRoom(){ if(roomChannel){ db.messages.unsubscribe(roomChannel); roomChannel=null; } if(reactChannel){ db.messages.unsubscribe(reactChannel); reactChannel=null; } }
   async function hydrateOnlineRoom(th){
     try{
       if(!th.roomId){
@@ -781,6 +826,7 @@
       const msgs=await db.messages.list(th.roomId);
       await ensureProfiles(msgs.map(m=>m.a));
       msgs.forEach(m=>{ if(m.replyToId){ const rm=msgs.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } });
+      try{ REACT=await db.reactions.forMessages(msgs.map(m=>m.id)); }catch(e){ REACT={}; }
       state.msgs[th.key]=msgs;
       if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(msgs,th)||'<div class="empty">Be the first to speak here.</div>'; s.scrollTop=s.scrollHeight; wireMsgMenu(s,msgs,th); } }
       subscribeRoom(th);
@@ -796,6 +842,7 @@
       else if(payload.eventType==='DELETE'){ const i=L.findIndex(x=>x.id===(payload.old&&payload.old.id)); if(i>=0)L.splice(i,1); }
       const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; s.innerHTML=renderMsgs(L,th); if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
     });
+    reactChannel=db.reactions.subscribe(null, async payload=>{ if(!active||active.key!==th.key)return; const mid=(payload.new&&payload.new.message_id)||(payload.old&&payload.old.message_id); if(!mid)return; const L=state.msgs[th.key]||[]; if(!L.some(m=>m.id===mid))return; try{ const map=await db.reactions.forMessages([mid]); REACT[mid]=map[mid]||[]; repaintThread(); }catch(e){} });
   }
   function maybeTagNotif(m){ const h=me().handle; if(h && new RegExp('@'+h+'\\b','i').test(m.t||'')){ pushNotif('tag',m.a,'tagged you'); } }
   /* @-mention autocomplete */
@@ -837,23 +884,29 @@
     scrollEl.querySelectorAll('.msg[data-mid]').forEach(row=>{
       const id=row.dataset.mid; if(!id)return;
       const open=(x,y)=>{ const m=list.find(z=>z.id===id); if(!m)return; showMsgMenu(x,y,m,list,th); };
-      row.addEventListener('pointerdown',e=>{ pressTimer=setTimeout(()=>open(e.clientX,e.clientY),450); });
+      row.addEventListener('pointerdown',e=>{ if(e.target.closest('[data-react]'))return; pressTimer=setTimeout(()=>open(e.clientX,e.clientY),450); });
       ['pointerup','pointerleave','pointermove','pointercancel'].forEach(ev=>row.addEventListener(ev,()=>clearTimeout(pressTimer)));
       row.addEventListener('contextmenu',e=>{ e.preventDefault(); open(e.clientX,e.clientY); });
     });
+    if(online()) scrollEl.querySelectorAll('[data-react]').forEach(el2=>el2.onclick=e=>{ e.stopPropagation(); const [mid,emoji]=el2.dataset.react.split('|'); applyReaction(mid,emoji); });
   }
   function showMsgMenu(x,y,m,list,th){
     document.querySelectorAll('.msg-menu').forEach(n=>n.remove());
     const mine=m.a===me().name||(me()&&m.a===me().id);
-    let h=`<button data-act="reply">${IC.reply} Reply</button>`;
+    const canReact = online() && m.id && th.roomId && !m.pin;
+    let h='';
+    if(canReact){ h+=`<div class="react-quick">${quickEmojis().map(e=>`<button data-qreact="${attr(e)}">${e}</button>`).join('')}<button data-qreact-add>${IC.plus}</button></div>`; }
+    h+=`<button data-act="reply">${IC.reply} Reply</button>`;
     if(mine){ h+=`<button data-act="edit">${IC.edit} Edit</button><button class="danger" data-act="del">${IC.trash} Delete</button>`; }
     else if(me().isAdmin){ h+=`<button class="danger" data-act="del">${IC.shield} Delete (admin)</button>`; }
     const menu=el('div','msg-menu',h); document.querySelector('.frame').appendChild(menu);
     const fr=document.querySelector('.frame').getBoundingClientRect();
-    menu.style.left=Math.min(x-fr.left, fr.width-165)+'px'; menu.style.top=Math.min(y-fr.top, fr.height-160)+'px';
+    menu.style.left=Math.min(x-fr.left, fr.width-165)+'px'; menu.style.top=Math.min(y-fr.top, fr.height-200)+'px';
     const close=()=>{ menu.remove(); document.removeEventListener('pointerdown',onDoc,true); };
     const onDoc=e=>{ if(!menu.contains(e.target))close(); };
     setTimeout(()=>document.addEventListener('pointerdown',onDoc,true),0);
+    menu.querySelectorAll('[data-qreact]').forEach(b=>b.onclick=()=>{ close(); applyReaction(m.id, b.dataset.qreact); });
+    const addB=menu.querySelector('[data-qreact-add]'); if(addB)addB.onclick=()=>{ close(); openEmojiPicker(m.id); };
     menu.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{ const a=b.dataset.act; close();
       if(a==='reply'){ replyTo={a:person(m.a).name,t:m.t,id:m.id}; renderReplyBar(); const i=$('thInput'); if(i)i.focus(); }
       else if(a==='edit'){ editing=m.id; const i=$('thInput'); if(i){i.value=m.t; i.focus(); i.placeholder='Editing…';} renderReplyBar(); }
@@ -866,42 +919,31 @@
 
   /* ═══ NEXUS HUB ═══ */
   function renderNexus(){
-    const u=me(); const gTrait=u.goals[0]||u.fears[0];
+    const u=me(); const gTrait=u.goals[0];
     const worldLabel=online()?((_presenceSynced&&ONLINE.size)?ONLINE.size+' online':'live'):(Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot).length+1)+' online';
     let h=`<div class="sec-title first">The one world</div>`;
     h+=`<div class="card" id="nxWorld"><div class="c-k">◍ World · ${worldLabel}</div><div class="c-t">The World</div><div class="c-s">One global room. Everyone in Maintrix, from everywhere, in one place.</div></div>`;
-    h+=`<div class="card" id="nxYW"><div class="c-k">◎ Your World${gTrait?' · '+esc(gTrait):''}</div><div class="c-t">Your World</div><div class="c-s">The room of people who share your traits — your "at home" nexus. Global or by location.</div></div>`;
-    h+=`<div class="sec-title">Explore ${u.tier!=='main'?'· <span style="color:var(--gold)">Main</span>':''}</div>`;
-    h+=`<div class="card ${u.tier!=='main'?'locked':''}" id="nxTrait">${u.tier!=='main'?'<span class="lockmini">'+IC.lock2+'</span>':''}<div class="c-k">✦ Trait Nexus Browsing</div><div class="c-t">Enter other worlds</div><div class="c-s">Join the nexus of any trait — sit in rooms of people chasing what you lack.</div></div>`;
-    h+=`<div class="card ${u.tier!=='main'?'locked':''}" id="nxTopic">${u.tier!=='main'?'<span class="lockmini">'+IC.lock2+'</span>':''}<div class="c-k">◈ Nexus Topic Rooms</div><div class="c-t">Rooms by topic</div><div class="c-s">Create a room around a topic, or drop into one someone else made.</div></div>`;
+    h+=`<div class="card" id="nxYW"><div class="c-k">◎ Your World${gTrait?' · '+esc(gTrait):''}</div><div class="c-t">Your World</div><div class="c-s">The room of everyone chasing ${gTrait?esc(gTrait):'what you chase'} — your "at home" nexus.</div></div>`;
+    h+=`<div class="sec-title">Explore</div>`;
+    h+=`<div class="card" id="nxTrait"><div class="c-k">✦ Trait Nexus Browsing</div><div class="c-t">Enter other worlds</div><div class="c-s">Sit in the nexus of any drive — rooms of people chasing what you don't.</div></div>`;
     $('s-nexus').innerHTML=h;
     $('nxWorld').onclick=()=>openThread({key:'world',roomSlug:'world',title:'The World',sub:'everyone, everywhere',kind:'world',roomTag:{main:'World',sub:'live'},back:'nexus'});
     $('nxYW').onclick=()=>openYourWorld();
-    $('nxTrait').onclick=()=> u.tier==='main'?openTraitBrowse():upsell('Trait Nexus Browsing');
-    $('nxTopic').onclick=()=> u.tier==='main'?openTopicRooms():upsell('Nexus Topic Rooms');
+    $('nxTrait').onclick=()=>openTraitBrowse();
   }
   function openYourWorld(){
-    const u=me(); const t=u.goals[0]||u.fears[0]||'your path';
-    // choose global vs location via a small sheet
-    let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Your World · ${esc(t)}</div><div class="th-sub" style="margin-bottom:16px">Both rooms are yours — the "at home" nexus of your traits.</div>`;
-    h+=`<button class="btn block" id="ywG" style="margin-bottom:10px">🌍 Global — everyone with your traits</button>`;
-    h+=`<button class="btn ghost block" id="ywL">📍 ${esc(ccode(u.loc.country))}${u.loc.region?' · '+esc(u.loc.region):''} — your traits, near you</button><div style="height:14px"></div></div>`;
-    showSheet(h);
-    $('ywG').onclick=()=>{ closeSheet(); openThread({key:'yw-'+t,roomSlug:'trait:'+t,title:'Your World',sub:'global · your traits',kind:'trait',roomTrait:t,roomTag:{main:esc(t),sub:'your world · global'},back:'nexus'}); };
-    $('ywL').onclick=()=>{ closeSheet(); openThread({key:'yw-'+t+'-loc',roomSlug:'trait:'+t,title:'Your World',sub:ccode(u.loc.country)+' · your traits',kind:'trait',roomTrait:t,roomTag:{main:esc(t),sub:'your world · '+esc(ccode(u.loc.country))},back:'nexus'}); };
+    const t=me().goals[0]||'your path';
+    openThread({key:'yw-'+t,roomSlug:'trait:'+t,title:'Your World',sub:'everyone chasing '+t,kind:'trait',roomTrait:t,roomTag:{main:esc(t),sub:'your world'},back:'nexus'});
   }
   function openTraitBrowse(){
     const u=me();
-    let h=`<div class="sub-head"><button class="back" id="tbBack">${IC.back}</button><div class="st">Choose a trait nexus</div></div><div class="sub-body">`;
-    h+=`<div class="sec-title first">Global trait nexuses</div>`;
-    GOALS.concat(FEARS).forEach(tr=>{ const own=traitsOf(u).includes(tr); h+=`<div class="row" data-trait="${attr(tr)}" data-loc="0"><div class="av" style="width:40px;height:40px;border-radius:12px;background:${own?'var(--accent)':'var(--surface-2)'};font-size:16px">${GOALS.includes(tr)?'◎':'⚑'}</div><div class="r-main"><div class="r-name">${esc(tr)} ${own?'<span class="label-home">at home</span>':'<span class="label-foreign">foreigner</span>'}</div><div class="r-sub">${GOALS.includes(tr)?'life goal':'fear'} · global room</div></div></div>`; });
-    h+=`<div class="sec-title">In ${esc(ccode(u.loc.country))}${u.loc.region?' · '+esc(u.loc.region):''}</div>`;
-    traitsOf(u).forEach(tr=>{ h+=`<div class="row" data-trait="${attr(tr)}" data-loc="1"><div class="av" style="width:40px;height:40px;border-radius:12px;background:var(--accent);font-size:16px">📍</div><div class="r-main"><div class="r-name">${esc(tr)} <span class="label-home">at home</span></div><div class="r-sub">your traits · near you</div></div></div>`; });
+    let h=`<div class="sub-head"><button class="back" id="tbBack">${IC.back}</button><div class="st">Choose a trait nexus</div></div><div class="sub-body"><div class="sec-title first">The worlds</div>`;
+    GOALS.forEach(tr=>{ const own=(u.goals||[]).includes(tr); h+=`<div class="row" data-trait="${attr(tr)}"><div class="av" style="width:40px;height:40px;border-radius:12px;background:${own?'var(--accent)':'var(--surface-2)'};font-size:16px">◎</div><div class="r-main"><div class="r-name">${esc(tr)} ${own?'<span class="label-home">at home</span>':'<span class="label-foreign">foreigner</span>'}</div><div class="r-sub">${esc(TRAIT_DESC[tr]||'')}</div></div></div>`; });
     h+=`<div style="height:24px"></div></div>`;
     openSub(h);
     $('tbBack').onclick=closeSub;
-    document.querySelectorAll('#subscreen [data-trait]').forEach(r=>r.onclick=()=>{ const tr=r.dataset.trait, loc=r.dataset.loc==='1'; closeSub();
-      openThread({key:'trait-'+tr+(loc?'-loc':''),roomSlug:'trait:'+tr,title:tr,sub:(loc?ccode(u.loc.country)+' · ':'global · ')+'trait nexus',kind:'trait',roomTrait:tr,roomTag:{main:esc(tr),sub:(loc?ccode(u.loc.country):'global')+' trait nexus'},back:'nexus'}); });
+    document.querySelectorAll('#subscreen [data-trait]').forEach(r=>r.onclick=()=>{ const tr=r.dataset.trait; closeSub();
+      openThread({key:'trait-'+tr,roomSlug:'trait:'+tr,title:tr,sub:'everyone chasing '+tr,kind:'trait',roomTrait:tr,roomTag:{main:esc(tr),sub:'trait nexus'},back:'nexus'}); });
   }
   function topicAv(bg){ return `<div class="av" style="width:40px;height:40px;border-radius:12px;background:${bg};font-size:16px">◈</div>`; }
   function openTopicRooms(){
@@ -979,7 +1021,6 @@
       h+=`<div class="empty" style="padding-top:16px">DMs are private. Start one from <b>Search</b>.</div>`;
     } else {
       h+=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="srvCreate" style="margin-bottom:10px">${IC.plus} Create a server</button><button class="btn ghost block" id="srvBrowse">${IC.search} Browse public servers</button></div>`;
-      h+=`<div class="sec-title">Live · public</div><div class="row" data-server="commons"><div class="av" style="width:46px;height:46px;border-radius:16px;background:var(--accent);font-size:18px">◍</div><div class="r-main"><div class="r-name">The Commons <span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span></div><div class="r-sub">everyone signed in · live</div></div></div>`;
       h+=`<div class="sec-title">Your servers</div><div id="srvMine">`;
       if(!online()){ const mine=state.servers.filter(s=>state.joined.includes(s.id)); mine.forEach(s=>{ h+=`<div class="row" data-server="${s.id}"><div class="av" style="width:46px;height:46px;border-radius:16px;background:${s.color};font-size:18px">${s.icon}</div><div class="r-main"><div class="r-name">${esc(s.name)} <span class="rank-badge">${s.public?'Public':'Private'}</span></div><div class="r-sub">${s.members.length} members · ${esc(s.cat)}</div></div></div>`; }); }
       h+=`</div>`;
@@ -1022,17 +1063,22 @@
 
   /* ═══ SERVERS ═══ */
   function openServer(sid){ const s=state.servers.find(x=>x.id===sid); if(!s)return; active=null; openThread({key:s.chan,title:s.name,sub:s.members.length+' members · '+s.cat,kind:'server',serverId:sid,roomTag:{main:s.public?'Public':'Private',sub:esc(s.cat)},back:'connect'}); }
-  function createServer(){
+  async function createServer(){
+    if(online()){ try{ const mineList=await db.servers.mine(); if(mineList.some(s=>s.owner===me().id)){ toast('You can make 1 server for now — more with membership later'); return; } }catch(e){} }
+    let picFile=null;
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:14px">Create a server</div>`;
-    h+=`<div class="field"><label>Topic category</label><select id="csCat">${TOPIC_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>`;
-    h+=`<div class="field"><label>What it’s about (bio)</label><textarea id="csBio" placeholder="One line on what this server is for"></textarea></div>`;
+    h+=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><div id="csPicPrev" class="av" style="width:60px;height:60px;border-radius:18px;background:var(--surface-2);font-size:24px;color:var(--muted);cursor:pointer">${IC.plus}</div><div><div style="font-weight:600">Server picture</div><div style="font-size:13px;color:var(--muted)">Optional · tap to add</div></div><input id="csPic" type="file" accept="image/*" style="display:none"></div>`;
     h+=`<div class="field"><label>Title</label><input id="csTitle" placeholder="Server name" maxlength="30"></div>`;
+    h+=`<div class="field"><label>Category</label><select id="csCat">${SERVER_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>`;
+    h+=`<div class="field"><label>What it’s about (bio)</label><textarea id="csBio" placeholder="One line on what this server is for"></textarea></div>`;
     h+=`<div class="field"><label>Visibility</label><div class="segmented" style="margin:0"><button id="csPub" class="on">Public</button><button id="csPriv">Private</button></div></div>`;
     h+=`<button class="btn block" id="csSave">Create server</button><div style="height:16px"></div></div>`;
-    showSheet(h);
+    $('sheet').className='sheet'; showSheet(h);
+    $('csPicPrev').onclick=()=>$('csPic').click();
+    $('csPic').onchange=()=>{ picFile=$('csPic').files[0]; if(picFile){ const u=URL.createObjectURL(picFile); $('csPicPrev').innerHTML=`<img src="${u}" style="width:100%;height:100%;object-fit:cover;border-radius:18px">`; } };
     let pub=true; $('csPub').onclick=()=>{pub=true; $('csPub').classList.add('on'); $('csPriv').classList.remove('on');}; $('csPriv').onclick=()=>{pub=false; $('csPriv').classList.add('on'); $('csPub').classList.remove('on');};
     $('csSave').onclick=async ()=>{ const title=$('csTitle').value.trim(); if(!title){toast('Give it a title');return;}
-      if(online()){ const b=$('csSave'); b.disabled=true; b.textContent='Creating…'; try{ const s=await db.servers.create({ title, category:$('csCat').value, bio:$('csBio').value.trim(), isPublic:pub }); closeSheet(); toast('Server created'); openServerOnline(s); }catch(e){ b.disabled=false; b.textContent='Create server'; toast('Could not create — '+(e.message||'try again')); } return; }
+      if(online()){ const b=$('csSave'); b.disabled=true; b.textContent='Creating…'; try{ let iconPath=null; if(picFile){ const up=await uploadMedia(picFile,'image'); iconPath=up.path; } const s=await db.servers.create({ title, category:$('csCat').value, bio:$('csBio').value.trim(), isPublic:pub, iconPath }); closeSheet(); toast('Server created'); openServerOnline(s); }catch(e){ b.disabled=false; b.textContent='Create server'; toast('Could not create — '+(e.message||'try again')); } return; }
       const id='u'+Date.now(); const chan='srv-'+id+'-general'; const s={id,name:title,icon:title[0].toUpperCase(),color:me().color,public:pub,cat:$('csCat').value,bio:$('csBio').value.trim(),chan,members:[{k:me().name,rank:'Owner'}],roles:{}}; state.servers.push(s); state.joined.push(id); state.msgs[chan]=[{a:'Overwatch',t:'**'+title+'** was created. You’re the Owner — assign ranks and roles from the members list.',bot:true,time:nowTime(),id:mid()}]; save(); closeSheet(); toast('Server created'); openServer(id); };
   }
   function browsePublicServers(){
@@ -1133,12 +1179,21 @@
     posts.forEach(async p=>{ const [lc,cc]=await Promise.all([db.posts.likeCount(p.id),db.posts.comments.count(p.id)]); const l=scr.querySelector('[data-pvlike="'+p.id+'"] .plc'); if(l)l.textContent=lc; const c=scr.querySelector('[data-pvcmt="'+p.id+'"] .cc'); if(c)c.textContent=cc; });
   }
   async function openComments(postId){
-    let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px">Comments</div></div><div id="cmtList" style="max-height:52vh;overflow-y:auto;padding-bottom:6px"><div class="empty" style="padding:16px">Loading…</div></div><div class="composer" style="position:relative"><div id="mentionPop"></div><div class="box"><input id="cmtInput" placeholder="Comment… @tag a friend" autocomplete="off"><button class="send" id="cmtSend">${IC.send}</button></div></div>`;
+    let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px">Comments</div></div><div id="cmtList" style="max-height:52vh;overflow-y:auto;padding-bottom:6px"><div class="empty" style="padding:16px">Loading…</div></div><div class="composer" style="position:relative"><div id="mentionPop"></div><div id="cmtReplyBar"></div><div class="box"><input id="cmtInput" placeholder="Comment… @tag a friend" autocomplete="off"><button class="send" id="cmtSend">${IC.send}</button></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
-    const load=async ()=>{ let list=[]; try{ list=await db.posts.comments.list(postId); }catch(e){} const box=$('cmtList'); if(!box)return; box.innerHTML=list.length?list.map(c=>`<div class="row" style="align-items:flex-start"><div data-user="${attr(c.a)}">${avatar(c.a,36,{ring:true})}</div><div class="r-main"><div class="r-name" style="font-size:14px">${esc(person(c.a).name)}</div><div style="font-size:14px;color:var(--text);line-height:1.4">${fmt(c.t)}</div></div></div>`).join(''):'<div class="empty" style="padding:16px">No comments yet. Say the first thing.</div>'; box.querySelectorAll('[data-user]').forEach(b=>b.onclick=()=>{ closeSheet(); openProfile(b.dataset.user===me().id?undefined:b.dataset.user); }); box.scrollTop=box.scrollHeight; };
-    await load();
+    let replyTarget=null;
+    const renderReply=()=>{ const b=$('cmtReplyBar'); if(!b)return; if(replyTarget){ b.innerHTML=`<div class="replybar">↳ replying to <b>@${esc(person(replyTarget.a).handle||person(replyTarget.a).name)}</b><span class="x" id="crX">✕</span></div>`; $('crX').onclick=()=>{ replyTarget=null; renderReply(); }; } else b.innerHTML=''; };
+    const cHtml=(c,isRep)=>`<div class="row" style="align-items:flex-start;${isRep?'padding-left:44px':''}"><div data-user="${attr(c.a)}">${avatar(c.a,isRep?30:36,{ring:true})}</div><div class="r-main"><div class="r-name" style="font-size:14px">${esc(person(c.a).name)}</div><div style="font-size:14px;color:var(--text);line-height:1.4">${fmt(c.t)}</div><div style="display:flex;gap:18px;margin-top:5px;font-size:12px;color:var(--muted)"><span data-clike="${attr(c.id)}" style="cursor:pointer;color:${c.liked?'var(--accent-hi)':'inherit'}">${c.liked?'♥':'♡'} ${c.likes||0}</span>${!isRep?`<span data-creply="${attr(c.id)}" style="cursor:pointer">Reply</span>`:''}</div></div></div>`;
+    const load=async ()=>{ let list=[]; try{ list=await db.posts.comments.list(postId); }catch(e){} const box=$('cmtList'); if(!box)return; if(!list.length){ box.innerHTML='<div class="empty" style="padding:16px">No comments yet. Say the first thing.</div>'; return; }
+      const tops=list.filter(c=>!c.parentId), rep=id=>list.filter(c=>c.parentId===id);
+      box.innerHTML=tops.map(t=>cHtml(t,false)+rep(t.id).map(r=>cHtml(r,true)).join('')).join('');
+      box.querySelectorAll('[data-user]').forEach(b=>b.onclick=()=>{ closeSheet(); openProfile(b.dataset.user===me().id?undefined:b.dataset.user); });
+      box.querySelectorAll('[data-clike]').forEach(b=>b.onclick=async ()=>{ const id=b.dataset.clike; const c=list.find(x=>x.id===id); const r=await db.posts.comments.toggleLike(id).catch(()=>null); if(r===null)return; c.liked=r; c.likes=(c.likes||0)+(r?1:-1); b.style.color=r?'var(--accent-hi)':''; b.innerHTML=(r?'♥':'♡')+' '+c.likes; });
+      box.querySelectorAll('[data-creply]').forEach(b=>b.onclick=()=>{ const c=list.find(x=>x.id===b.dataset.creply); replyTarget=c; renderReply(); const i=$('cmtInput'); if(i){ i.value='@'+(person(c.a).handle||'')+' '; i.focus(); } });
+      box.scrollTop=box.scrollHeight; };
+    await load(); renderReply();
     const input=$('cmtInput'); wireMentions(input,{key:'cmt'});
-    const send=async ()=>{ const v=input.value.trim(); if(!v)return; input.value=''; closeMentions(); try{ await db.posts.comments.add(postId,v); await load(); }catch(e){ toast('Could not comment'); } };
+    const send=async ()=>{ const v=input.value.trim(); if(!v)return; input.value=''; closeMentions(); const pid=replyTarget?replyTarget.id:null; replyTarget=null; renderReply(); try{ await db.posts.comments.add(postId,v,pid); await load(); }catch(e){ toast('Could not comment'); } };
     input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!mentionOpen())send(); });
     $('cmtSend').onclick=send; setTimeout(()=>input.focus(),60);
   }
@@ -1342,15 +1397,17 @@
     $('spSave').onclick=async ()=>{ const pw=$('spPass').value||''; if(pw.length<6){ toast('Password must be 6+ characters'); return; } const b=$('spSave'); b.disabled=true; b.textContent='Saving…'; try{ const { error }=await db.auth.setPassword(pw); if(error)throw error; toast('Password set'); closeSheet(); }catch(e){ b.disabled=false; b.textContent='Save password'; toast('Could not set — '+(e.message||'try again')); } };
   }
   function openAppearance(){
-    const u=me(); const sel={color:u.color,like:u.likeIcon||'heart'};
+    const u=me(); const sel={color:u.color,like:u.likeIcon||'heart'}; let picFile=null;
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:14px">Appearance</div>`;
+    if(online())h+=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><div id="apPicPrev" style="cursor:pointer">${avatar(u.name,64)}</div><div><div style="font-weight:600">Profile picture</div><div style="font-size:13px;color:var(--muted)">Tap to change</div></div><input id="apPic" type="file" accept="image/*" style="display:none"></div>`;
     h+=`<div class="field"><label>Your color</label><div class="swatches" id="apColor">${SWATCH.map(c=>`<div class="sw ${c===u.color?'on':''}" data-c="${c}" style="background:${c}"></div>`).join('')}</div></div>`;
     h+=`<div class="field"><label>How your likes show</label><div class="lswatches" id="apLike">${Object.keys(LIKE_ICONS).map(k=>`<div class="lsw ${k===sel.like?'on':''}" data-l="${k}">${LIKE_ICONS[k]}</div>`).join('')}</div></div>`;
     h+=`<button class="btn block" id="apSave">Save</button><div style="height:16px"></div></div>`;
-    showSheet(h);
+    $('sheet').className='sheet'; showSheet(h);
+    const pp=$('apPicPrev'); if(pp){ pp.onclick=()=>$('apPic').click(); $('apPic').onchange=()=>{ picFile=$('apPic').files[0]; if(picFile){ const url=URL.createObjectURL(picFile); pp.innerHTML=`<div class="av" style="width:64px;height:64px"><img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`; } }; }
     $('apColor').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ sel.color=b.dataset.c; $('apColor').querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.c===sel.color)); });
     $('apLike').querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{ sel.like=b.dataset.l; $('apLike').querySelectorAll('.lsw').forEach(x=>x.classList.toggle('on',x.dataset.l===sel.like)); });
-    $('apSave').onclick=async ()=>{ u.color=sel.color; u.likeIcon=sel.like; save(); if(online()){ try{ await db.profiles.update({ color:sel.color, like_icon:sel.like }); }catch(e){} } toast('Appearance saved'); closeSheet(); render(); };
+    $('apSave').onclick=async ()=>{ const b=$('apSave'); b.disabled=true; b.textContent='Saving…'; u.color=sel.color; u.likeIcon=sel.like; if(online()){ try{ const patch={ color:sel.color, like_icon:sel.like }; if(picFile){ const up=await uploadMedia(picFile,'image'); patch.avatar_path=up.path; u.avatarPath=up.path; } await db.profiles.update(patch); cacheProfile(me()); }catch(e){ toast('Could not save picture'); } } save(); toast('Appearance saved'); closeSheet(); render(); };
   }
   function openEditBio(){
     const u=me(); let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:12px">Edit bio</div><div class="field"><label>Bio — #hashtags and @mentions work</label><textarea id="ebBio" maxlength="200">${esc(u.bio||'')}</textarea></div><button class="btn block" id="ebSave">Save</button><div style="height:16px"></div></div>`;
@@ -1447,7 +1504,8 @@
   function openSub(h){ $('subscreen').innerHTML=h; $('subscreen').classList.add('on'); }
   function closeSub(){ $('subscreen').classList.remove('on'); $('subscreen').innerHTML=''; }
   $('view').addEventListener('click',e=>{ const t=e.target.closest('[data-user]'); if(!t)return; const u=t.dataset.user; openProfile(me()&&u===me().name?undefined:u); });
-  document.querySelector('.frame').addEventListener('click',e=>{ const ht=e.target.closest('[data-hashtag]'); if(ht){ e.stopPropagation(); closeSheet(); const pv=$('pvScreen'); if(pv){pv.classList.remove('on'); pv.innerHTML='';} openHashtag(ht.dataset.hashtag); } });
+  document.querySelector('.frame').addEventListener('click',e=>{ const ht=e.target.closest('[data-hashtag]'); if(ht){ e.stopPropagation(); closeSheet(); const pv=$('pvScreen'); if(pv){pv.classList.remove('on'); pv.innerHTML='';} openHashtag(ht.dataset.hashtag); return; } const mn=e.target.closest('[data-mention]'); if(mn){ e.stopPropagation(); openProfileByHandle(mn.dataset.mention); } });
+  function openProfileByHandle(handle){ if(!online()){ openProfile(handle); return; } db.profiles.byHandle(handle).then(p=>{ if(!p){ toast('@'+handle+' not found'); return; } cacheProfile(p); const pv=$('pvScreen'); if(pv&&pv.classList.contains('on')){pv.classList.remove('on'); pv.innerHTML='';} openProfile(p.id); }).catch(()=>{}); }
   // delegate data-user inside sheet + subscreen
   document.querySelector('.frame').addEventListener('click',e=>{ const inSheet=e.target.closest('#sheet [data-user], #subscreen [data-user]'); if(inSheet){ const u=inSheet.dataset.user; closeSheet(); closeSub(); openProfile(me()&&u===me().name?undefined:u); } });
 
@@ -1528,10 +1586,10 @@
     $('obCountry').innerHTML=Object.keys(COUNTRIES).map(c=>`<option>${c}</option>`).join('');
     const renderRegion=()=>{ const regs=REGIONS[$('obCountry').value]; const w=$('obRegionWrap'); if(!w)return; if(regs){ w.innerHTML=`<select id="obRegion"><option value="">Choose your state / region…</option>${regs.map(r=>`<option>${r}</option>`).join('')}</select>`; } else { w.innerHTML=`<input id="obRegion" placeholder="Your state / region" maxlength="30" autocomplete="off">`; } };
     $('obCountry').onchange=renderRegion; renderRegion();
-    $('obGoals').innerHTML=GOALS.map(g=>`<span class="chip" data-g="${g}">${g}</span>`).join('');
+    $('obGoals').innerHTML=GOALS.map(g=>`<button type="button" class="trait-opt" data-g="${g}"><div class="to-name">${g}</div><div class="to-desc">${esc(TRAIT_DESC[g]||'')}</div></button>`).join('');
     $('obFears').innerHTML=FEARS.map(f=>`<span class="chip" data-f="${f}">${f}</span>`).join('');
-    $('obGoals').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ toggle(ob.goals,b.dataset.g); b.classList.toggle('on'); });
-    $('obFears').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ toggle(ob.fears,b.dataset.f); b.classList.toggle('on'); });
+    $('obGoals').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ ob.goals=[b.dataset.g]; $('obGoals').querySelectorAll('.trait-opt').forEach(x=>x.classList.toggle('on',x.dataset.g===b.dataset.g)); });
+    $('obFears').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{ const f=b.dataset.f; if(ob.fears.includes(f)){ ob.fears=ob.fears.filter(x=>x!==f); b.classList.remove('on'); } else { if(ob.fears.length>=2){ toast('Pick up to 2'); return; } ob.fears.push(f); b.classList.add('on'); } });
     const hb=$('obHandle'); $('obName').oninput=()=>{ if(hb&&!hb.dataset.touched)hb.value=cleanHandle($('obName').value); }; if(hb)hb.oninput=()=>{ hb.dataset.touched='1'; hb.value=cleanHandle(hb.value); };
   }
   function obShow(n){ ob.step=n; $('obBar').style.width=((n+1)/3*100)+'%'; document.querySelectorAll('.ob-step').forEach(s=>s.classList.toggle('on',+s.dataset.step===n)); $('obBack').style.visibility=n===0?'hidden':'visible'; $('obNext').textContent=n===2?'Enter Maintrix':'Continue'; }
@@ -1541,8 +1599,8 @@
   $('obBack').onclick=()=>obShow(Math.max(0,ob.step-1));
   $('obNext').onclick=()=>{
     if(ob.step===0){ if(!$('obName').value.trim()){ $('obName').focus(); toast('Pick a name'); return; } const h=cleanHandle($('obHandle').value); if(h.length<3){ $('obHandle').focus(); toast('Pick an @handle — 3+ letters, numbers or _'); return; } $('obHandle').value=h; }
-    if(ob.step===1){ if(!ob.goals.length){ toast('Pick at least one goal'); return; } }
-    if(ob.step===2){ if(!ob.fears.length){ toast('Pick at least one fear'); return; } finishOb(); return; }
+    if(ob.step===1){ if(ob.goals.length!==1){ toast('Pick the one thing you’re chasing'); return; } }
+    if(ob.step===2){ if(!ob.fears.length){ toast('Pick at least one'); return; } finishOb(); return; }
     obShow(ob.step+1);
   };
   async function finishOb(){
@@ -1556,7 +1614,7 @@
   /* ═══ AUTH (Supabase email OTP) ═══ */
   function showSupaAuth(){ $('auth').classList.add('hidden'); $('onboard').classList.add('hidden'); $('supaAuth').classList.remove('hidden'); }
   let saMode='signin';
-  function paintSaMode(){ const si=saMode==='signin'; const t=$('saTitle'); if(!t)return; t.textContent=si?'Sign in to your world.':'Create your account.'; $('saTag').textContent=si?'Your identity, your world — wherever you sign in.':'Pick an email and a password. That’s it.'; $('saGo').textContent=si?'Sign in':'Create account'; $('saToggle').textContent=si?'New here? Create an account':'Have an account? Sign in'; $('saPass').autocomplete=si?'current-password':'new-password'; $('saStatus').textContent=''; }
+  function paintSaMode(){ const si=saMode==='signin'; const t=$('saTitle'); if(!t)return; t.textContent=si?'Sign in to your world.':'Welcome over the fence…'; $('saTag').textContent=si?'Your identity, your world — wherever you sign in.':'You’ve left the sleep behind. Welcome to Maintrix.'; $('saGo').textContent=si?'Sign in':'Create account'; $('saToggle').textContent=si?'New here? Create an account':'Have an account? Sign in'; $('saPass').autocomplete=si?'current-password':'new-password'; $('saStatus').textContent=''; }
   function prettyAuthErr(e){ const m=(e&&e.message||'').toLowerCase(); if(m.includes('invalid login')) return 'Wrong email or password'; if(m.includes('already registered')||m.includes('already exists')) return 'That email already has an account — sign in instead'; if(m.includes('should be at least')) return 'Password must be at least 6 characters'; return e&&e.message||'Something went wrong'; }
   (function wireSupaAuth(){ const go=$('saGo'); if(!go)return;
     $('saToggle').onclick=()=>{ saMode=saMode==='signin'?'signup':'signin'; paintSaMode(); };
