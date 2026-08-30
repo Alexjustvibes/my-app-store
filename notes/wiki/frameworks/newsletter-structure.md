@@ -1,6 +1,6 @@
-# Framework (mine): Newsletter Structure
+# Framework (adopted — NOT his): Newsletter Structure
 
-Type: the human's own framework
+Type: **adopted, not his.** Standard long-form/newsletter structure; codified in his writing-coach skill (Koe-lineage).
 Definition source: the writing-coach skill
 Use: the **in-order skeleton for a newsletter** (the long-form delivery of an APAG piece).
 

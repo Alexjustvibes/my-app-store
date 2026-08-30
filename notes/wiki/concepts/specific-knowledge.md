@@ -17,4 +17,4 @@ Knowledge you can't be trained for — found, not taught in schools. The thing y
 - Pairs with [[concepts/leverage]]: specific knowledge is judgement; leverage multiplies it. One without the other underperforms.
 
 ## Connects to
-[[thinkers/naval-ravikant]], [[concepts/leverage]], [[concepts/institutions-to-individuals]], FMS positioning, [[seeds/discord-writing-is-creative-practice]], [[sources/commonplace-2026-06-09]]. Also: the human's own "what would I do forever / always feels positive" ([[frameworks/the-jester-hero]]) is this concept in his own words.
+[[thinkers/naval-ravikant]], [[concepts/leverage]], [[concepts/institutions-to-individuals]], FMS positioning, [[seeds/discord-writing-is-creative-practice]], [[sources/commonplace-2026-06-09]]. Also: the human's own "what would I do forever / always feels positive" ([[frameworks/the-jester-hero]]) is this concept in his own words. And Koe's **genuine interest** (browser/YouTube history; the books you buy) is the same idea — what to look at to *find* your specific knowledge ([[frameworks/domain-of-mastery]]).

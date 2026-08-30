@@ -17,5 +17,8 @@ The two notes are one idea at two altitudes: alignment as a *life* state (note 3
 ## Market signal
 **Update (2026-06-09): this note earned a subscriber** — a real conversion, not lukewarm as first logged. The abstract claim *does* pull. Notable on two counts: (1) it's conviction-driven and number-free (like the Writer Note) yet still converted — evidence that a number isn't required to convert; (2) it's **CORE to the mission** — it literally states "aligned freedom." So alignment is a *second converting theme* alongside the writing-identity one. The concrete "levers you enjoy pulling" version (note 4) is still worth testing as a higher-reach framing, but the abstract version is validated enough to develop. Tracked in [[notes-performance]].
 
+## External cousin (validation)
+Dan Koe's [[frameworks/domain-of-mastery]] is structurally this concept applied to topic-choice: his three interests (monetizable + genuine + understand-yourself) are "alignment" by another route — work where earning, curiosity, and self point the same way. Note the divergence in *starting point*: Koe is market-first ("what sells"); the human's mission is alignment-first. See [[sources/koe-what-do-you-write-about]].
+
 ## Connects to
-[[concepts/flow]], [[concepts/agency]], [[concepts/specific-knowledge]], [[concepts/wealth-vs-status]], [[frameworks/the-jester-hero]], [[sources/own-notes-batch-pre-wiki]].
+[[concepts/flow]], [[concepts/agency]], [[concepts/specific-knowledge]], [[concepts/wealth-vs-status]], [[frameworks/the-jester-hero]], [[frameworks/domain-of-mastery]], [[sources/own-notes-batch-pre-wiki]].

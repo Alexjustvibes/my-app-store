@@ -1,6 +1,6 @@
-# Framework (mine): The Levels of Awareness
+# Framework (adopted — NOT his): The Levels of Awareness
 
-Type: the human's own framework
+Type: **adopted, not his and not Koe's invention either.** The five stages of awareness are classic copywriting (Eugene Schwartz lineage), taught by Koe and codified in his writing-coach skill.
 Definition source: the writing-coach skill
 Use: **diagnose whether content is aimed at the right reader.**
 

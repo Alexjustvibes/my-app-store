@@ -1,6 +1,6 @@
-# Framework (mine): PPP
+# Framework (adopted — NOT his original): PPP
 
-Type: the human's own framework
+Type: **adopted, not his.** Pull → Perspective → Punchline is standard copywriting structure; the acronym/packaging may be his, the principles are not. Codified in his writing-coach skill (Koe-lineage).
 Definition source: the writing-coach skill
 Use: **sections, tweets, and transitions** (the micro structure). The macro counterpart is [[frameworks/apag]].
 

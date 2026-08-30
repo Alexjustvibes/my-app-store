@@ -17,6 +17,9 @@ The competent professional who is good at their job, stable, "fine" — and quie
 - The turn / what most people get wrong: they treat creating as a luxury to earn after the responsible stuff is handled. Reframe — creating is *maintenance*. You're not indulging; you're discharging something that damages you when it's pent up.
 - Connects to Naval's "ignore society… create" instinct and to [[thinkers/dan-koe]]'s "entrepreneurship is self-improvement in disguise" — making the thing isn't separate from being well, it's a precondition.
 
+## External resonance
+[[sources/beauty-out-of-good-essay]]: "All those drafts of your manuscript collecting dust in your cabinet? You're not editing. You're dilly dallying." The unmade thing isn't being perfected — it's being avoided. Same wound as this seed, stated as a kick.
+
 ## Connects to
 [[concepts/two-modes-of-attention]], [[sources/commonplace-2026-06-09]], [[thinkers/dan-koe]], reenchantment, the broader "you already have the reps" thread ([[seeds/discord-writing-is-creative-practice]]).
 

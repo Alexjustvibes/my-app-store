@@ -33,6 +33,34 @@ star, aligned freedom wins.
 **This mission *is* the "Current Bet"** referenced throughout the repo. When a seed tags
 `Serves Current Bet: yes/no`, it is being tested against this mission.
 
+The human's personal **vision, anti-vision, and mission-as-bridge** (the path from anti-vision →
+vision) are articulated in `wiki/vision.md`. "Leading others to aligned freedom" is the
+*others-facing endpoint* of that bridge; the front half — *free myself first, by solving my own
+problems and shipping the solutions* — lives there too. The north star above is held above the
+personal framing when they ever diverge.
+
+## Current state (handoff snapshot — 2026-08-26; check `log.md` tail for the latest)
+
+The strategic foundation is **built** — don't re-derive it. Read these first: `the-self` (who he is),
+`vision`, `goals`, `my-domain-of-mastery` (niche + content engine), `my-reader-profile-entp`
+(audience = him), `fms` (the product), `problems-log`. His **niche/engine:** philosophy + psychology
+→ building a free creative life; format = *ancient idea → modern creator problem*. His **moat:**
+synthesis (don't do it for him). His **wound:** shipping (ENTP, inferior-Si). He ships *notes* fine;
+the gap is notes → bigger pieces.
+
+**The active phase is SHIPPING**, via the `Coach` operation — turn proven seeds into posted
+Notes/newsletters. Goals: **3 notes/day (floor 1) · 1 newsletter/week · this year = first income +
+validate FMS demand.** His proven lane (real data): punchy conviction aphorisms on agency /
+self-reliance / creating.
+
+**Immediate open item:** he wrote a full draft into `seeds/do-anything-make-them-care` (his best
+note, 7 likes). It's been diagnosed — **3 fixes then post:** move the hook to the front (currently a
+soft question buried behind ~5 paragraphs of philosophy), cut the ~10 "really"s, and stop calling his
+own topics "not very interesting." Other proven, draft-ready seeds: `solve-your-own-problems-first`,
+`surrender-your-ego-to-your-calling`, `the-prompt-is-the-value`.
+
+**When in doubt: help him SHIP, not organize.** The wiki is not the bottleneck; output is.
+
 ## Prime directive
 
 This is **not** a neutral knowledge archive. It is a writing-fuel engine. Its job is
@@ -52,6 +80,10 @@ and "How would publishing it help someone free themselves?" (the mission test). 
 1. **`raw/`** — immutable source documents (article clips, book/chapter notes, podcast
    and video transcripts, screenshots, the human's own voice memos). You READ from here.
    You NEVER edit these. This is the source of truth.
+   **Standing rule:** whenever the human posts/ships a note or post, append its verbatim text
+   to `raw/posted-notes.md` (append-only — add new, never edit past entries). That file is the
+   canonical archive of his output; performance/diagnosis is tracked separately in
+   `wiki/notes-performance.md`. Do this every time, without being asked.
 2. **`wiki/`** — everything you write and maintain. Interlinked markdown. You own this
    layer entirely: create pages, update them on every new source, keep cross-references
    current, flag contradictions.
@@ -68,12 +100,20 @@ and "How would publishing it help someone free themselves?" (the mission test). 
 - **`concepts/`** — leverage, specific knowledge, otium/negotium, fallibilism,
   antifragility, reenchantment, etc. Definition, the human's working version, links to
   thinkers and seeds.
-- **`frameworks/`** — TWO kinds: (a) the human's own — APAG, PPP, Levels of Awareness,
-  the Outline System, Idea Compiling, the Experience Model; (b) others' he's studying.
-  When an external idea connects to one of his frameworks, say so explicitly. That
-  connection is often the essay.
+- **`frameworks/`** — TWO kinds: (a) his own and (b) others' he's studying. NOTE (learned this
+  session): APAG, PPP, Levels of Awareness, and the Experience Model are actually **Dan Koe's**,
+  adopted into his system — his *genuinely* own are the **Jester-Hero** and his **Domain-of-Mastery
+  adaptation**. His originality is in synthesis/application, not the frameworks. When an external
+  idea connects to one of his frameworks, say so — that connection is often the essay.
 - **`seeds/`** — THE load-bearing page type. Each seed is a potential piece of content.
-  This is where reading becomes writing. See format below.
+  This is where reading becomes writing. See format below. Seeds also carry a
+  `Mission fit:` line (CORE vs peripheral — see Mission).
+- **Personal / operational pages** (top-level in `wiki/`, not in the typed folders) — the human
+  and his plan. Key ones: `the-self` (master self-knowledge hub), `vision`, `goals`, `problems-log`
+  (his problems → future content), `fms` (the product), `my-domain-of-mastery`,
+  `my-reader-profile-entp`, `human-3.0-assessment`, `notes-performance`, `idea-synthesis`,
+  `dealership-content-lane`. **At session start, read `the-self` + `vision` + `goals` +
+  `problems-log`** — that's who he is and where he's going; don't re-derive it from scratch.
 
 ## The seed format (most important thing in this repo)
 
@@ -86,6 +126,7 @@ to date — Discord writing reframed as latent content skill, ~600 views — is 
 
 Stage: raw            # raw → validating → newsletter → video  (matches his pipeline)
 Serves Current Bet: yes/no
+FMS ladder: core / yes / partial   # does it teach the FMS buyer a build-move? (see below)
 Template: overlooked-person + counterintuitive-claim   # or note why it deviates
 
 ## Hook (the counterintuitive claim, in one line)
@@ -106,6 +147,20 @@ Template: overlooked-person + counterintuitive-claim   # or note why it deviates
 Keep seeds honest. A seed with a hook but no real argument is a `Stage: raw` placeholder,
 not a ready piece. Don't inflate.
 
+**The FMS-ladder check (added 2026-08-30).** Every seed must connect to the endgoal — the online
+business ([[fms]]). This is the pipeline test + mission test collapsed into one business question:
+
+> **"Does this teach something the FMS buyer *actually needs to build their own thing* — or is it
+> just interesting?"** (The FMS buyer = the aspiring creator / fellow ENTP one stage behind him.)
+
+Score each seed:
+- **core** — teaches a direct build-move or states the FMS thesis itself (you can start, here's how creating/value works now). Ship-first.
+- **yes** — teaches a real facet of building your own thing; attracts the right reader.
+- **partial** — true and on-theme (everything here orbits freedom by design), but teaches *worldview/understanding* more than a build-move. Fine to keep; lower shipping priority. **If a seed can't even reach `partial`, it's the [bloodline trap](engagement ≠ mission) — flag it, don't ship it for likes.**
+
+The running rescore lives in `index.md` (Seeds section, tagged per line). Backfill the `FMS ladder:`
+line on each seed the next time it's touched — don't mass-edit to organize (that's the shipping trap).
+
 ## Operations
 
 ### Ingest
@@ -125,6 +180,16 @@ answer with citations to `[[source]]` pages. Good answers — comparisons, synth
 connections — get **filed back as new pages** (usually a concept or a seed) so the
 exploration compounds instead of dying in chat.
 
+### Coach (seed → shipped piece)
+He wants to turn a seed/idea into a Note or newsletter. You **coach — never ghostwrite** (see
+hard rules). Diagnose against his frameworks: hook via `attention-capture-tactics` +
+`levels-of-awareness`; structure via `apag`/`ppp`/`newsletter-structure`; build via
+`the-outline-system` (hook written **last**). For outlines, ask **one question at a time**. When
+he posts it: append the verbatim text to `raw/posted-notes.md` and log it in
+`wiki/notes-performance.md` (hook engine, tactics, awareness level, engagement). The signal that
+matters is **recognition** (this-is-me replies, saves, "I'd buy this"), not raw likes. His proven
+lane (from real data): punchy, conviction-driven aphorisms on agency / self-reliance / creating.
+
 ### Lint
 On request, health-check the wiki. Standard checks (contradictions, stale claims, orphan
 pages, missing cross-refs, concepts mentioned but lacking a page). PLUS two custom checks
@@ -140,13 +205,25 @@ for this human:
   bookkeeping). But seeds give *angles, structure, and scaffolding* — not finished prose
   he'd publish under his name. Feedback and diagnosis on his drafts, never a rewrite.
   (This mirrors his standing writing-coach arrangement.)
-- **Stay in scope.** This wiki serves his active focus (FMS, the newsletter/video pipeline,
+- **Stay in scope.** This wiki serves his active focus (FMS — his planned course on
+  learning to write / create online from scratch, the product the pipeline ladders toward; see
+  `wiki/fms.md` — plus the newsletter/video pipeline,
   thinking he wants to publish). It is NOT for backburnered projects (MindHybrid, No Man's
   World) or deferred interests (animation/Blender, drawing, music, game theory). If ingested
   material starts pulling that direction, flag the drift rather than building it out here.
 - **Don't over-engineer.** At this scale, `index.md` is enough — no vector DB, no embeddings,
   no RAG infra. Plain greppable markdown. Add tooling only when the wiki actually outgrows
   the index, not before.
+- **Bias toward shipping.** His signature failure mode (ENTP, inferior-Si) is over-ingesting and
+  under-shipping — beautifully organized input, little output. (He ships *notes* fine; the real
+  gap is notes → bigger pieces: newsletter/video.) When he's accumulating or reorganizing, the
+  move is almost always "push one thing to output," not "ingest/organize more." Say so. The wiki
+  is scaffolding toward shipped writing, never a place to hoard.
+- **Don't do his synthesis for him.** Synthesis (connecting ideas) is his moat and his
+  genuine-interest edge; per `human-3.0-assessment`, letting AI do it *for* him atrophies it.
+  Pressure-test and sharpen the collisions he makes — don't replace the step where he makes them.
+  Especially in his genuine-interest domain (philosophy/psychology), hand the synthesis back. The
+  content engines (`idea-synthesis`, ancient-idea→modern-problem) are HIS reps to run.
 
 ## index.md and log.md
 
@@ -156,3 +233,6 @@ for this human:
   `grep "^## \[" log.md | tail -5` shows recent activity:
   `## [YYYY-MM-DD] ingest | Source Title`  ·  `## [YYYY-MM-DD] query | what was asked`  ·
   `## [YYYY-MM-DD] lint | summary`
+  **Always use the ACTUAL current date** — check it (from the environment/system context) at the
+  start of each session; never carry over a stale date from a raw file or a previous entry. (Past
+  entries in this log were mis-dated 2026-06-09 for a stretch; leave them, but don't repeat it.)

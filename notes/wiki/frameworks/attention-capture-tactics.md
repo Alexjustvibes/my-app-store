@@ -1,6 +1,6 @@
-# Framework (mine): Attention Capture & Holding
+# Framework (adopted — NOT his): Attention Capture & Holding
 
-Type: the human's own framework / toolkit
+Type: **adopted, not his.** Standard copywriting hook/retention tactics; codified in his writing-coach skill (Koe-lineage / copywriting canon).
 Definition source: the writing-coach skill
 Use: **diagnose whether a hook captures attention, and whether the body holds it.**
 

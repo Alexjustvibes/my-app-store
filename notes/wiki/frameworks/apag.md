@@ -1,6 +1,6 @@
-# Framework (mine): APAG
+# Framework (adopted — NOT his original): APAG
 
-Type: the human's own framework
+Type: **adopted, not his.** The Attention → Perspective → Advantage → Gamify structure is standard persuasive-writing/copywriting canon; the acronym/packaging may be his, the underlying principles are not. Codified in his writing-coach skill (Koe-lineage).
 Definition source: the writing-coach skill
 Use: **full articles and newsletters** (the macro structure). The micro counterpart is [[frameworks/ppp]].
 

@@ -18,6 +18,9 @@ The diligent credential-stacker: the person mid-degree, mid-certification, mid-"
 - The turn: this is not "credentials are worthless / drop out." It's that **the source of trust changed address.** Where the institution used to vouch for you, now your proof of work does. Putting your reps in public *is* the new credential. (Connects to [[concepts/specific-knowledge]] — apprenticeship over school, [[seeds/apprenticeship-not-school]].)
 - Character angle ([[thinkers/cicero]]): when trust comes from the person not the institution, character becomes load-bearing again — a credential can't fake what proof-of-work reveals.
 
+## External resonance + the emotional template (this seed is now ripe)
+[[sources/harry-miller-hypnosis-of-high-achievement]] is this seed made *visceral*: valedictorian / 4.0 engineering / Rhodes finalist → minimum-wage at Crunch Fitness. "I played by the rules, and I got played." That essay is the **emotional register** this seed's open question asked for — the felt betrayal, not just the analytical "depreciating asset" claim. Borrow that charge (in your own voice). The constructive turn Harry never makes — *here's the exit (make something / [[fms]])* — is what makes it yours, not just a lament.
+
 ## Connects to
 [[concepts/institutions-to-individuals]], [[concepts/specific-knowledge]], [[seeds/apprenticeship-not-school]], [[thinkers/naval-ravikant]], FMS positioning, [[sources/commonplace-2026-06-09]].
 

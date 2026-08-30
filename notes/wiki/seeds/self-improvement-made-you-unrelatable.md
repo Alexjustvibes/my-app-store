@@ -17,6 +17,9 @@ The self-improvement devotee who did everything right — routines, discipline, 
 - The jester half exists precisely to prevent this: it keeps the improved person warm, funny, in contact with people — able to walk between yin and yang without losing authenticity.
 - The turn / what most people get wrong: they treat self-improvement as a solo vertical climb. But past a point, more discipline subtracts from the very connection that made the climb worth it. The skill nobody trains is staying *relatable* while you level up.
 
+## External resonance
+[[sources/beauty-out-of-good-essay]] sharpens the failure mode: the "Physical Optimizer" whose life is "Bed → Gym → Work → Supermarket. Repeat. No room... to be of service" — optimization as *avoidance of real life*, self-improvement that serves and connects with no one. Plus Calhoun's "Beautiful Ones": males who groom in isolation while everything around them dies. The vivid extreme of this seed's warning.
+
 ## Connects to
 [[frameworks/the-jester-hero]], [[concepts/agency]], [[thinkers/cicero]] (friendship/character — relatability as a moral, not just social, good), [[sources/modern-day-hero-alex-2026-05-24]].
 
