@@ -1,6 +1,6 @@
-# Framework (mine): Content Philosophy (the root beliefs)
+# Framework (adopted — NOT his): Content Philosophy (the root beliefs)
 
-Type: the human's own framework / philosophy
+Type: **adopted, not his.** General content-marketing philosophy (Koe-flavored); codified in his writing-coach skill. The beliefs are ones he holds, but he didn't originate them.
 Definition source: the writing-coach skill ("Core Beliefs")
 Use: the foundation all the other writing frameworks grow from.
 

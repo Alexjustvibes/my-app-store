@@ -1,6 +1,6 @@
-# Framework (mine): The Outline System (outline-first method)
+# Framework (adopted — mostly NOT his): The Outline System (outline-first method)
 
-Type: the human's own framework
+Type: **mostly adopted.** Outline-first / hook-written-last is general writing practice that Koe teaches; codified in his writing-coach skill. (The "Idea Compiling" name may be his own; the method itself isn't original.)
 Definition source: the writing-coach skill ("Brainstorming / Outline Help")
 Use: **build a piece outline-first**, one question at a time — the hook comes last.
 

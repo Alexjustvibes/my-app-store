@@ -49,6 +49,8 @@ Read: *faint-positive, not validation.* A subscriber is a stronger action than a
 What to watch: **recognition** signals (replies of "this is me," saves, quote-reposts adding their own number) — not raw likes. Recognition = green light to move this toward `newsletter` (and into [[seeds/the-writer-is-now-the-content-creator]] as the broad thesis). If it underperforms, A/B the number and comparison first; the structure is sound.
 Decision (2026-06-09): human is doubling down — making more content on this theme. See the theme cluster: [[seeds/the-writer-is-now-the-content-creator]], [[seeds/your-free-obsession-is-the-moat]], [[seeds/unused-creative-power-is-destructive]].
 
+He restated the core conviction himself (2026-06-09, [[sources/own-ideas-2026-06-09]]): *"If you use Discord a lot to talk about specific topics you are naturally inclined to start writing — you literally write all day."* Still believes it; it's a recurring conviction, not a one-off.
+
 What worked through the passes: second-person mirror, a believable-but-staggering number (the small/unbelievable-number trap was the main failure mode), the two-word turn "But it is.", one spine (identity), and the wall-removal close ("not starting from scratch") plus the "direct it" aim.
 
 ### Framework diagnosis (baseline, 2026-06-09)
