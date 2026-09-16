@@ -67,10 +67,17 @@ pins, and realtime all work the same everywhere.
   immutable `@handle` used for mentions/URLs, `name (text)` — the changeable
   display name, `goals text[]`, `fears text[]`, `bio`, `color`, `like_icon`,
   `country`, `region`, `tier ('lite'|'main')`, `is_admin bool`,
-  `created_at`, `live_stream_id (nullable fk)`.
+  `created_at`, `live_stream_id (nullable fk)`, `mbti (nullable, migration 0010,
+  now allows 'Unsure' too per migration 0011)`, `enneagram_core`, `enneagram_wing`,
+  `enneagram_tritype` (format `x-x-x`), `temperament_dominant`,
+  `temperament_secondary` (all nullable, migration 0011).
   - **Immutability:** a `BEFORE UPDATE` trigger rejects changes to `goals`/`fears`
     and `handle` (traits and handle are locked after signup); `name`, `bio`,
-    `color`, `like_icon` stay editable per the appearance rules.
+    `color`, `like_icon`, and **all personality-system fields** (`mbti`,
+    `enneagram_*`, `temperament_*`) stay editable — members can set/change any of
+    them anytime from their profile (pick directly or take that system's in-app
+    mini test), and also set them once at signup (onboarding step 4, defaulting
+    to "Unsure").
 - **traits** — `value (pk)`, `kind ('goal'|'fear')`. Seed from `GOALS`/`FEARS`.
 
 ### Social graph
@@ -110,9 +117,14 @@ Servers are `rooms` with `kind='server'` plus:
 - Public server discovery = `select rooms where kind='server' and is_public`.
 
 ### Posts & media (Main-gated)
-- **posts** — `id`, `author_id`, `body`, `media_kind ('image'|'video'|'text')`,
-  `media_path (storage)`, `created_at`. **Insert policy requires author `tier='main'`.**
-  **Select policy requires viewer `tier='main'`** (Lite sees blur-lock in UI).
+- **posts** — `id`, `author_id`, `body`, `caption (nullable, migration 0009)`,
+  `media_kind ('image'|'video'|'text')`, `media_path (storage)`, `created_at`.
+  **Insert policy requires author `tier='main'`.** **Select policy requires
+  viewer `tier='main'`** (Lite sees blur-lock in UI). `caption` is the short
+  (≤60 char) label the composer now requires for every new post — it's what
+  renders on the feed's picture-card for text posts (replacing the old
+  sliced-body fallback, which is still used for older posts that have no
+  caption).
 - **post_comments** — `id`, `post_id`, `author_id`, `body`, `created_at`. Enables
   "tag friends on posts". Mentions fan out like message mentions.
 - **post_likes** — `post_id`, `user_id`, PK `(post_id,user_id)`. **Post-like only;
@@ -265,6 +277,39 @@ Enforced **server-side**, not just hidden in UI:
    (used for mentions/URLs); `name` is the changeable display name.
 
 Still to decide when we get there: live-video provider (Phase 6), Stripe pricing.
+
+## 12b. v0.10 QOL/features batch (migration 0012)
+
+- **profiles** gains `status_line`, `banner_path`, `dm_privacy`
+  ('everyone'|'friends'|'none', default 'everyone'), `loc_visibility`
+  ('exact'|'country'|'hidden', default 'exact'). All editable anytime like
+  `mbti`/enneagram/temperament — not in `trg_lock_identity`.
+- **blocks** (`blocker_id`,`blocked_id`) — one-directional; `is_blocked(a,b)`
+  helper (security definer). `can_post_dm()` now checks blocks both ways and
+  `dm_privacy` before the existing friends/one-message logic. Blocking also
+  blocks friend-request insertion both ways.
+- **room_mutes** (`user_id`,`room_id`) — fully private (select/insert/delete own
+  only). `notify_mentions`/`on_message_notify` skip a muted recipient.
+- **polls** (`room_id`,`author_id`,`question`,`options jsonb`) +
+  `messages.poll_id` (nullable FK) + **poll_votes** (`poll_id`,`user_id`,
+  `option_idx`, PK on the pair so voting again just changes your vote via
+  upsert). Realtime enabled on `poll_votes`.
+- **saved_posts** (`post_id`,`user_id`) — fully private, like `user_likes` but
+  for bookmarking rather than liking.
+- **events** (`room_id`,`title`,`starts_at`,`created_by`) + **event_rsvps**
+  (`event_id`,`user_id`). Read follows `room_readable(room_id)`; no push
+  reminders — that needs a push provider (web push + VAPID or similar), not
+  scoped here.
+- **delete-account Edge Function** (`supabase/functions/delete-account/`) —
+  the one piece of this batch that needs manual deployment: `supabase
+  functions deploy delete-account` plus a `SUPABASE_SERVICE_ROLE_KEY` function
+  secret (never in the client). Calls `auth.admin.deleteUser(user.id)` for the
+  caller's own id only (derived from their JWT, not client-supplied) —
+  `profiles` and everything that references it cascade via existing FKs.
+- **Voice (preview only)** — no new tables. `openVoiceChannel` uses an ad-hoc
+  Realtime **Presence** channel (`voice:<roomId>`), not a persisted room kind.
+  Real audio is a separate, larger effort (SFU account + token-minting Edge
+  Function) — see the CLAUDE.md v0.10 note.
 
 ## 13. Cost / limits (Supabase free tier)
 
