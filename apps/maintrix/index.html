@@ -463,7 +463,11 @@
     },
     profiles:{
       async mine(){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) return null; const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle(); return (data && data.handle) ? rowToProfile(data) : null; },
-      async create(p){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) throw new Error('no session'); const { error } = await sb.from('profiles').update({ handle:p.handle, name:p.name, goals:p.goals, fears:p.fears, mbti:p.mbti, enneagram_core:p.enneagramCore, enneagram_wing:p.enneagramWing, enneagram_tritype:p.enneagramTritype, temperament_dominant:p.temperamentDominant, temperament_secondary:p.temperamentSecondary, bio:p.bio, color:p.color, like_icon:p.likeIcon, country:p.loc.country, region:p.loc.region }).eq('id', user.id); if(error) throw error; },
+      async create(p){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) throw new Error('no session');
+        const { error } = await sb.from('profiles').update({ handle:p.handle, name:p.name, goals:p.goals, fears:p.fears, bio:p.bio, color:p.color, like_icon:p.likeIcon, country:p.loc.country, region:p.loc.region }).eq('id', user.id); if(error) throw error;
+        // personality fields are newer columns — best-effort, must not block account creation on a not-yet-migrated DB
+        try{ await sb.from('profiles').update({ mbti:p.mbti, enneagram_core:p.enneagramCore, enneagram_wing:p.enneagramWing, enneagram_tritype:p.enneagramTritype, temperament_dominant:p.temperamentDominant, temperament_secondary:p.temperamentSecondary }).eq('id', user.id); }catch(e){}
+      },
       async update(patch){ await initSB(); const { data:{ user } } = await sb.auth.getUser(); if(!user) return; await sb.from('profiles').update(patch).eq('id', user.id); },
       async search(q){ await initSB(); q=(q||'').trim(); let query=sb.from('profiles').select('*').not('handle','is',null).neq('id', me().id).limit(30); if(q) query=query.or(`handle.ilike.%${q}%,name.ilike.%${q}%`); const { data } = await query; return (data||[]).map(rowToProfile); },
       async byIds(ids){ ids=[...new Set((ids||[]).filter(Boolean))]; if(!ids.length) return []; await initSB(); const { data } = await sb.from('profiles').select('*').in('id', ids); return (data||[]).map(rowToProfile); },
@@ -487,7 +491,12 @@
     },
     messages:{
       async list(roomId){ await initSB(); const { data } = await sb.from('messages').select('*').eq('room_id', roomId).order('created_at',{ascending:true}).limit(300); return (data||[]).map(rowToMsg); },
-      async send(roomId, body, opt){ opt=opt||{}; await initSB(); const { data, error } = await sb.from('messages').insert({ room_id:roomId, author_id:me().id, body, reply_to:opt.replyTo||null, pinned:!!opt.pinned, is_system:!!opt.system, media_path:opt.mediaPath||null, media_kind:opt.mediaKind||null, poll_id:opt.pollId||null }).select().single(); if(error) throw error; return rowToMsg(data); },
+      async send(roomId, body, opt){ opt=opt||{}; await initSB();
+        const base={ room_id:roomId, author_id:me().id, body, reply_to:opt.replyTo||null, pinned:!!opt.pinned, is_system:!!opt.system, media_path:opt.mediaPath||null, media_kind:opt.mediaKind||null };
+        // poll_id is a newer column — if the DB hasn't been migrated yet, fall back to a normal message rather than failing every send
+        let { data, error } = await sb.from('messages').insert(opt.pollId?{ ...base, poll_id:opt.pollId }:base).select().single();
+        if(error && opt.pollId){ ({ data, error } = await sb.from('messages').insert(base).select().single()); }
+        if(error) throw error; return rowToMsg(data); },
       async edit(id, body){ await initSB(); await sb.from('messages').update({ body, edited:true }).eq('id', id); },
       async remove(id){ await initSB(); await sb.from('messages').delete().eq('id', id); },
       subscribe(roomId, on){ if(!sb) return null; const ch=sb.channel('room:'+roomId).on('postgres_changes',{event:'*',schema:'public',table:'messages',filter:'room_id=eq.'+roomId}, payload=>on(payload)).subscribe(); return ch; },
@@ -561,7 +570,11 @@
     async byAuthor(id){ await initSB(); const { data } = await sb.from('posts').select('*').eq('author_id', id).order('created_at',{ascending:false}); return (data||[]).map(rowToPost); },
     async create({body,caption,color,file}){ await initSB(); let media_kind='text', media_path=null;
       if(file){ const r=await uploadMedia(file, (file.type||'').startsWith('audio')?'audio':null); media_kind=r.kind; media_path=r.path; }
-      const { data, error } = await sb.from('posts').insert({ author_id:me().id, body:body||'', caption:caption||'', media_kind, media_path, color:color||null }).select().single(); if(error) throw error; return rowToPost(data); },
+      const base={ author_id:me().id, body:body||'', media_kind, media_path, color:color||null };
+      // caption is a newer column — if the DB hasn't been migrated yet, fall back to posting without it rather than failing the whole post
+      let { data, error } = await sb.from('posts').insert({ ...base, caption:caption||'' }).select().single();
+      if(error){ ({ data, error } = await sb.from('posts').insert(base).select().single()); }
+      if(error) throw error; return rowToPost(data); },
     async remove(id){ await initSB(); await sb.from('posts').delete().eq('id', id); },
     async likeCount(id){ await initSB(); const { count } = await sb.from('post_likes').select('*',{count:'exact',head:true}).eq('post_id', id); return count||0; },
     async likedByMe(ids){ if(!ids.length) return []; await initSB(); const { data } = await sb.from('post_likes').select('post_id').eq('user_id', me().id).in('post_id', ids); return (data||[]).map(r=>r.post_id); },
@@ -624,7 +637,7 @@
     async create({title,category,bio,isPublic,iconPath}){ await initSB(); const { data, error } = await sb.from('rooms').insert({ kind:'server', title, category, is_public:isPublic, owner_id:me().id, meta:{ bio:bio||'', icon:title[0].toUpperCase(), icon_path:iconPath||null } }).select().single(); if(error) throw error; await sb.from('room_members').insert({ room_id:data.id, user_id:me().id, rank:'Owner' }); return rowToServer(data); },
     async update(id, fields){ await initSB(); const upd={}; if(fields.title!==undefined)upd.title=fields.title; if(fields.category!==undefined)upd.category=fields.category; if(fields.meta!==undefined)upd.meta=fields.meta; await sb.from('rooms').update(upd).eq('id', id); },
     async get(id){ await initSB(); const { data } = await sb.from('rooms').select('*').eq('id',id).maybeSingle(); return data?rowToServer(data):null; },
-    async mine(){ await initSB(); const { data } = await sb.from('room_members').select('rank, rooms!inner(id,kind,title,category,is_public,owner_id,meta,is_official,theme)').eq('user_id', me().id); return (data||[]).filter(x=>x.rooms&&x.rooms.kind==='server').map(x=>Object.assign(rowToServer(x.rooms),{ myRank:x.rank })); },
+    async mine(){ await initSB(); const { data } = await sb.from('room_members').select('rank, rooms!inner(*)').eq('user_id', me().id); return (data||[]).filter(x=>x.rooms&&x.rooms.kind==='server').map(x=>Object.assign(rowToServer(x.rooms),{ myRank:x.rank })); },
     async browse(q,cat){ await initSB(); let query=sb.from('rooms').select('*').eq('kind','server').eq('is_public',true).order('created_at',{ascending:false}).limit(40); if(cat)query=query.eq('category',cat); if(q)query=query.ilike('title','%'+q+'%'); const { data } = await query; return (data||[]).map(rowToServer); },
     async join(id){ await initSB(); await sb.from('room_members').upsert({ room_id:id, user_id:me().id, rank:'Initiate' }); },
     async myRank(id){ await initSB(); const { data } = await sb.from('room_members').select('rank').eq('room_id',id).eq('user_id',me().id).maybeSingle(); return data?data.rank:null; },
@@ -827,9 +840,39 @@
     emerald:{name:'Emerald',accent:'#22c55e',hi:'#4ade80',press:'#16a34a'},
     amber:{name:'Amber',accent:'#f59e0b',hi:'#fbbf24',press:'#d97706'},
     rose:{name:'Rose',accent:'#f43f5e',hi:'#fb7185',press:'#e11d48'},
-    graphite:{name:'Graphite',accent:'#d4d4d4',hi:'#ffffff',press:'#a3a3a3'}
+    graphite:{name:'Graphite',accent:'#6b7280',hi:'#9ca3af',press:'#4b5563',neutralSatMul:0}
   };
-  function applyAppTheme(){ const t=APP_THEMES[state.appTheme]||APP_THEMES.crimson; const r=document.documentElement.style; r.setProperty('--accent',t.accent); r.setProperty('--accent-hi',t.hi); r.setProperty('--accent-press',t.press); r.setProperty('--accent-soft',t.accent+'26'); r.setProperty('--accent-deep',t.press); }
+  function hexToHsl(hex){
+    hex=hex.replace('#','');
+    const r=parseInt(hex.slice(0,2),16)/255, g=parseInt(hex.slice(2,4),16)/255, b=parseInt(hex.slice(4,6),16)/255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b); let h=0,s=0; const l=(max+min)/2;
+    if(max!==min){ const d=max-min; s=l>0.5?d/(2-max-min):d/(max+min);
+      switch(max){ case r: h=(g-b)/d+(g<b?6:0); break; case g: h=(b-r)/d+2; break; default: h=(r-g)/d+4; }
+      h*=60;
+    }
+    return [h,s,l];
+  }
+  function hslToHex(h,s,l){
+    let r,g,b;
+    if(s===0){ r=g=b=l; } else {
+      const hue2rgb=(p,q,t)=>{ if(t<0)t+=1; if(t>1)t-=1; if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
+      const q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q;
+      r=hue2rgb(p,q,h/360+1/3); g=hue2rgb(p,q,h/360); b=hue2rgb(p,q,h/360-1/3);
+    }
+    const toHex=x=>Math.round(x*255).toString(16).padStart(2,'0');
+    return '#'+toHex(r)+toHex(g)+toHex(b);
+  }
+  const BASE_NEUTRALS = { ground:'#150e10', surface:'#201417', 'surface-2':'#2a191d', elevated:'#332025', line:'#3a2429', hover:'#2b1a1f', muted:'#b7969c', dim:'#86636b', faint:'#5a3d44' };
+  function applyAppTheme(){
+    const t=APP_THEMES[state.appTheme]||APP_THEMES.crimson; const r=document.documentElement.style;
+    r.setProperty('--accent',t.accent); r.setProperty('--accent-hi',t.hi); r.setProperty('--accent-press',t.press); r.setProperty('--accent-soft',t.accent+'26'); r.setProperty('--accent-deep',t.press);
+    const [hue]=hexToHsl(t.accent);
+    const satMul = t.neutralSatMul==null?1:t.neutralSatMul;
+    Object.keys(BASE_NEUTRALS).forEach(key=>{
+      const [,s,l]=hexToHsl(BASE_NEUTRALS[key]);
+      r.setProperty('--'+key, hslToHex(hue, s*satMul, l));
+    });
+  }
   function applyTextSize(){ const frame=document.querySelector('.frame'); if(!frame)return; frame.style.zoom={small:0.92,medium:1,large:1.1}[state.textSize||'medium']; }
   function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); }
   const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦' };
@@ -2247,7 +2290,15 @@
     $('apLike').querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{ sel.like=b.dataset.l; $('apLike').querySelectorAll('.lsw').forEach(x=>x.classList.toggle('on',x.dataset.l===sel.like)); });
     $('apDenComf').onclick=()=>{ sel.density='comfortable'; $('apDenComf').classList.add('on'); $('apDenComp').classList.remove('on'); };
     $('apDenComp').onclick=()=>{ sel.density='compact'; $('apDenComp').classList.add('on'); $('apDenComf').classList.remove('on'); };
-    $('apSave').onclick=async ()=>{ const b=$('apSave'); b.disabled=true; b.textContent='Saving…'; u.color=sel.color; u.likeIcon=sel.like; u.statusLine=$('apStatus').value.trim().slice(0,60); state.density=sel.density; applyDensity(); if(online()){ try{ const patch={ color:sel.color, like_icon:sel.like, status_line:u.statusLine }; if(picFile){ const up=await uploadMedia(picFile,'image'); patch.avatar_path=up.path; u.avatarPath=up.path; } if(bannerFile){ const up2=await uploadMedia(bannerFile,'image'); patch.banner_path=up2.path; u.bannerPath=up2.path; } await db.profiles.update(patch); cacheProfile(me()); }catch(e){ toast('Could not save picture'); } } save(); toast('Appearance saved'); closeSheet(); render(); };
+    $('apSave').onclick=async ()=>{ const b=$('apSave'); b.disabled=true; b.textContent='Saving…'; u.color=sel.color; u.likeIcon=sel.like; u.statusLine=$('apStatus').value.trim().slice(0,60); state.density=sel.density; applyDensity();
+      if(online()){
+        try{ const core={ color:sel.color, like_icon:sel.like }; if(picFile){ const up=await uploadMedia(picFile,'image'); core.avatar_path=up.path; u.avatarPath=up.path; } await db.profiles.update(core); cacheProfile(me()); }
+        catch(e){ toast('Could not save picture'); }
+        // status_line / banner_path are newer columns — save separately so a not-yet-migrated DB can't block the save above
+        try{ const extra={ status_line:u.statusLine }; if(bannerFile){ const up2=await uploadMedia(bannerFile,'image'); extra.banner_path=up2.path; u.bannerPath=up2.path; } await db.profiles.update(extra); }
+        catch(e){}
+      }
+      save(); toast('Appearance saved'); closeSheet(); render(); };
   }
   function applyDensity(){ document.body.classList.toggle('density-compact', state.density==='compact'); }
   function openEditBio(){
