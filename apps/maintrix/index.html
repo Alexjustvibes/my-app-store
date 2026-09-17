@@ -17,8 +17,8 @@
   :root {
     --ground:#150e10; --surface:#201417; --surface-2:#2a191d; --elevated:#332025; --line:#3a2429; --hover:#2b1a1f;
     --text:#f5eaec; --text-hi:#fff; --muted:#b7969c; --dim:#86636b; --faint:#5a3d44;
-    --accent:#ed2e44; --accent-hi:#ff4257; --accent-press:#c11d31; --accent-soft:#ed2e4420;
-    --gold:#f0b232; --green:#23a55a; --live:#ff2d55;
+    --accent:#ed2e44; --accent-hi:#ff4257; --accent-press:#c11d31; --accent-soft:#ed2e4420; --accent-deep:#c11d31;
+    --gold:#f0b232; --green:#23a55a; --live:#ff2d55; --danger:#ff4257; --danger-line:#ed2e44;
     --font:'Hanken Grotesk',system-ui,-apple-system,sans-serif; --display:'Fraunces',Georgia,serif; --mono:'JetBrains Mono',ui-monospace,monospace;
   }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
@@ -42,7 +42,7 @@
   .av { border-radius:50%; flex:0 0 auto; display:grid; place-items:center; color:#fff; font-weight:700; position:relative; }
   .av.live { box-shadow:0 0 0 2px var(--ground),0 0 0 4px var(--live); }
   .av .dot { position:absolute; right:-1px; bottom:-1px; border-radius:50%; border:2.5px solid var(--surface); }
-  .av .dot.online { background:var(--green); } .av .dot.offline { background:#6b5158; } .av .dot.idle { background:var(--gold); } .av .dot.dnd { background:var(--accent); }
+  .av .dot.online { background:var(--green); } .av .dot.offline { background:#6b5158; } .av .dot.idle { background:var(--gold); } .av .dot.dnd { background:var(--danger); }
   [data-user] { cursor:pointer; }
 
   /* auth / onboarding */
@@ -204,7 +204,7 @@
   .react.on { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-hi); }
   .emoji-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; } .emoji-grid button { font-size:24px; height:46px; border-radius:10px; } .emoji-grid button:hover { background:var(--hover); }
   .msg-menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:12px 14px; font-size:14px; color:var(--text); }
-  .msg-menu button:hover { background:var(--hover); } .msg-menu button.danger { color:var(--accent-hi); }
+  .msg-menu button:hover { background:var(--hover); } .msg-menu button.danger { color:var(--danger); }
 
   /* feed / posts */
   .go-live-btn { width:100%; background:var(--live); color:#fff; font-weight:800; font-size:16px; padding:15px; border-radius:14px; box-shadow:0 8px 22px -6px var(--live); }
@@ -268,7 +268,7 @@
   .prof-stats { display:flex; justify-content:center; gap:30px; margin:14px 0; } .prof-stats .ps { text-align:center; } .prof-stats .ps b { font-family:var(--display); font-size:20px; color:var(--text-hi); font-weight:700; display:block; } .prof-stats .ps span { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
   .prof-bio { font-size:15px; color:var(--text); line-height:1.55; padding:0 20px 16px; text-align:center; }
   .trait-group { padding:4px 16px 10px; } .trait-group .tg-k { font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; } .trait-group .muted-note { text-align:left; color:var(--dim); font-size:14px; }
-  .settings-row { display:flex; align-items:center; gap:13px; padding:15px 18px; border-top:1px solid var(--line); cursor:pointer; font-size:15px; color:var(--text); } .settings-row:hover { background:var(--hover); } .settings-row .sr-ic { color:var(--muted); } .settings-row .sr-r { margin-left:auto; color:var(--dim); font-size:13px; } .settings-row.danger { color:var(--accent-hi); }
+  .settings-row { display:flex; align-items:center; gap:13px; padding:15px 18px; border-top:1px solid var(--line); cursor:pointer; font-size:15px; color:var(--text); } .settings-row:hover { background:var(--hover); } .settings-row .sr-ic { color:var(--muted); } .settings-row .sr-r { margin-left:auto; color:var(--dim); font-size:13px; } .settings-row.danger { color:var(--danger); }
   .swatches { display:flex; gap:12px; } .sw { width:40px; height:40px; border-radius:50%; cursor:pointer; border:3px solid transparent; } .sw.on { border-color:#fff; transform:scale(1.1); }
   .wallpaper-grid { display:flex; flex-wrap:wrap; gap:10px; } .wp-sw { width:64px; height:44px; border-radius:10px; cursor:pointer; border:2px solid transparent; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted); } .wp-sw.on { border-color:var(--accent); }
   .tb-btn.muted-on { color:var(--accent-hi); }
@@ -667,7 +667,7 @@
     }
     h+=`<div class="sec-title" style="margin-left:0">Members & ranks</div><div id="smMembers"><div class="empty" style="padding:12px">Loading…</div></div>`;
     if(iMember && !iOwn && owner!==me().id)h+=`<button class="btn ghost block" id="smLeave" style="margin-top:12px">Leave server</button>`;
-    if(iOwn)h+=`<button class="btn ghost block danger" id="smDel" style="color:var(--accent-hi);border-color:var(--accent);margin-top:8px">${IC.trash} Delete server</button>`;
+    if(iOwn)h+=`<button class="btn ghost block danger" id="smDel" style="color:var(--danger);border-color:var(--danger-line);margin-top:8px">${IC.trash} Delete server</button>`;
     h+=`<div style="height:16px"></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
     if(iOwn && srv){
@@ -829,7 +829,7 @@
     rose:{name:'Rose',accent:'#f43f5e',hi:'#fb7185',press:'#e11d48'},
     graphite:{name:'Graphite',accent:'#d4d4d4',hi:'#ffffff',press:'#a3a3a3'}
   };
-  function applyAppTheme(){ const t=APP_THEMES[state.appTheme]||APP_THEMES.crimson; const r=document.documentElement.style; r.setProperty('--accent',t.accent); r.setProperty('--accent-hi',t.hi); r.setProperty('--accent-press',t.press); r.setProperty('--accent-soft',t.accent+'26'); }
+  function applyAppTheme(){ const t=APP_THEMES[state.appTheme]||APP_THEMES.crimson; const r=document.documentElement.style; r.setProperty('--accent',t.accent); r.setProperty('--accent-hi',t.hi); r.setProperty('--accent-press',t.press); r.setProperty('--accent-soft',t.accent+'26'); r.setProperty('--accent-deep',t.press); }
   function applyTextSize(){ const frame=document.querySelector('.frame'); if(!frame)return; frame.style.zoom={small:0.92,medium:1,large:1.1}[state.textSize||'medium']; }
   function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); }
   const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦' };
@@ -1347,7 +1347,7 @@
     const s=state.servers.find(x=>x.id===sid); if(!s)return; const owner=isOwner(s);
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">${esc(s.name)}</div><div class="th-sub" style="margin-bottom:16px">${esc(s.cat)} · ${s.members.length} members</div>`;
     h+=`<div class="field"><label>Visibility — switch anytime</label><div class="segmented" style="margin:0"><button id="smPub" class="${s.public?'on':''}">Public</button><button id="smPriv" class="${!s.public?'on':''}">Private</button></div></div>`;
-    if(owner||me().isAdmin)h+=`<button class="btn ghost block danger" id="smDel" style="color:var(--accent-hi);border-color:var(--accent);margin-top:8px">${IC.trash} Delete server</button>`;
+    if(owner||me().isAdmin)h+=`<button class="btn ghost block danger" id="smDel" style="color:var(--danger);border-color:var(--danger-line);margin-top:8px">${IC.trash} Delete server</button>`;
     h+=`<div style="height:16px"></div></div>`;
     showSheet(h);
     $('smPub').onclick=()=>{ s.public=true; save(); $('smPub').classList.add('on'); $('smPriv').classList.remove('on'); toast(esc(s.name)+' is now Public'); if(active&&active.serverId===sid)renderThread(); };
@@ -1612,7 +1612,7 @@
   function feedPostHtml(p){ const au=person(p.a),liked=MYPL.has(p.id);
     const media = p.mediaPath ? `<div class="post-media" data-open="${attr(p.id)}" style="padding:0;overflow:hidden">${postMediaHtml(p,'')}</div>` : `<div class="post-media" data-open="${attr(p.id)}" style="background:linear-gradient(140deg,${p.c},#0d090a)">${esc(p.caption||(p.t||'Post').slice(0,44))}</div>`;
     const saved=MYSAVED.has(p.id);
-    return `<div class="post"><div class="post-top"><div data-user="${attr(p.a)}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">${avatar(p.a,40,{ring:true})}<div class="r-main"><div class="r-name">${esc(au.name)}</div><div class="r-sub">@${esc(au.handle||'')}</div></div></div><button class="likebtn ${liked?'on':''}" data-plike="${attr(p.id)}">${likeGlyph()} <span class="plc">·</span></button></div>${p.t?`<div class="post-body">${fmt(p.t)}</div>`:''}${media}<div class="post-actions"><button data-cmt="${attr(p.id)}">${IC.chat} <span class="cc">·</span></button>${(me().isAdmin||p.a===me().id)?`<button data-pdel="${attr(p.id)}" style="color:var(--accent-hi)">${IC.trash}</button>`:''}<button data-save="${attr(p.id)}" style="${saved?'color:var(--accent-hi)':''}">${IC.pin}</button><button data-share="${attr(p.id)}" style="margin-left:auto">${IC.share}</button></div></div>`; }
+    return `<div class="post"><div class="post-top"><div data-user="${attr(p.a)}" style="display:flex;align-items:center;gap:11px;flex:1;min-width:0">${avatar(p.a,40,{ring:true})}<div class="r-main"><div class="r-name">${esc(au.name)}</div><div class="r-sub">@${esc(au.handle||'')}</div></div></div><button class="likebtn ${liked?'on':''}" data-plike="${attr(p.id)}">${likeGlyph()} <span class="plc">·</span></button></div>${p.t?`<div class="post-body">${fmt(p.t)}</div>`:''}${media}<div class="post-actions"><button data-cmt="${attr(p.id)}">${IC.chat} <span class="cc">·</span></button>${(me().isAdmin||p.a===me().id)?`<button data-pdel="${attr(p.id)}" style="color:var(--danger)">${IC.trash}</button>`:''}<button data-save="${attr(p.id)}" style="${saved?'color:var(--accent-hi)':''}">${IC.pin}</button><button data-share="${attr(p.id)}" style="margin-left:auto">${IC.share}</button></div></div>`; }
   function renderFeedOnline(q){
     const host=$('s-feed'); host.innerHTML=`<div class="searchbar" style="margin:12px 16px">${IC.search}<input id="feedSearch" placeholder="Search posts or #hashtags" value="${attr(q||'')}"></div><div id="feedList"><div class="empty" style="padding-top:40px">Loading…</div></div>`;
     const si=$('feedSearch'); si.oninput=()=>{ clearTimeout(si._t); si._t=setTimeout(()=>doFeed(si.value.trim()),300); };
@@ -2346,7 +2346,7 @@
     h+=`<div class="field"><label>Broadcast target</label><select id="admWhere"><option value="ALL">Everywhere (all areas)</option>${targets.map(t=>`<option value="${attr(t.id)}">${esc(t.label)}</option>`).join('')}</select></div>`;
     h+=`<div class="field"><label>Message — pinned for everyone</label><textarea id="admMsg" placeholder="Ship notes, a rule, a rally cry…"></textarea></div><button class="btn block" id="admSend">📌 Broadcast (pinned)</button>`;
     if(!online()){ h+=`<div class="sec-title" style="margin-left:0">Members</div>`;
-      ['nova','kestrel','dax','juno','sable','pip'].forEach(k=>{ h+=`<div class="row"><div data-user="${attr(k)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${avatar(k,38,{dot:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">member</div></div></div><button class="chip" data-mute="${k}">Mute</button><button class="chip" data-kick="${k}" style="color:var(--accent-hi);margin-left:6px">Kick</button></div>`; }); }
+      ['nova','kestrel','dax','juno','sable','pip'].forEach(k=>{ h+=`<div class="row"><div data-user="${attr(k)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${avatar(k,38,{dot:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">member</div></div></div><button class="chip" data-mute="${k}">Mute</button><button class="chip" data-kick="${k}" style="color:var(--danger);margin-left:6px">Kick</button></div>`; }); }
     else {
       h+=`<div class="sec-title" style="margin-left:0">Overview</div><div id="admStats" class="admin-stat-grid"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
       h+=`<div class="sec-title" style="margin-left:0">Manage a member</div><div class="searchbar" style="margin:0 0 8px">${IC.search}<input id="admUserSearch" placeholder="Search by name or @handle"></div><div id="admUserResults"></div><div id="admUserPanel"></div>`;
@@ -2379,7 +2379,7 @@
   }
   function renderAdminUserPanel(p){
     const box=$('admUserPanel'); if(!box)return;
-    box.innerHTML=`<div class="admin-user-panel"><div class="row" style="padding-left:0;padding-right:0">${avatar(p.id,38,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="chip ${p.isAdmin?'on':''}" id="admToggleAdmin">${p.isAdmin?'Remove admin':'Make admin'}</button><button class="chip ${p.tier==='main'?'on':''}" id="admToggleTier">${p.tier==='main'?'Set to Lite':'Grant Main'}</button><button class="chip" id="admToggleBan" style="${p.banned?'color:var(--accent-hi);border-color:var(--accent)':''}">${p.banned?'Unban':'Ban'}</button></div></div>`;
+    box.innerHTML=`<div class="admin-user-panel"><div class="row" style="padding-left:0;padding-right:0">${avatar(p.id,38,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="chip ${p.isAdmin?'on':''}" id="admToggleAdmin">${p.isAdmin?'Remove admin':'Make admin'}</button><button class="chip ${p.tier==='main'?'on':''}" id="admToggleTier">${p.tier==='main'?'Set to Lite':'Grant Main'}</button><button class="chip" id="admToggleBan" style="${p.banned?'color:var(--danger);border-color:var(--danger-line)':''}">${p.banned?'Unban':'Ban'}</button></div></div>`;
     $('admToggleAdmin').onclick=async ()=>{ try{ await sb.rpc('admin_set_admin',{target:p.id,val:!p.isAdmin}); p.isAdmin=!p.isAdmin; toast(p.isAdmin?'Now an admin':'Admin removed'); renderAdminUserPanel(p); }catch(e){ toast('Could not update'); } };
     $('admToggleTier').onclick=async ()=>{ const newTier=p.tier==='main'?'lite':'main'; try{ await sb.rpc('admin_set_tier',{target:p.id,val:newTier}); p.tier=newTier; toast('Tier set to '+newTier); renderAdminUserPanel(p); }catch(e){ toast('Could not update'); } };
     $('admToggleBan').onclick=async ()=>{ try{ await sb.rpc('admin_set_banned',{target:p.id,val:!p.banned}); p.banned=!p.banned; toast(p.banned?'Banned':'Unbanned'); renderAdminUserPanel(p); }catch(e){ toast('Could not update'); } };

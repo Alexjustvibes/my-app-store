@@ -188,6 +188,17 @@ debate ELO ranks (migration `0014`):
   win/loss/tie). The debates tab also got a **🏆 leaderboard**
   (`openDebateLeaderboard`, `db.debates.leaderboard()`) ranking everyone
   who's played by ELO.
+- **Fix (same batch):** the theme system originally just swapped `--accent`/
+  `--accent-hi`, but ~39 places already reused `--accent-hi` to mean
+  "destructive/danger" (delete server, kick, ban, the DND status dot, message
+  delete) — so a green or blue theme was turning delete buttons that color
+  too. Added a fixed `--danger`/`--danger-line` pair (never touched by
+  `applyAppTheme()`) and repointed every genuinely destructive control at it;
+  everything else (badges, likes, active tabs, mentions) still correctly
+  follows the theme. Also added `--accent-deep` to the themed set so
+  `.card:hover` (previously a silently-unthemed hardcoded fallback) recolors
+  too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
+  while the rest of the chrome recolors.
 
 ## Build state (as of v0.11)
 
