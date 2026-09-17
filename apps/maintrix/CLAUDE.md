@@ -75,11 +75,19 @@ preview + Unlock. Prototype unlock is instant/free.
 
 ## The Nexus system (core, novel piece)
 
+**Current state (v0.8): scaled down to just The Nexus** (the single global room
+below) while the user base is small — see the v0.8 build-state note. The rest of
+this section describes the full design, which is **preserved for later, not
+abandoned**: re-introduce Your World / Trait Nexus Browsing / Nexus Topic Rooms
+once there's enough of a user base to justify splitting into multiple rooms.
+Their code is already written and untouched (`openYourWorld`, `openTraitBrowse`,
+`openTopicRooms`, `createTopicRoom`) — re-adding them is a `renderNexus()` UI
+change, not a rebuild.
+
 Bottom-nav "Nexus" opens the nexus hub. Every nexus room shows each user's
 **location (country/state)** near their name, for everyone.
 
-- **World** (the original "Nexus"): one global room for all app users. Label shown:
-  **"World"**.
+- **The Nexus** (formerly "World"): one global room for all app users. Live today.
 - **Your World** (the "My Nexus"): a room for people who share **your** traits.
   Label shown: **"Your World"**. The room's traits show top-right for everyone.
   While in your own trait room, the **"at home"** label shows next to your name.
@@ -146,6 +154,231 @@ running Maintrix and in the room sees typed messages in real time. Topic:
 Private DMs/GCs stay local and never hit the network. Implemented via a plain
 `WebSocket` (`wss://ntfy.sh/<topic>/ws`) for receive + `fetch` POST for send;
 own-echo filtered by a per-session `CLIENT_ID`.
+
+## Build state (as of v0.12)
+
+**v0.12** — app-wide themes, a couple more personal display settings, and
+debate ELO ranks (migration `0014`):
+
+- **App themes** (`APP_THEMES`, Profile → Settings → **Theme & display**):
+  7 presets (Crimson/Azure/Violet/Emerald/Amber/Rose/Graphite) that recolor
+  `--accent`/`--accent-hi`/`--accent-press`/`--accent-soft` on `:root` via
+  `applyAppTheme()`. **Personal and client-side only** — it changes how the
+  app looks to you, not how your name/messages look to others (that's still
+  the separate per-user `color` swatch in Appearance). Applied on every boot
+  from `enter()`.
+- **Text size** (`state.textSize`, small/medium/large) — scales the whole
+  `.frame` via `zoom` (`applyTextSize()`) rather than touching individual
+  font-size rules, so it scales everything (text, icons, spacing) together
+  without a big refactor.
+- **Reduce motion** (`state.reduceMotion`) — an explicit override alongside
+  the existing OS-level `prefers-reduced-motion` check; both now gate the
+  intro splash, and a `body.reduce-motion` class kills transitions/animations
+  app-wide (`applyReduceMotion()`).
+- **Debate ELO / ranks** — winning a debate raises your ELO (`profiles.elo`,
+  starts at 1000), losing lowers it, a tie nudges both toward the midpoint —
+  standard ELO math with a high K-factor (64) so rank changes are fast and
+  visible, computed entirely inside `end_debate()` (no client-side scoring).
+  Also tracks `debate_wins`/`debate_losses`/`debate_ties`. Seven rank tiers
+  (`DEBATE_RANKS`: Novice → Contender → Skilled → Sharp → Expert → Elite →
+  Master) are purely a client-side label over the ELO number
+  (`debateRankFor`/`debateRankBadge`) — shown next to debaters' names in the
+  debates list, the debate head (VS card), and on a profile (new "Debate
+  Rank" trait-group, shown once someone has at least one recorded
+  win/loss/tie). The debates tab also got a **🏆 leaderboard**
+  (`openDebateLeaderboard`, `db.debates.leaderboard()`) ranking everyone
+  who's played by ELO.
+- **Fix (same batch):** the theme system originally just swapped `--accent`/
+  `--accent-hi`, but ~39 places already reused `--accent-hi` to mean
+  "destructive/danger" (delete server, kick, ban, the DND status dot, message
+  delete) — so a green or blue theme was turning delete buttons that color
+  too. Added a fixed `--danger`/`--danger-line` pair (never touched by
+  `applyAppTheme()`) and repointed every genuinely destructive control at it;
+  everything else (badges, likes, active tabs, mentions) still correctly
+  follows the theme. Also added `--accent-deep` to the themed set so
+  `.card:hover` (previously a silently-unthemed hardcoded fallback) recolors
+  too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
+  while the rest of the chrome recolors.
+
+## Build state (as of v0.11)
+
+**v0.11** — a Debates tab, expanded admin powers, and one official server
+(migration `0013`):
+
+- **Debates** (new bottom-nav tab, `IC.debates`, ungated for Lite too): 1-on-1
+  only. A member starts one with a **title** + a **description** of what
+  they're arguing (`openCreateDebate` → `create_debate` RPC, which also spins
+  up a `rooms` row of kind `'debate'`). Anyone else can **join as the
+  opponent** once (`join_debate`) — after that it's locked to those two.
+  Spectators can always **read** the exchange (`room_readable` now includes
+  `'debate'`) but only the two debaters can **post** into it
+  (`is_debate_participant` gates `msg_insert`); spectators instead get a vote
+  panel (`renderDebateComposer`) — "Vote <name>" for either side, one vote
+  each, changeable (`vote_debate` RPC, upsert). Live tallies
+  (`refreshDebateTally`) update over Realtime on `debates`/`debate_votes`
+  (`subscribeDebate`). The **creator** (or an admin) can **end it anytime**
+  (`end_debate`) — most votes wins, an equal split (including 0-0) is a
+  **tie** (`winner_id` left null). The debate room reuses the normal
+  `renderThread()` pipeline (reactions, polls, mentions all still work for the
+  two debaters) via a `kind:'debate'` branch — `renderDebateHead` injects the
+  description/VS card/tally/End button above the message list.
+- **Expanded admin powers**, all in Overwatch → Tools (online only):
+  - **Promote/demote admin** (`admin_set_admin` RPC) and **grant/revoke Main**
+    (`admin_set_tier`) on any searched member (`renderAdminUserPanel`).
+  - **Ban / unban** (`admin_set_banned`, new `profiles.banned` column) — a
+    banned member can still read everything but can't post anywhere
+    (`msg_insert` now also checks `not banned`) or join new rooms/servers
+    (`rm_join` same check).
+  - **Verify a server** (`admin_set_server_official`) — toggles the black
+    checkmark badge (`verifiedBadge()`, `rooms.is_official`) from a simple
+    list in Tools.
+  - **Live stats dashboard** (`admin_stats` RPC) — member/Main/message/post/
+    server/live-debate/banned counts, refreshed each time Tools opens.
+  - `lock_identity()` (the trigger that locks `tier`/`is_admin`/`banned`) now
+    has an admin bypass: it only re-locks those three columns when the
+    **acting** user (`auth.uid()`, not the row being edited) isn't already an
+    admin — so the RPCs above can actually take effect, while a normal user
+    still can't self-promote.
+  - Migration `0013` also grants admin to the profile with **handle `'ret'`**
+    directly (same one-off pattern as the founder grant in `0006`) — adjust
+    the handle in the migration if it doesn't match exactly.
+- **"Awake" — the one official, mono-theme server.** Seeded as a public
+  server (`rooms.is_official=true`, `rooms.theme='mono'`). `theme` is a new
+  `rooms` column (currently only allows `'mono'` by constraint) — **Awake is
+  the only server anyone has set it on**; nothing in the UI offers it for
+  other servers. When `theme==='mono'`, `renderThread()` adds a `mono-theme`
+  class that repaints that one thread pure black/white in `--mono`
+  (JetBrains Mono — already loaded, no new font) via scoped CSS overrides;
+  every other server keeps the normal red aesthetic. The verified badge
+  (`verifiedBadge()`) shows next to "Awake" everywhere a server name renders
+  (server lists, thread header) — and next to *any* server an admin marks
+  official via the new Tools toggle. Mirrored in the offline demo too
+  (`PUBLIC_BROWSE`'s `awake` entry, `openServer`) so it's testable without
+  the backend.
+
+## Build state (as of v0.10)
+
+**v0.10** — a QOL / customization / settings / feature batch (migration `0012`):
+
+- **Per-room notification mutes** (`room_mutes`, `db.rooms.mute/unmute`) — bell icon
+  in the thread header (`openRoomOptions`) toggles mute for that room. Enforced
+  server-side too: `notify_mentions`/`on_message_notify` skip muted recipients.
+- **Draft persistence** — composer text is saved to `state.drafts[roomKey]` on
+  input and restored on reopen; cleared on send.
+- **Undo on delete** — `toastUndo()` gives a 5s "Undo" action before a message or
+  post delete actually commits (optimistic removal, restorable).
+- **Typing indicators** — `wireTyping`/`showTypingHint`, Realtime **Broadcast**
+  only (no DB writes), per BACKEND.md's plan.
+- **Jump-to-unread** — `state.lastRead[roomKey]` + a "New" divider
+  (`renderMsgs`'s `unreadFromId`) and a floating "↓ New messages" button
+  (`showJumpButton`) when reopening an online room with unseen messages.
+- **Global search** (`openGlobalSearch`, topbar search icon) — people + posts +
+  messages in one sheet; message search reuses `openRoomById` (factored out of
+  `openNotifTarget`) to jump straight into the room.
+- **Customization**: status line (`status_line`, shown next to your name),
+  profile banner (`banner_path`, Storage-backed like avatars), per-room
+  wallpaper (`state.wallpapers`, local-only — a personal view preference, not
+  synced), message density toggle (`state.density`, `body.density-compact`),
+  and a **shareable personality card** (`sharePersonalityCard` — Canvas-drawn
+  PNG of your MBTI/Enneagram/Temperament, `navigator.share` with a download
+  fallback).
+- **Settings**: DM privacy (`dm_privacy`: everyone/friends/none, enforced in
+  `can_post_dm`), location visibility (`loc_visibility`: exact/country/hidden,
+  masked client-side in `locStr()`), blocked users (`blocks` table +
+  `openBlockedList`; also blocks friend-requests both ways), **sign out of all
+  devices** (`sb.auth.signOut({scope:'global'})` — works today, no extra infra),
+  and **delete account** — needs the `delete-account` Edge Function deployed
+  with your own service-role key (see `supabase/functions/delete-account/`);
+  the client already calls `sb.functions.invoke('delete-account')`.
+- **Polls** (`polls`/`poll_votes`, `messages.poll_id`) — a poll composer button
+  in any online room, inline vote bars in the thread (`renderPollBlock`),
+  results update live via the existing poll message realtime path.
+- **Scheduled events** (`events`/`event_rsvps`) — "Create event" +
+  upcoming-events list live in Room options (`openRoomOptions` →
+  `renderRoomEvents`/`openCreateEvent`); RSVP toggles a chip. No push
+  reminders yet (needs a push provider — see Voice below for the same kind of
+  gap).
+- **Saved posts** (`saved_posts`) — bookmark icon on feed posts
+  (`toggleSave`), a "Saved posts" row in Settings (`openSavedPosts`).
+- **Personality-match icebreaker** (`personalityOverlap`) — a dismissible
+  banner in a DM thread when you and the other person share an exact MBTI,
+  Enneagram Core+Wing, or Temperament match.
+- **Voice channel — preview only, not real audio.** `openVoiceChannel` joins a
+  Supabase **Presence** channel (`voice:<roomId>`) and shows who's "in" the
+  channel with a local-only mute toggle. This is a real, working foundation
+  (presence, join/leave) but **carries no audio** — actual voice transport
+  needs a provider like LiveKit/Daily/Agora (an SFU, API keys, and typically
+  an Edge Function to mint room tokens), which is out of scope without that
+  account. Same category of gap as the deferred live-video work in
+  `BACKEND.md` §2 — wire it in the same way when ready.
+
+## Build state (as of v0.9)
+
+**v0.9** — three personality systems, all editable anytime, unlike goals/fears:
+
+- **MBTI**: unchanged mechanically from v0.8 but now offers **Unsure** as a first-class
+  pick, shows each type's **cognitive-function stack** (e.g. INTJ → Ni·Te·Fi·Se) next
+  to its description, and is now reachable **at signup** as well as from the profile.
+- **Enneagram** (`openEnneagramFlow`): full **Core + Wing** (`enneagramCore`,
+  `enneagramWing` — wing must be core±1, wrapping 1↔9, shown as e.g. `4w5`) plus
+  **Tritype** (`enneagramTritype`, format `x-x-x`): one pick from each of the three
+  triads — Gut (8/9/1, anger), Heart (2/3/4, self-worth), Head (5/6/7, thinking) —
+  then ranked most-to-least dominant. Wing and tritype are individually skippable;
+  picking "Unsure" for the core skips both.
+- **Four Temperaments** (`openTemperamentFlow`): **Dominant** (`temperamentDominant`,
+  mandatory or "Unsure") + optional **Secondary** (`temperamentSecondary`, any of the
+  other three) — shown as `Melancholic-Choleric` or just `Melancholic`.
+- **Tests, one per system**, member picks how many questions (more = more accurate):
+  MBTI keeps its dichotomy-pair test (`startMbtiTest`, `MBTI_QUESTIONS`, 8/16/24/32
+  questions). Enneagram and Temperament share a **yes/no category engine**
+  (`openCategoryTestSetup`/`startCategoryTest`/`finishCategoryTest`,
+  `CATEGORY_TEST_CONFIG`, `ENNEAGRAM_QUESTIONS`/`TEMPERAMENT_QUESTIONS`) — answer
+  "That's me" / "Not really" per statement, highest-scoring type wins. A finished
+  Enneagram test sets the core and rolls straight into the **wing** step; a finished
+  Temperament test sets the dominant and rolls into the **secondary** step — the test
+  is just an alternate entry point into the same manual flow.
+- **Signup integration**: onboarding is now **4 steps** (was 3) — step 4
+  ("Who are you, deeper down?") shows all three systems, each defaulting to
+  **Unsure** so Continue never blocks; tapping a row launches that system's picker
+  (same code as the profile version, via a `ctx` param: `'onboard'` writes to the
+  in-memory `ob` object and returns to the step; `'profile'` calls
+  `savePersonalityFields` and saves immediately, online or off).
+- Profile display (`personalityBlock`) and the three Settings rows (MBTI /
+  Enneagram / Temperament) read `enneagramLabel()`/`temperamentLabel()` for the
+  compact form and show full descriptions inline.
+- Backend: `mbti`, `enneagram_core`, `enneagram_wing`, `enneagram_tritype`,
+  `temperament_dominant`, `temperament_secondary` on `profiles` — see migrations
+  `0010`/`0011`. None of these are in `trg_lock_identity`, so they stay editable
+  server-side too, matching "change anytime" in the front end.
+
+## Build state (as of v0.8)
+
+**v0.8** (state key still `maintrix.v4`):
+- **Nexus scaled down to one room.** `renderNexus()` now shows only **The Nexus**
+  (the old global "World" room, relabeled). **Your World**, **Trait Nexus
+  Browsing**, and **Nexus Topic Rooms** are hidden from the UI while the user
+  base is small — their code (`openYourWorld`, `openTraitBrowse`,
+  `openTopicRooms`, `createTopicRoom`) is **untouched and still fully wired**,
+  just unlinked from the hub screen. **Do not delete that code.** Re-add their
+  cards to `renderNexus()` once there are enough users to justify splitting into
+  multiple nexus rooms again.
+- **Posts require a caption.** The feed used to derive a text post's "picture"
+  card by slicing the first ~44 chars of the body, which cut off mid-word and
+  looked broken. `openCompose()` now has a required **Caption** field (≤60
+  chars) used as that picture-card text (`posts.caption`, migration `0009`);
+  the body textarea is now optional/supplementary. Existing posts (seeded +
+  already-live) are untouched — they keep rendering via the old sliced-body
+  fallback since their `caption` is null.
+- **MBTI.** Members can set/change their MBTI type anytime from **Profile →
+  Settings → MBTI type** (`openMbtiPicker`) — pick directly from all 16 types
+  (`MBTI_TYPES`, with a one-line description each) or take an in-app **mini
+  test** (`openMbtiTestSetup` → `startMbtiTest`): forced-choice statement pairs
+  per dichotomy (E/I, S/N, T/F, J/P), 8 pooled questions per axis
+  (`MBTI_QUESTIONS`), and the member picks how many rounds to answer (8/16/24/32
+  — more rounds = more accurate). Result shown with type + description, saved
+  via `saveMbti()`. Unlike goals/fears, **mbti is NOT locked** — editable
+  anytime, enforced by leaving it out of `trg_lock_identity` (migration `0010`).
+  Shown on every profile (`mbtiBlock`) when set.
 
 ## Build state (as of v0.7)
 

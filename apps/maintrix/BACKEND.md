@@ -67,10 +67,17 @@ pins, and realtime all work the same everywhere.
   immutable `@handle` used for mentions/URLs, `name (text)` — the changeable
   display name, `goals text[]`, `fears text[]`, `bio`, `color`, `like_icon`,
   `country`, `region`, `tier ('lite'|'main')`, `is_admin bool`,
-  `created_at`, `live_stream_id (nullable fk)`.
+  `created_at`, `live_stream_id (nullable fk)`, `mbti (nullable, migration 0010,
+  now allows 'Unsure' too per migration 0011)`, `enneagram_core`, `enneagram_wing`,
+  `enneagram_tritype` (format `x-x-x`), `temperament_dominant`,
+  `temperament_secondary` (all nullable, migration 0011).
   - **Immutability:** a `BEFORE UPDATE` trigger rejects changes to `goals`/`fears`
     and `handle` (traits and handle are locked after signup); `name`, `bio`,
-    `color`, `like_icon` stay editable per the appearance rules.
+    `color`, `like_icon`, and **all personality-system fields** (`mbti`,
+    `enneagram_*`, `temperament_*`) stay editable — members can set/change any of
+    them anytime from their profile (pick directly or take that system's in-app
+    mini test), and also set them once at signup (onboarding step 4, defaulting
+    to "Unsure").
 - **traits** — `value (pk)`, `kind ('goal'|'fear')`. Seed from `GOALS`/`FEARS`.
 
 ### Social graph
@@ -110,9 +117,14 @@ Servers are `rooms` with `kind='server'` plus:
 - Public server discovery = `select rooms where kind='server' and is_public`.
 
 ### Posts & media (Main-gated)
-- **posts** — `id`, `author_id`, `body`, `media_kind ('image'|'video'|'text')`,
-  `media_path (storage)`, `created_at`. **Insert policy requires author `tier='main'`.**
-  **Select policy requires viewer `tier='main'`** (Lite sees blur-lock in UI).
+- **posts** — `id`, `author_id`, `body`, `caption (nullable, migration 0009)`,
+  `media_kind ('image'|'video'|'text')`, `media_path (storage)`, `created_at`.
+  **Insert policy requires author `tier='main'`.** **Select policy requires
+  viewer `tier='main'`** (Lite sees blur-lock in UI). `caption` is the short
+  (≤60 char) label the composer now requires for every new post — it's what
+  renders on the feed's picture-card for text posts (replacing the old
+  sliced-body fallback, which is still used for older posts that have no
+  caption).
 - **post_comments** — `id`, `post_id`, `author_id`, `body`, `created_at`. Enables
   "tag friends on posts". Mentions fan out like message mentions.
 - **post_likes** — `post_id`, `user_id`, PK `(post_id,user_id)`. **Post-like only;
@@ -265,6 +277,101 @@ Enforced **server-side**, not just hidden in UI:
    (used for mentions/URLs); `name` is the changeable display name.
 
 Still to decide when we get there: live-video provider (Phase 6), Stripe pricing.
+
+## 12b. v0.10 QOL/features batch (migration 0012)
+
+- **profiles** gains `status_line`, `banner_path`, `dm_privacy`
+  ('everyone'|'friends'|'none', default 'everyone'), `loc_visibility`
+  ('exact'|'country'|'hidden', default 'exact'). All editable anytime like
+  `mbti`/enneagram/temperament — not in `trg_lock_identity`.
+- **blocks** (`blocker_id`,`blocked_id`) — one-directional; `is_blocked(a,b)`
+  helper (security definer). `can_post_dm()` now checks blocks both ways and
+  `dm_privacy` before the existing friends/one-message logic. Blocking also
+  blocks friend-request insertion both ways.
+- **room_mutes** (`user_id`,`room_id`) — fully private (select/insert/delete own
+  only). `notify_mentions`/`on_message_notify` skip a muted recipient.
+- **polls** (`room_id`,`author_id`,`question`,`options jsonb`) +
+  `messages.poll_id` (nullable FK) + **poll_votes** (`poll_id`,`user_id`,
+  `option_idx`, PK on the pair so voting again just changes your vote via
+  upsert). Realtime enabled on `poll_votes`.
+- **saved_posts** (`post_id`,`user_id`) — fully private, like `user_likes` but
+  for bookmarking rather than liking.
+- **events** (`room_id`,`title`,`starts_at`,`created_by`) + **event_rsvps**
+  (`event_id`,`user_id`). Read follows `room_readable(room_id)`; no push
+  reminders — that needs a push provider (web push + VAPID or similar), not
+  scoped here.
+- **delete-account Edge Function** (`supabase/functions/delete-account/`) —
+  the one piece of this batch that needs manual deployment: `supabase
+  functions deploy delete-account` plus a `SUPABASE_SERVICE_ROLE_KEY` function
+  secret (never in the client). Calls `auth.admin.deleteUser(user.id)` for the
+  caller's own id only (derived from their JWT, not client-supplied) —
+  `profiles` and everything that references it cascade via existing FKs.
+- **Voice (preview only)** — no new tables. `openVoiceChannel` uses an ad-hoc
+  Realtime **Presence** channel (`voice:<roomId>`), not a persisted room kind.
+  Real audio is a separate, larger effort (SFU account + token-minting Edge
+  Function) — see the CLAUDE.md v0.10 note.
+
+## 12c. v0.11 batch (migration 0013): Debates, admin powers, official servers
+
+- **debates** (`room_id` fk rooms, `title`, `description`, `creator_id`,
+  `opponent_id` nullable, `status` open/active/ended, `winner_id` nullable —
+  null also means "tie") + **debate_votes** (`debate_id`,`voter_id`,`vote_for`,
+  PK on the pair so re-voting just changes your pick). Both tables are
+  `select using (true)` — spectating and seeing the score is the point — and
+  every write goes through a security-definer RPC rather than a table policy:
+  `create_debate(title,desc)`, `join_debate(id)` (fails if already has an
+  opponent or you're the creator), `end_debate(id)` (creator or admin only,
+  tallies `debate_votes` and sets `winner_id`), `vote_debate(id,for_user)`
+  (rejects the debaters themselves, and any target that isn't one of the two).
+- `room_readable()` now includes `kind='debate'` in its open-read list (so
+  spectators don't need `room_members` rows), and `msg_insert` gained a
+  `is_debate_participant(room_id)` check so only the two debaters can post —
+  spectators can read the exchange but can't type into it.
+- **Bans**: `profiles.banned boolean default false`. `msg_insert` and `rm_join`
+  both reject when the *acting* user is banned. This is a read-only ban — a
+  banned member keeps read access everywhere, they just can't post or join
+  anything new. No separate "you're banned" UI state is enforced client-side;
+  enforcement is entirely at the RLS layer, so it holds regardless of what the
+  client does.
+- **Admin RPCs** (all `raise exception` if `not is_admin()`): `admin_set_admin`,
+  `admin_set_tier`, `admin_set_banned`, `admin_set_server_official`, and a
+  read-only `admin_stats()` returning a `jsonb` of counts. These are the only
+  way `tier`/`is_admin`/`banned` change on someone else's row — `lock_identity()`
+  was updated to skip re-locking those three columns when the acting user
+  (`auth.uid()`, i.e. whoever is running the `UPDATE`, not the row's owner) is
+  already an admin, so the RPCs' internal `UPDATE` actually sticks while a
+  normal user still can never touch their own `tier`/`is_admin`/`banned`.
+- **rooms.is_official** (boolean) and **rooms.theme** (text, CHECK'd to only
+  allow `'mono'` today) — generic columns, but only the seeded **Awake** server
+  (kind `server`, inserted idempotently by title) has `theme='mono'` set; nothing
+  in the app offers setting `theme` on any other server. `is_official` is
+  generic and admin-togglable on any server via `admin_set_server_official`.
+- One-off in this migration: `update profiles set is_admin = true where handle
+  = 'ret'` — same pattern as 0006's founder grant. If "ret"'s actual handle is
+  different, edit that line before running the migration (it's not
+  re-runnable-safe to just re-target — update the row directly instead if you
+  already ran it against the wrong handle).
+
+## 12d. v0.12 batch (migration 0014): debate ELO
+
+- `profiles` gains `elo` (int, default 1000), `debate_wins`, `debate_losses`,
+  `debate_ties` (all int, default 0). `debates` gains `elo_delta` (int,
+  nullable — the magnitude both sides moved; null if the debate ended with no
+  opponent, e.g. an admin closing an unfilled `open` debate).
+- `end_debate()` was extended (not re-created from scratch — same signature,
+  same authorization check) to run standard ELO between `creator_id` and
+  `opponent_id` once a winner/tie is determined: `expected = 1/(1+10^((oelo-celo)/400))`,
+  `delta = round(K * (score - expected))` with `K = 64` (deliberately high —
+  this is a fun gamification layer, not a competitive ladder, and the front
+  end explicitly says ranks should move fast). The loser's `elo` moves by
+  `-delta` (zero-sum, since `expected_a + expected_b = 1` always). Win/loss/tie
+  counters increment alongside. All of this is skipped if `opponent_id is
+  null` (can't happen once a debate reaches `active`, but `end_debate` can
+  still be called on a still-`open` debate with no opponent — that just tallies
+  0-0 and sets no winner, no ELO change).
+- No new RLS: `elo`/`debate_*` are read through the existing `profiles_read`
+  policy (`using (true)`) same as every other profile column, and are only
+  ever written by `end_debate()`, which runs `security definer`.
 
 ## 13. Cost / limits (Supabase free tier)
 
