@@ -155,6 +155,96 @@ Private DMs/GCs stay local and never hit the network. Implemented via a plain
 `WebSocket` (`wss://ntfy.sh/<topic>/ws`) for receive + `fetch` POST for send;
 own-echo filtered by a per-session `CLIENT_ID`.
 
+## Build state (as of v0.12)
+
+**v0.12** — app-wide themes, a couple more personal display settings, and
+debate ELO ranks (migration `0014`):
+
+- **App themes** (`APP_THEMES`, Profile → Settings → **Theme & display**):
+  7 presets (Crimson/Azure/Violet/Emerald/Amber/Rose/Graphite) that recolor
+  `--accent`/`--accent-hi`/`--accent-press`/`--accent-soft` on `:root` via
+  `applyAppTheme()`. **Personal and client-side only** — it changes how the
+  app looks to you, not how your name/messages look to others (that's still
+  the separate per-user `color` swatch in Appearance). Applied on every boot
+  from `enter()`.
+- **Text size** (`state.textSize`, small/medium/large) — scales the whole
+  `.frame` via `zoom` (`applyTextSize()`) rather than touching individual
+  font-size rules, so it scales everything (text, icons, spacing) together
+  without a big refactor.
+- **Reduce motion** (`state.reduceMotion`) — an explicit override alongside
+  the existing OS-level `prefers-reduced-motion` check; both now gate the
+  intro splash, and a `body.reduce-motion` class kills transitions/animations
+  app-wide (`applyReduceMotion()`).
+- **Debate ELO / ranks** — winning a debate raises your ELO (`profiles.elo`,
+  starts at 1000), losing lowers it, a tie nudges both toward the midpoint —
+  standard ELO math with a high K-factor (64) so rank changes are fast and
+  visible, computed entirely inside `end_debate()` (no client-side scoring).
+  Also tracks `debate_wins`/`debate_losses`/`debate_ties`. Seven rank tiers
+  (`DEBATE_RANKS`: Novice → Contender → Skilled → Sharp → Expert → Elite →
+  Master) are purely a client-side label over the ELO number
+  (`debateRankFor`/`debateRankBadge`) — shown next to debaters' names in the
+  debates list, the debate head (VS card), and on a profile (new "Debate
+  Rank" trait-group, shown once someone has at least one recorded
+  win/loss/tie). The debates tab also got a **🏆 leaderboard**
+  (`openDebateLeaderboard`, `db.debates.leaderboard()`) ranking everyone
+  who's played by ELO.
+
+## Build state (as of v0.11)
+
+**v0.11** — a Debates tab, expanded admin powers, and one official server
+(migration `0013`):
+
+- **Debates** (new bottom-nav tab, `IC.debates`, ungated for Lite too): 1-on-1
+  only. A member starts one with a **title** + a **description** of what
+  they're arguing (`openCreateDebate` → `create_debate` RPC, which also spins
+  up a `rooms` row of kind `'debate'`). Anyone else can **join as the
+  opponent** once (`join_debate`) — after that it's locked to those two.
+  Spectators can always **read** the exchange (`room_readable` now includes
+  `'debate'`) but only the two debaters can **post** into it
+  (`is_debate_participant` gates `msg_insert`); spectators instead get a vote
+  panel (`renderDebateComposer`) — "Vote <name>" for either side, one vote
+  each, changeable (`vote_debate` RPC, upsert). Live tallies
+  (`refreshDebateTally`) update over Realtime on `debates`/`debate_votes`
+  (`subscribeDebate`). The **creator** (or an admin) can **end it anytime**
+  (`end_debate`) — most votes wins, an equal split (including 0-0) is a
+  **tie** (`winner_id` left null). The debate room reuses the normal
+  `renderThread()` pipeline (reactions, polls, mentions all still work for the
+  two debaters) via a `kind:'debate'` branch — `renderDebateHead` injects the
+  description/VS card/tally/End button above the message list.
+- **Expanded admin powers**, all in Overwatch → Tools (online only):
+  - **Promote/demote admin** (`admin_set_admin` RPC) and **grant/revoke Main**
+    (`admin_set_tier`) on any searched member (`renderAdminUserPanel`).
+  - **Ban / unban** (`admin_set_banned`, new `profiles.banned` column) — a
+    banned member can still read everything but can't post anywhere
+    (`msg_insert` now also checks `not banned`) or join new rooms/servers
+    (`rm_join` same check).
+  - **Verify a server** (`admin_set_server_official`) — toggles the black
+    checkmark badge (`verifiedBadge()`, `rooms.is_official`) from a simple
+    list in Tools.
+  - **Live stats dashboard** (`admin_stats` RPC) — member/Main/message/post/
+    server/live-debate/banned counts, refreshed each time Tools opens.
+  - `lock_identity()` (the trigger that locks `tier`/`is_admin`/`banned`) now
+    has an admin bypass: it only re-locks those three columns when the
+    **acting** user (`auth.uid()`, not the row being edited) isn't already an
+    admin — so the RPCs above can actually take effect, while a normal user
+    still can't self-promote.
+  - Migration `0013` also grants admin to the profile with **handle `'ret'`**
+    directly (same one-off pattern as the founder grant in `0006`) — adjust
+    the handle in the migration if it doesn't match exactly.
+- **"Awake" — the one official, mono-theme server.** Seeded as a public
+  server (`rooms.is_official=true`, `rooms.theme='mono'`). `theme` is a new
+  `rooms` column (currently only allows `'mono'` by constraint) — **Awake is
+  the only server anyone has set it on**; nothing in the UI offers it for
+  other servers. When `theme==='mono'`, `renderThread()` adds a `mono-theme`
+  class that repaints that one thread pure black/white in `--mono`
+  (JetBrains Mono — already loaded, no new font) via scoped CSS overrides;
+  every other server keeps the normal red aesthetic. The verified badge
+  (`verifiedBadge()`) shows next to "Awake" everywhere a server name renders
+  (server lists, thread header) — and next to *any* server an admin marks
+  official via the new Tools toggle. Mirrored in the offline demo too
+  (`PUBLIC_BROWSE`'s `awake` entry, `openServer`) so it's testable without
+  the backend.
+
 ## Build state (as of v0.10)
 
 **v0.10** — a QOL / customization / settings / feature batch (migration `0012`):

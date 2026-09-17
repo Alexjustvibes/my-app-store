@@ -311,6 +311,68 @@ Still to decide when we get there: live-video provider (Phase 6), Stripe pricing
   Real audio is a separate, larger effort (SFU account + token-minting Edge
   Function) — see the CLAUDE.md v0.10 note.
 
+## 12c. v0.11 batch (migration 0013): Debates, admin powers, official servers
+
+- **debates** (`room_id` fk rooms, `title`, `description`, `creator_id`,
+  `opponent_id` nullable, `status` open/active/ended, `winner_id` nullable —
+  null also means "tie") + **debate_votes** (`debate_id`,`voter_id`,`vote_for`,
+  PK on the pair so re-voting just changes your pick). Both tables are
+  `select using (true)` — spectating and seeing the score is the point — and
+  every write goes through a security-definer RPC rather than a table policy:
+  `create_debate(title,desc)`, `join_debate(id)` (fails if already has an
+  opponent or you're the creator), `end_debate(id)` (creator or admin only,
+  tallies `debate_votes` and sets `winner_id`), `vote_debate(id,for_user)`
+  (rejects the debaters themselves, and any target that isn't one of the two).
+- `room_readable()` now includes `kind='debate'` in its open-read list (so
+  spectators don't need `room_members` rows), and `msg_insert` gained a
+  `is_debate_participant(room_id)` check so only the two debaters can post —
+  spectators can read the exchange but can't type into it.
+- **Bans**: `profiles.banned boolean default false`. `msg_insert` and `rm_join`
+  both reject when the *acting* user is banned. This is a read-only ban — a
+  banned member keeps read access everywhere, they just can't post or join
+  anything new. No separate "you're banned" UI state is enforced client-side;
+  enforcement is entirely at the RLS layer, so it holds regardless of what the
+  client does.
+- **Admin RPCs** (all `raise exception` if `not is_admin()`): `admin_set_admin`,
+  `admin_set_tier`, `admin_set_banned`, `admin_set_server_official`, and a
+  read-only `admin_stats()` returning a `jsonb` of counts. These are the only
+  way `tier`/`is_admin`/`banned` change on someone else's row — `lock_identity()`
+  was updated to skip re-locking those three columns when the acting user
+  (`auth.uid()`, i.e. whoever is running the `UPDATE`, not the row's owner) is
+  already an admin, so the RPCs' internal `UPDATE` actually sticks while a
+  normal user still can never touch their own `tier`/`is_admin`/`banned`.
+- **rooms.is_official** (boolean) and **rooms.theme** (text, CHECK'd to only
+  allow `'mono'` today) — generic columns, but only the seeded **Awake** server
+  (kind `server`, inserted idempotently by title) has `theme='mono'` set; nothing
+  in the app offers setting `theme` on any other server. `is_official` is
+  generic and admin-togglable on any server via `admin_set_server_official`.
+- One-off in this migration: `update profiles set is_admin = true where handle
+  = 'ret'` — same pattern as 0006's founder grant. If "ret"'s actual handle is
+  different, edit that line before running the migration (it's not
+  re-runnable-safe to just re-target — update the row directly instead if you
+  already ran it against the wrong handle).
+
+## 12d. v0.12 batch (migration 0014): debate ELO
+
+- `profiles` gains `elo` (int, default 1000), `debate_wins`, `debate_losses`,
+  `debate_ties` (all int, default 0). `debates` gains `elo_delta` (int,
+  nullable — the magnitude both sides moved; null if the debate ended with no
+  opponent, e.g. an admin closing an unfilled `open` debate).
+- `end_debate()` was extended (not re-created from scratch — same signature,
+  same authorization check) to run standard ELO between `creator_id` and
+  `opponent_id` once a winner/tie is determined: `expected = 1/(1+10^((oelo-celo)/400))`,
+  `delta = round(K * (score - expected))` with `K = 64` (deliberately high —
+  this is a fun gamification layer, not a competitive ladder, and the front
+  end explicitly says ranks should move fast). The loser's `elo` moves by
+  `-delta` (zero-sum, since `expected_a + expected_b = 1` always). Win/loss/tie
+  counters increment alongside. All of this is skipped if `opponent_id is
+  null` (can't happen once a debate reaches `active`, but `end_debate` can
+  still be called on a still-`open` debate with no opponent — that just tallies
+  0-0 and sets no winner, no ELO change).
+- No new RLS: `elo`/`debate_*` are read through the existing `profiles_read`
+  policy (`using (true)`) same as every other profile column, and are only
+  ever written by `end_debate()`, which runs `security definer`.
+
 ## 13. Cost / limits (Supabase free tier)
 
 500 MB Postgres, 1 GB storage, ~2 GB egress/mo, ~200 concurrent Realtime, 50k
