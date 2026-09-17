@@ -294,6 +294,13 @@ create policy evr_delete on public.event_rsvps for delete to authenticated using
 -- Maintrix backend — 0013: Debates tab, expanded admin powers, official servers
 -- Run after 0012.
 
+-- bans: read-only for the banned user (can still read rooms, can't post/join).
+-- Added here, ahead of the debates section below, because msg_insert (which
+-- references this column) gets recreated before the "expanded admin powers"
+-- section further down would otherwise add it — running this migration fresh
+-- errors on "column banned does not exist" without this being first.
+alter table public.profiles add column if not exists banned boolean not null default false;
+
 -- ═══════════════════════ Debates ═══════════════════════
 -- A debate is a 1-on-1 room (kind='debate', publicly readable so anyone can
 -- spectate) that only the two debaters may post into. Spectators vote for
@@ -427,9 +434,8 @@ begin
 end $$;
 
 -- ═══════════════════════ Expanded admin powers ═══════════════════════
-
--- bans: read-only for the banned user (can still read rooms, can't post/join)
-alter table public.profiles add column if not exists banned boolean not null default false;
+-- (profiles.banned was already added near the top of this file, ahead of
+-- the debates section, since msg_insert below needs it to exist first)
 
 -- allow admins to change is_admin/tier/banned on ANY profile (previously fully
 -- locked); everyone else keeps the old locked behavior.

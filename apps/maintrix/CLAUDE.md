@@ -313,11 +313,21 @@ since its accent itself is achromatic. Also fixed Graphite's accent contrast
 (was a near-white `#d4d4d4` behind white button text) and themed
 `--accent-deep` (`.card:hover` border was silently never themed before).
 
-**Action needed, still true:** run `supabase/migrations/0009` through `0014`
-in order in the SQL editor. Until then the app runs in a degraded-but-no-
-longer-broken mode (messages/posts/signups all work again; the newer
-features — Debates, admin tools, personality systems, etc. — stay
-unavailable until migrated).
+**Resolved 2026-09-18: migrations 0009–0014 have been run against
+production** (via `supabase/RUN_THIS_ONCE.sql`, run directly in the Supabase
+SQL editor). Debates, admin tools, personality systems, the Awake server,
+etc. are now live against real schema. One migration bug was caught and
+fixed in the process: `0013_debates_admin_awake.sql` created the
+`msg_insert` policy (which references `profiles.banned`) *before* that
+column was added later in the same file — running the migration fresh threw
+`column "banned" does not exist`. Fixed by moving the `alter table
+public.profiles add column if not exists banned ...` line to the top of the
+file, ahead of the debates section; `RUN_THIS_ONCE.sql` was regenerated from
+the corrected migrations. Verified post-run via direct REST checks against
+the live project: `debates` table reachable (200, was a schema-cache 404
+before), `rooms.is_official`/`theme` columns reachable, and `admin_stats()`
+correctly executes and returns its own "not authorized" business-logic error
+for an anon caller (proving the function exists and runs, not missing).
 
 ## Build state (as of v0.11)
 
