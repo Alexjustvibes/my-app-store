@@ -200,6 +200,136 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.13 — mobile fixes, icons-not-emoji, voice channels, badges/streaks, maintenance banner)
+
+A large friend-feedback batch. Grouped by area:
+
+- **No more emoji in app chrome.** Rank tiers, debate result screens, badges,
+  the icebreaker banner, reduce-motion row, broadcast buttons, etc. now use
+  proper inline SVGs from the `IC` map instead of emoji characters, so the
+  app reads as one consistent icon system instead of a mix of emoji and
+  icons. Deliberately **left alone**: the message-reaction emoji picker
+  (`EMOJI_SET`) and the per-user "like glyph" choice (`LIKE_ICONS`) — both
+  are intentional emoji-based features, not chrome. `DEBATE_RANKS` entries
+  no longer carry an `icon` field (can't reference `IC` before it's defined
+  in load order); `debateRankBadge()` picks `IC.medal`/`IC.trophy` (top tier)
+  at call time instead.
+- **The gear icon actually looks like a gear now.** The old one (`IC.gear`)
+  was a circle with 8 straight radiating spokes — reads as a sun/asterisk at
+  small sizes, which is what prompted "change the sun logo into a settings
+  logo." Replaced with a real cog silhouette (Material's `settings` glyph).
+  Also **consolidated the two server-header icons into one**: server threads
+  used to show a bell (`thOptions`, all members) *and* a separate gear
+  (`thManage`, owner/admin) side by side. Now there's a single gear that
+  opens Room Options for everyone, with a new "Server management" section
+  inside that sheet (visibility + delete) that only renders for
+  owners/admins — same underlying `serverManageOnline`/`serverManage`
+  functions, just reached from one place instead of two icons.
+- **Nexus's icon is a phone now, and voice channels are real (member-
+  creatable).** The Nexus room header's action icon is `IC.phone` and opens
+  a voice call directly (`openVoiceChannel`), skipping the options-sheet
+  detour entirely — tapping it while offline shows a toast instead of
+  crashing (`sb` doesn't exist yet in local/demo mode). Servers get a proper
+  **voice channel list** inside Room Options (`db.voice.list/create`, new
+  `voice_channels` table, migration `0015`) — any member can start one by
+  name; each is its own Presence channel (`voice:<channelId>`) instead of
+  the old one-ad-hoc-room-wide-channel model. Still preview-only (presence +
+  local mute, no real audio — needs a provider like LiveKit, same gap as
+  documented for live video).
+- **Profile leads with personality, not goals/fears.** `personalityBlock(u)`
+  now takes an `editable` flag: on your own profile, MBTI/Enneagram/
+  Temperament each get a pencil icon (`.tg-edit`) that opens the matching
+  picker (`openMbtiPicker('profile')` etc.) right from the profile sheet —
+  no detour through Settings. Chasing/Escaping (goals/fears) moved from
+  their own big chip blocks to one compact muted line under the bio
+  ("Chasing X · Escaping Y") so personality is what's visually featured. The
+  now-redundant MBTI/Enneagram/Temperament rows were removed from Settings
+  (same picker, one entry point) as part of decluttering it — see below.
+- **DM notifications are real now, not just tag/reply.** `on_message_notify()`
+  (migration `0015`) fires a `'dm'`-type notification on every new DM
+  message (unless the room's muted), carrying `media_kind` in `entity` so
+  the client can show "dmed you!" vs. "sent you a picture!" / "…a video!" /
+  "…a voice note!" (`dmNotifText()`). DMs skip the generic @mention/reply
+  path now — redundant in a 1:1. Client-side, `groupNotifs()` collapses
+  **consecutive** unread DM notifications from the same person in the same
+  room into one row: "sent you 3 dms", capped at "9+ dms" once the run hits
+  9 or more.
+- **Debates got a first-run intro, a rank card, and admin deletion.**
+  First time anyone opens Debates, `renderDebatesIntro()` shows a full hype
+  screen (what it is, three how-it-works steps, a CTA) gated by
+  `state.seenDebatesIntro` (set once, forever after goes straight to the
+  normal list). Above the list, a `.debate-rank-card` shows your own
+  `debateRankBadge` + W/L/T once you've played at least one. Admins can now
+  delete any debate outright from Overwatch → Tools (`admin_delete_debate`
+  RPC, cascades the room/messages/votes with it).
+- **The EXPANSION intro splash is theme-aware.** `applyAppTheme()` now runs
+  once immediately at script load (before `runIntro()`), not just inside
+  `enter()` after auth resolves — so the splash's ring/glow/subtitle
+  (already `var(--accent)`-driven) actually reflect your saved theme instead
+  of always being crimson. The intro's background gradient and word glow
+  were also switched from hardcoded crimson hex to `var(--surface-2)`/
+  `var(--ground)`/`var(--accent)`, which `applyAppTheme()`'s hue-rotation
+  already covers.
+- **Settings is grouped now**: Profile / Display / Privacy & security /
+  Account section headers instead of one long flat list — mostly achieved by
+  removing the redundant MBTI/Enneagram/Temperament rows (now edited from
+  the profile directly) rather than adding UI chrome.
+- **Expanded admin powers**: delete any debate (above), plus a new
+  **maintenance banner** system — `app_config` singleton table (public
+  read, admin-only write via `admin_set_maintenance` RPC), a form in
+  Overwatch → Tools to toggle it and set a title + details blurb, and a
+  slim banner (`#maintBanner`, `checkMaintenanceBanner()`) that shows across
+  the whole app with a "More details" button opening the full text in a
+  sheet. This is a **banner, not a hard lockout** — the app stays fully
+  usable underneath it; that matched how the ask read ("banner… with more
+  details button"), but flag it if an actual maintenance-mode lockout is
+  wanted instead.
+- **Badges are curated + auto-awarded now, not just admin-typed emoji.**
+  `badges.icon` stores an **icon key** (matched against `IC` client-side via
+  `BADGE_ICON_KEYS`) instead of a freeform emoji string — `openAwardBadge()`
+  is now an icon picker, not a text box. Auto-award triggers (migration
+  `0015`, all idempotent via `award_badge_if_missing()`): **Founding
+  Member** (signed up while `profiles` count ≤ 100), **First Words** (first
+  message), **First Post**, **Debate Debut** (first finished debate) /
+  **Debate Champion** (10 wins), **Social Butterfly** (10 accepted friends),
+  **Week Warrior** / **Streak Legend** (7-day / 30-day streak — see next).
+- **Texting streaks — per-user daily, not per-conversation.** Scoped this as
+  a single daily-activity streak on `profiles.streak_count`/
+  `streak_last_date` (bumped by `bump_streak()` on any non-system message,
+  once per calendar day), **not** a Snapchat-style per-DM-pair streak —
+  that's a materially bigger feature (a streak per conversation, not per
+  person) and wasn't specified either way, so the simpler, still-meaningful
+  version shipped. Say the word if per-DM-pair streaks are actually wanted.
+- **Nexus header decluttered**: the embedded room no longer repeats "The
+  Nexus / everyone, everywhere / The Nexus / live" (title+sub *and* a
+  roomTag rendering the same info twice) — for the embedded case the
+  thread-head now shows nothing but the action icons, since the topbar
+  above it already says "Nexus."
+- **Mobile: composer/keyboard fix, best-effort.** Reported as "on normal
+  text size, typing pushes everything down; not on large." Root cause
+  wasn't reproducible in this environment (no real mobile keyboard/visual-
+  viewport event to test against), so this shipped as a legitimate
+  standards-based fix rather than a guess-and-check patch:
+  `syncFrameToVisualViewport()` keeps `.frame`'s height locked to
+  `window.visualViewport.height` whenever it's meaningfully smaller than
+  `window.innerHeight` (keyboard open) and hands back to CSS `100dvh` the
+  moment it isn't — addresses the actual symptom (content getting pushed
+  off-screen under the keyboard) regardless of the text-size-specific
+  asymmetry, which is consistent with `--frame` using the non-standard CSS
+  `zoom` property for text scaling (interacts unpredictably with visual-
+  viewport resize on mobile Safari in particular). **Needs a real-device
+  check** — this could not be verified against an actual on-screen keyboard.
+- **Admin grants**: migration `0015` grants admin to handles `'ret'` and
+  `'5'` (in addition to the existing one-off `'ret'` grant already sitting
+  unresolved in migration `0013`) — takes effect once run, and only for
+  accounts that have already signed up with those exact handles.
+
+**Action needed:** run `supabase/migrations/0015_voice_streaks_badges_maintenance.sql`
+(or the regenerated `RUN_THIS_ONCE.sql`, which now includes it) against
+production — none of the voice channels / DM notifications / streaks /
+badge auto-awards / maintenance banner / admin_delete_debate / new admin
+grants exist server-side until it's run.
+
 ## Build state (as of v0.12.2 — Nexus-as-room, debate fixes, flashy ranks)
 
 Friend feedback round: the Nexus tab felt like an unnecessary extra tap, the
