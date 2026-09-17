@@ -200,6 +200,66 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.12.1 — urgent fix)
+
+**The merged v0.12 update went out before migrations 0009–0014 were ever run
+against the live database.** Confirmed directly against the live Supabase
+project (read-only REST checks) that every column/table from this whole
+multi-round collaboration is still missing in production. That silently broke
+things far beyond the new features themselves, because several INSERT/UPDATE
+calls bundled a brand-new column into the *same request* as pre-existing
+columns — and Postgres/PostgREST rejects the whole request if any one column
+doesn't exist:
+
+- **Every message send was broken app-wide** — `db.messages.send()` always
+  included `poll_id` (even `null`, for ordinary messages), so with that
+  column missing, *no message could be sent anywhere* (Nexus, DMs, servers,
+  everywhere). Fixed: `poll_id` is now only included in the payload when
+  actually creating a poll message.
+- **Every new post failed to create** — `db.posts.create()` always included
+  `caption`, which the composer now requires client-side, so with that column
+  missing, posting was fully broken. Fixed: tries with `caption` first, falls
+  back to posting without it.
+- **"Your servers" list was broken** ("your servers is bugged") —
+  `db.servers.mine()` explicitly selected `is_official,theme` in a join,
+  which hard-errors if those columns don't exist (unlike `select('*')`, which
+  just omits them). Fixed to `rooms!inner(*)`.
+- **New signups were fully blocked** — `db.profiles.create()` bundled the new
+  personality columns into the same UPDATE as core signup fields
+  (handle/name/goals/fears/bio/etc.), so a missing personality column failed
+  the *entire* signup. Fixed: core fields save first (must succeed); the
+  personality fields save separately and best-effort.
+- **Profile picture uploads were broken** ("pfps buggy") — `openAppearance`'s
+  save bundled the new `status_line` field into the same request as
+  `avatar_path`/`color`/`like_icon`, so *any* appearance change failed,
+  including ones that had nothing to do with the new fields. Fixed: avatar/
+  color/likes save first (must succeed); `status_line`/`banner_path` save
+  separately and best-effort.
+- **"ret" was never actually granted admin`** — migration 0013 (which
+  contains that one-off grant) simply never ran.
+
+None of this needed a code fix once migrations are run — the schema mismatch
+*is* the bug. But the resilience changes above are staying regardless: no
+future column addition should ever be allowed to take down messaging or
+posting again just because a migration lagged behind a deploy.
+
+**Also fixed in this pass: themes now actually retint the background**, not
+just the accent. `applyAppTheme()` converts each theme's accent to HSL, takes
+its hue, and re-renders `--ground`/`--surface`/`--surface-2`/`--elevated`/
+`--line`/`--hover`/`--muted`/`--dim`/`--faint` at that hue (same saturation/
+lightness as the original crimson palette, so contrast never changes) via a
+small hex↔HSL round-trip (`hexToHsl`/`hslToHex`). Graphite is a special case
+(`neutralSatMul:0`) — true desaturated gray rather than a hue-rotated one,
+since its accent itself is achromatic. Also fixed Graphite's accent contrast
+(was a near-white `#d4d4d4` behind white button text) and themed
+`--accent-deep` (`.card:hover` border was silently never themed before).
+
+**Action needed, still true:** run `supabase/migrations/0009` through `0014`
+in order in the SQL editor. Until then the app runs in a degraded-but-no-
+longer-broken mode (messages/posts/signups all work again; the newer
+features — Debates, admin tools, personality systems, etc. — stay
+unavailable until migrated).
+
 ## Build state (as of v0.11)
 
 **v0.11** — a Debates tab, expanded admin powers, and one official server
