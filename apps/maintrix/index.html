@@ -84,6 +84,10 @@
   .screen { display:none; min-height:100%; } .screen.on { display:block; animation:fade .28s ease; }
   #s-nexus.on { display:flex; flex-direction:column; height:100%; animation:fade .28s ease; }
   @keyframes fade { from { opacity:0; } to { opacity:1; } }
+  .maint-banner { flex:0 0 auto; background:linear-gradient(90deg,var(--gold),#f0b232); color:#1a1207; padding:10px 14px; font-size:12.5px; display:flex; align-items:center; gap:8px; }
+  .maint-banner .mb-ic { flex:0 0 auto; } .maint-banner .mb-ic svg { width:16px; height:16px; }
+  .maint-banner .mb-t { flex:1; min-width:0; font-weight:700; }
+  .maint-banner button { flex:0 0 auto; font-size:11px; font-weight:700; text-decoration:underline; }
   .msgbar { flex:0 0 auto; padding:8px 12px; background:var(--ground); border-top:1px solid var(--line); }
   .msgbar button { width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 0; border-radius:12px; background:var(--surface); border:1px solid var(--line); color:var(--text-hi); font-weight:700; font-size:13px; }
   .msgbar button .ni { width:18px; height:18px; }
@@ -176,11 +180,25 @@
   @keyframes rpShine { 0%{left:-60%;} 40%{left:130%;} 100%{left:130%;} }
   .rank-pill.big { font-size:15px; padding:6px 16px 6px 13px; }
   .rank-pill.big .rp-shine { width:25%; }
+  .debate-rank-card { display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:14px; }
+  .drc-wl { font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .debate-intro { padding:40px 24px 24px; text-align:center; display:flex; flex-direction:column; align-items:center; }
+  .debate-intro-ic { color:var(--accent-hi); margin-bottom:14px; } .debate-intro-ic svg { width:52px; height:52px; }
+  .debate-intro h2 { font-family:var(--display); font-size:26px; margin-bottom:10px; color:var(--text-hi); }
+  .debate-intro p { color:var(--muted); font-size:14.5px; line-height:1.5; max-width:320px; margin-bottom:26px; }
+  .debate-intro-steps { display:flex; flex-direction:column; gap:14px; width:100%; max-width:340px; margin-bottom:30px; text-align:left; }
+  .dis { display:flex; align-items:center; gap:12px; font-size:13.5px; color:var(--text); background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .dis-n { flex:0 0 24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; font-family:var(--mono); font-weight:700; font-size:12px; display:grid; place-items:center; }
+  .debate-intro .btn { max-width:280px; }
+  .rp-ic { display:inline-flex; vertical-align:-2px; }
+  .rp-ic svg { width:11px; height:11px; }
+  .rank-pill.big .rp-ic svg { width:16px; height:16px; }
   .rankfx-scrim { position:fixed; inset:0; z-index:999; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; animation:rankfxFade .25s ease; }
   @keyframes rankfxFade { from{opacity:0} to{opacity:1} }
   .rankfx-card { position:relative; width:min(320px,86vw); background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:30px 22px 24px; text-align:center; animation:rankfxPop .45s cubic-bezier(.2,1.4,.4,1); overflow:hidden; }
   @keyframes rankfxPop { from{ transform:scale(.7); opacity:0; } to{ transform:scale(1); opacity:1; } }
-  .rankfx-emoji { font-size:44px; line-height:1; margin-bottom:8px; animation:rankfxBounce 1.1s ease .2s 2; }
+  .rankfx-emoji { display:flex; align-items:center; justify-content:center; margin-bottom:8px; animation:rankfxBounce 1.1s ease .2s 2; }
+  .rankfx-emoji svg { width:44px; height:44px; }
   @keyframes rankfxBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
   .rankfx-title { font-family:var(--display); font-weight:800; font-size:21px; color:var(--text-hi); margin-bottom:4px; letter-spacing:.01em; }
   .rankfx-sub { font-size:12.5px; color:var(--muted); margin-bottom:18px; }
@@ -291,9 +309,12 @@
   .prof-hero { padding:10px 20px 16px; text-align:center; } .prof-hero .p-av { margin:-38px auto 12px; border:3px solid var(--surface); border-radius:50%; } .prof-hero h2 { font-family:var(--display); font-size:26px; font-weight:700; color:var(--text-hi); } .prof-hero .p-status { font-size:14px; color:var(--text); margin-top:4px; } .prof-hero .p-since { font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:4px; }
   .prof-stats { display:flex; justify-content:center; gap:30px; margin:14px 0; } .prof-stats .ps { text-align:center; } .prof-stats .ps b { font-family:var(--display); font-size:20px; color:var(--text-hi); font-weight:700; display:block; } .prof-stats .ps span { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
   .prof-bio { font-size:15px; color:var(--text); line-height:1.55; padding:0 20px 16px; text-align:center; }
-  .trait-group { padding:4px 16px 10px; } .trait-group .tg-k { font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; } .trait-group .muted-note { text-align:left; color:var(--dim); font-size:14px; }
+  .trait-group { padding:4px 16px 10px; } .trait-group .tg-k { font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; display:flex; align-items:center; gap:6px; } .trait-group .muted-note { text-align:left; color:var(--dim); font-size:14px; }
+  .tg-edit { margin-left:auto; color:var(--dim); width:22px; height:22px; display:grid; place-items:center; border-radius:6px; } .tg-edit:active { background:var(--hover); } .tg-edit svg { width:14px; height:14px; }
   .settings-row { display:flex; align-items:center; gap:13px; padding:15px 18px; border-top:1px solid var(--line); cursor:pointer; font-size:15px; color:var(--text); } .settings-row:hover { background:var(--hover); } .settings-row .sr-ic { color:var(--muted); } .settings-row .sr-r { margin-left:auto; color:var(--dim); font-size:13px; } .settings-row.danger { color:var(--danger); }
-  .swatches { display:flex; gap:12px; } .sw { width:40px; height:40px; border-radius:50%; cursor:pointer; border:3px solid transparent; } .sw.on { border-color:#fff; transform:scale(1.1); }
+  .swatches { display:flex; gap:12px; flex-wrap:wrap; } .sw { width:40px; height:40px; border-radius:50%; cursor:pointer; border:3px solid transparent; } .sw.on { border-color:#fff; transform:scale(1.1); }
+  .sw.ic-sw { background:var(--surface-2); color:var(--muted); display:grid; place-items:center; border-color:var(--line); } .sw.ic-sw.on { color:var(--accent-hi); border-color:var(--accent); transform:scale(1.08); }
+  .badge-chip { display:inline-flex; align-items:center; gap:5px; }
   .wallpaper-grid { display:flex; flex-wrap:wrap; gap:10px; } .wp-sw { width:64px; height:44px; border-radius:10px; cursor:pointer; border:2px solid transparent; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted); } .wp-sw.on { border-color:var(--accent); }
   .tb-btn.muted-on { color:var(--accent-hi); }
   .lswatches { display:flex; gap:10px; } .lsw { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; font-size:20px; background:var(--surface); border:2px solid var(--line); cursor:pointer; } .lsw.on { border-color:var(--accent); background:var(--accent-soft); }
@@ -354,9 +375,9 @@
   .ls-compose .send { width:38px; height:38px; border-radius:50%; background:var(--live); color:#fff; display:grid; place-items:center; flex:0 0 38px; }
 
   /* intro */
-  #intro { position:absolute; inset:0; z-index:96; overflow:hidden; background:radial-gradient(circle at 50% 44%,#2a0d13 0%,#0d090a 68%); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity .6s ease; } #intro.gone { opacity:0; pointer-events:none; }
+  #intro { position:absolute; inset:0; z-index:96; overflow:hidden; background:radial-gradient(circle at 50% 44%,var(--surface-2) 0%,var(--ground) 68%); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity .6s ease; } #intro.gone { opacity:0; pointer-events:none; }
   #intro .ex-ring { position:absolute; top:44%; left:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; border:2px solid var(--accent); opacity:0; animation:exRing 2.3s cubic-bezier(.2,.7,.2,1) .1s forwards; } #intro .ex-ring.two { animation-delay:.35s; border-color:var(--accent-hi); }
-  #intro .ex-word { font-family:'Hanken Grotesk',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(28px,8.5vw,44px); color:#fff; letter-spacing:.42em; margin-right:-.42em; opacity:0; animation:exWord 1.7s cubic-bezier(.2,.7,.2,1) .15s forwards; text-shadow:0 0 34px #ed2e4455; }
+  #intro .ex-word { font-family:'Hanken Grotesk',sans-serif; font-weight:800; text-transform:uppercase; font-size:clamp(28px,8.5vw,44px); color:#fff; letter-spacing:.42em; margin-right:-.42em; opacity:0; animation:exWord 1.7s cubic-bezier(.2,.7,.2,1) .15s forwards; text-shadow:0 0 34px var(--accent); }
   #intro .ex-sub { font-family:var(--mono); font-size:11px; letter-spacing:.4em; margin-right:-.4em; text-transform:uppercase; color:var(--accent-hi); margin-top:22px; opacity:0; animation:exSub .9s ease 1.05s forwards; }
   #intro .ex-skip { position:absolute; bottom:calc(24px + env(safe-area-inset-bottom)); font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); opacity:0; animation:exSub .6s ease 1.8s forwards; }
   @keyframes exRing { 0%{opacity:.85; transform:scale(.4);} 55%{opacity:.3;} 100%{opacity:0; transform:scale(46);} }
@@ -424,6 +445,7 @@
   </div>
 
   <div id="app">
+    <div id="maintBanner" class="maint-banner" style="display:none"></div>
     <div class="topbar"><div class="tb-title"><span id="tbTitle">Nexus</span><span class="tb-sub" id="tbSub"></span></div><span class="tier-pill" id="tierPill">Lite</span><button class="tb-btn" id="globalSearchBtn"></button><button class="tb-btn bell" id="notifBtn"></button><button class="tb-btn" id="profileBtn"></button></div>
     <div id="view">
       <section class="screen" id="s-nexus"></section>
@@ -467,16 +489,16 @@
   async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
   function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
   const DEBATE_RANKS = [
-    {min:0,name:'Novice',color:'#8a8a8a',icon:'🔰'},
-    {min:1000,name:'Contender',color:'#4a9eff',icon:'🥉'},
-    {min:1100,name:'Skilled',color:'#3ba55d',icon:'🥈'},
-    {min:1250,name:'Sharp',color:'#f0b232',icon:'⚔️'},
-    {min:1400,name:'Expert',color:'#f0663b',icon:'🥇'},
-    {min:1600,name:'Elite',color:'#a855f7',icon:'💎'},
-    {min:1800,name:'Master',color:'#ed2e44',icon:'👑'}
+    {min:0,name:'Novice',color:'#8a8a8a'},
+    {min:1000,name:'Contender',color:'#4a9eff'},
+    {min:1100,name:'Skilled',color:'#3ba55d'},
+    {min:1250,name:'Sharp',color:'#f0b232'},
+    {min:1400,name:'Expert',color:'#f0663b'},
+    {min:1600,name:'Elite',color:'#a855f7'},
+    {min:1800,name:'Master',color:'#ed2e44',top:true}
   ];
   function debateRankFor(elo){ let r=DEBATE_RANKS[0]; for(const x of DEBATE_RANKS){ if(elo>=x.min)r=x; } return r; }
-  function debateRankBadge(elo,size){ const r=debateRankFor(elo); return `<span class="rank-pill" style="background:linear-gradient(135deg,${r.color}30,${r.color}12);color:${r.color};border-color:${r.color}66;${size==='sm'?'font-size:10px;padding:1px 6px 1px 5px':''}"><span class="rp-shine"></span>${r.icon} ${esc(r.name)} · ${elo}</span>`; }
+  function debateRankBadge(elo,size){ const r=debateRankFor(elo); const ic=r.top?IC.trophy:IC.medal; return `<span class="rank-pill${size==='big'?' big':''}" style="background:linear-gradient(135deg,${r.color}30,${r.color}12);color:${r.color};border-color:${r.color}66;${size==='sm'?'font-size:10px;padding:1px 6px 1px 5px':''}"><span class="rp-shine"></span><span class="rp-ic">${ic}</span> ${esc(r.name)} · ${elo}</span>`; }
   // db.* is the swap seam for later phases; Phase 1 implements profiles/auth.
   const db = {
     auth:{
@@ -636,6 +658,10 @@
     async myRsvps(ids){ if(!ids.length)return []; await initSB(); const { data } = await sb.from('event_rsvps').select('event_id').eq('user_id', me().id).in('event_id', ids); return (data||[]).map(r=>r.event_id); },
     async toggleRsvp(id){ await initSB(); const uid=me().id; const { data } = await sb.from('event_rsvps').select('event_id').eq('event_id',id).eq('user_id',uid).maybeSingle(); if(data){ await sb.from('event_rsvps').delete().eq('event_id',id).eq('user_id',uid); return false; } await sb.from('event_rsvps').insert({ event_id:id, user_id:uid }); return true; }
   };
+  db.voice = {
+    async list(serverId){ await initSB(); const { data, error } = await sb.from('voice_channels').select('*').eq('room_id', serverId).order('created_at',{ascending:true}); if(error) throw error; return data||[]; },
+    async create(serverId,name){ await initSB(); const { data, error } = await sb.from('voice_channels').insert({ room_id:serverId, name, created_by:me().id }).select().single(); if(error) throw error; return data; }
+  };
   /* ── debates (1-on-1, spectators vote) ── */
   function rowToDebate(r){ return { id:r.id, roomId:r.room_id, title:r.title, description:r.description, creatorId:r.creator_id, opponentId:r.opponent_id, status:r.status, winnerId:r.winner_id, eloDelta:r.elo_delta==null?null:r.elo_delta, createdAt:r.created_at, endedAt:r.ended_at }; }
   db.debates = {
@@ -647,7 +673,12 @@
     async vote(id,forUser){ await initSB(); const { error } = await sb.rpc('vote_debate',{d_id:id,for_user:forUser}); if(error) throw error; },
     async votes(id){ await initSB(); const { data } = await sb.from('debate_votes').select('vote_for,voter_id').eq('debate_id',id); const counts={}; let mine=null; (data||[]).forEach(v=>{ counts[v.vote_for]=(counts[v.vote_for]||0)+1; if(v.voter_id===me().id)mine=v.vote_for; }); return { counts, mine, total:(data||[]).length }; },
     async votesFor(ids){ if(!ids.length)return {}; await initSB(); const { data } = await sb.from('debate_votes').select('debate_id,vote_for').in('debate_id',ids); const tally={}; (data||[]).forEach(v=>{ tally[v.debate_id]=tally[v.debate_id]||{}; tally[v.debate_id][v.vote_for]=(tally[v.debate_id][v.vote_for]||0)+1; }); return tally; },
-    async leaderboard(){ await initSB(); const { data } = await sb.from('profiles').select('id,name,handle,elo,debate_wins,debate_losses,debate_ties').or('debate_wins.gt.0,debate_losses.gt.0,debate_ties.gt.0').order('elo',{ascending:false}).limit(20); return data||[]; }
+    async leaderboard(){ await initSB(); const { data } = await sb.from('profiles').select('id,name,handle,elo,debate_wins,debate_losses,debate_ties').or('debate_wins.gt.0,debate_losses.gt.0,debate_ties.gt.0').order('elo',{ascending:false}).limit(20); return data||[]; },
+    async adminDelete(id){ await initSB(); const { error } = await sb.rpc('admin_delete_debate',{d_id:id}); if(error) throw error; }
+  };
+  db.config = {
+    async get(){ await initSB(); const { data } = await sb.from('app_config').select('*').eq('id',1).maybeSingle(); return data; },
+    async setMaintenance(enabled,title,details){ await initSB(); const { error } = await sb.rpc('admin_set_maintenance',{enabled,title,details}); if(error) throw error; }
   };
   db.reactions = {
     async forMessages(ids){ if(!ids||!ids.length) return {}; await initSB(); const { data } = await sb.from('message_reactions').select('message_id,user_id,emoji').in('message_id', ids); const map={}; (data||[]).forEach(r=>{ (map[r.message_id]=map[r.message_id]||[]).push(r); }); return map; },
@@ -899,6 +930,21 @@
     });
   }
   function applyTextSize(){ const frame=document.querySelector('.frame'); if(!frame)return; frame.style.zoom={small:0.92,medium:1,large:1.1}[state.textSize||'medium']; }
+  // Mobile keyboards (esp. iOS Safari, which ignores interactive-widget=resizes-content)
+  // shrink the visual viewport without resizing the layout viewport, so 100dvh keeps
+  // measuring the old, taller height and the composer gets pushed off-screen under the
+  // keyboard. Sync .frame's height directly to the visual viewport whenever it's
+  // smaller than the layout viewport (keyboard open), and let CSS's 100dvh take back
+  // over the moment it isn't.
+  (function syncFrameToVisualViewport(){
+    if(!window.visualViewport)return;
+    const vv=window.visualViewport;
+    const apply=()=>{ const frame=document.querySelector('.frame'); if(!frame)return;
+      const shrink = window.innerHeight - vv.height;
+      if(shrink>60){ frame.style.height=vv.height+'px'; } else { frame.style.height=''; }
+    };
+    vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply);
+  })();
   function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); }
   const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦' };
   const RANKS = ['Initiate','Operator','Architect','Owner'];
@@ -989,7 +1035,7 @@
     {id:mid(),type:'tag',who:'kestrel',t:'tagged you in The Nexus',time:'5h',read:false},
     {id:mid(),type:'reply',who:'dax',t:'replied to your message',time:'1d',read:true}
   ]; }
-  const NOTIF_IC={like:'♥',post_like:'♥',tag:'@',reply:'↩',comment:'💬',friend:'＋',friend_request:'＋'};
+  const NOTIF_IC={like:'♥',post_like:'♥',tag:'@',reply:'↩',comment:'@',dm:'@',friend:'＋',friend_request:'＋'};
   function pushNotif(type,who,t){ (state.notifications=state.notifications||[]).unshift({id:mid(),type,who,t,time:'now',read:false}); if(state.notifications.length>40)state.notifications.length=40; save(); paintBell(); }
   function unreadNotifs(){ return (state.notifications||[]).filter(n=>!n.read).length; }
   function paintBell(){ const b=$('notifBtn'); if(b)b.innerHTML=IC.bell+(unreadNotifs()?'<span class="nd"></span>':''); }
@@ -1071,7 +1117,7 @@
     let h='',prev=null;
     (list||[]).forEach(mm=>{
       if(ctx&&ctx.unreadFromId&&mm.id===ctx.unreadFromId){ h+=`<div class="unread-divider"><span>New</span></div>`; prev=null; }
-      if(mm.pin){ h+=`<div class="pinbar" data-mid="${mm.id||''}"><span class="pin-ic">${IC.pin}</span><div><div class="pin-k">📌 Overwatch broadcast</div><div class="pin-t">${fmt(mm.t)}</div></div></div>`; prev=null; return; }
+      if(mm.pin){ h+=`<div class="pinbar" data-mid="${mm.id||''}"><span class="pin-ic">${IC.pin}</span><div><div class="pin-k">Overwatch broadcast</div><div class="pin-t">${fmt(mm.t)}</div></div></div>`; prev=null; return; }
       const p=person(mm.a); const grouped=prev&&prev.a===mm.a&&!mm.replyTo;
       const color=mm.color?mm.color:(p.bot?'var(--accent-hi)':(p.color||'var(--text-hi)'));
       const du=mm.remote?'':` data-user="${attr(mm.a)}"`;
@@ -1105,17 +1151,19 @@
     const isDebate = th.kind==='debate' && th.debate;
     const debaterCanType = isDebate && th.debate.status!=='ended' && (me().id===th.debate.creatorId || me().id===th.debate.opponentId);
     let h=`<div class="thread${th.theme==='mono'?' mono-theme':''}"><div class="thread-head">${isEmbed?'':`<button class="back" id="thBack">${IC.back}</button>`}`;
-    if(th.dmKey){ h+=`<div data-user="${attr(th.dmKey)}" style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">${avatar(th.dmKey,34,{dot:true,ring:true})}<div style="min-width:0"><div class="th-name">${esc(th.title)}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div></div>`; }
+    if(isEmbed){ h+=`<div style="min-width:0;flex:1"></div>`; }
+    else if(th.dmKey){ h+=`<div data-user="${attr(th.dmKey)}" style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">${avatar(th.dmKey,34,{dot:true,ring:true})}<div style="min-width:0"><div class="th-name">${esc(th.title)}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div></div>`; }
     else h+=`<div style="min-width:0;flex:1"><div class="th-name">${esc(th.title)}${th.official?verifiedBadge():''} ${isCommons?'<span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span>':''}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div>`;
-    h+=tag;
+    if(!isEmbed) h+=tag;
     const isMuted=(state.mutedRooms||[]).includes(th.key);
-    h+=`<button class="tb-btn${isMuted?' muted-on':''}" id="thOptions" style="margin-left:6px">${IC.bell}</button>`;
-    if(canManage)h+=`<button class="tb-btn" id="thManage" style="margin-left:6px">${IC.gear}</button>`;
+    const optIcon = th.serverId?IC.gear:(isEmbed?IC.phone:IC.bell);
+    const optTitle = th.serverId?'Room settings':(isEmbed?'Voice call':(isMuted?'Unmute':'Mute'));
+    h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isEmbed)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
     if(isEmbed)h+=`<button class="tb-btn" id="thDebates" title="Debates" style="margin-left:6px">${IC.debates}</button>`;
     h+=`</div>`;
     if(isDebate) h+=renderDebateHead(th.debate);
     const ice = th.dmKey ? personalityOverlap(me(),person(th.dmKey)) : [];
-    if(ice.length && !(state.dismissedIcebreakers||[]).includes(th.key)) h+=`<div class="icebreaker" id="iceBanner"><span>✦ You're both <b>${esc(ice[0])}</b> — ask them about it.</span><button id="iceDismiss">✕</button></div>`;
+    if(ice.length && !(state.dismissedIcebreakers||[]).includes(th.key)) h+=`<div class="icebreaker" id="iceBanner"><span>${IC.sparkle} You're both <b>${esc(ice[0])}</b> — ask them about it.</span><button id="iceDismiss">✕</button></div>`;
     const wallpaperStyle=(state.wallpapers&&state.wallpapers[th.key])?` style="background:${attr(state.wallpapers[th.key])}"`:'';
     h+=`<div class="thread-scroll" id="thScroll"${wallpaperStyle}>${renderMsgs(list,th)}</div>`;
     h+=`<div id="typingHint" class="typing-hint"></div>`;
@@ -1136,8 +1184,7 @@
     { const backBtn=$('thBack'); if(backBtn) backBtn.onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); }; }
     { const debBtn=$('thDebates'); if(debBtn) debBtn.onclick=()=>{ state.screen='debates'; save(); render(); }; }
     { const idb=$('iceDismiss'); if(idb)idb.onclick=()=>{ state.dismissedIcebreakers=state.dismissedIcebreakers||[]; state.dismissedIcebreakers.push(th.key); save(); const ib=$('iceBanner'); if(ib)ib.remove(); }; }
-    if(canManage)$('thManage').onclick=()=> online()?serverManageOnline(th.serverId, th.serverOwner, th.title):serverManage(th.serverId);
-    $('thOptions').onclick=()=>openRoomOptions(th);
+    $('thOptions').onclick=()=>{ if(isEmbed){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); };
     if(isDebate) wireDebateRoom(th);
     if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML='<div class="empty">Loading…</div>'; hydrateOnlineRoom(th); }
     else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
@@ -1263,14 +1310,16 @@
     clearTimeout(_typingHideT); _typingHideT=setTimeout(()=>el2.classList.remove('on'),2500);
   }
   const WALLPAPERS = [ ['None',''], ['Rose','linear-gradient(160deg,#2a1418,#150e10)'], ['Amber','linear-gradient(160deg,#2a1f10,#150e10)'], ['Ocean','linear-gradient(160deg,#10202a,#150e10)'], ['Violet','linear-gradient(160deg,#221528,#150e10)'], ['Forest','linear-gradient(160deg,#132a1c,#150e10)'] ];
-  function openRoomOptions(th){
+  function openRoomOptions(th,canManage){
     const muted=(state.mutedRooms||[]).includes(th.key);
     const cur=(state.wallpapers&&state.wallpapers[th.key])||'';
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:14px">Room options</div>`;
     h+=`<div class="settings-row" id="roMute" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">${IC.bell}</span> ${muted?'Unmute notifications':'Mute notifications'} <span class="sr-r">${muted?'Muted':'On'}</span></div>`;
     h+=`<div class="field"><label>Wallpaper</label><div class="wallpaper-grid" id="roWall">`+WALLPAPERS.map(([label,val])=>`<div class="wp-sw ${cur===val?'on':''}" data-wp="${attr(val)}" style="background:${val||'var(--surface-2)'}">${val?'':label}</div>`).join('')+`</div></div>`;
     if(online()&&th.roomId){ h+=`<div class="sec-title" style="margin-left:0">Scheduled events</div><div id="roEvents"><div class="empty" style="padding:10px 0">Loading…</div></div><button class="btn ghost block" id="roNewEvent" style="margin-top:6px">${IC.plus} Create event</button>`;
-      h+=`<div class="sec-title" style="margin-left:0">Voice</div><button class="btn ghost block" id="roVoice">${IC.mic} Join voice channel (preview)</button>`; }
+      if(th.serverId){ h+=`<div class="sec-title" style="margin-left:0">Voice channels</div><div id="roVoiceList"><div class="empty" style="padding:10px 0">Loading…</div></div><div style="display:flex;gap:8px;margin-top:6px"><input id="roVoiceName" placeholder="New channel name" style="flex:1"><button class="btn ghost" id="roVoiceCreate">${IC.plus}</button></div>`; }
+      else h+=`<div class="sec-title" style="margin-left:0">Voice</div><button class="btn ghost block" id="roVoice">${IC.phone} Join voice call (preview)</button>`; }
+    if(canManage&&th.serverId){ h+=`<div class="sec-title" style="margin-left:0">Server management</div><button class="btn ghost block" id="roManage">${IC.gear} Visibility &amp; danger zone</button>`; }
     h+=`<div style="height:16px"></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
     $('roMute').onclick=async ()=>{ state.mutedRooms=state.mutedRooms||[]; const i=state.mutedRooms.indexOf(th.key);
@@ -1279,22 +1328,32 @@
       save(); closeSheet(); renderThread(); };
     $('roWall').querySelectorAll('[data-wp]').forEach(sw=>sw.onclick=()=>{ state.wallpapers=state.wallpapers||{}; if(sw.dataset.wp)state.wallpapers[th.key]=sw.dataset.wp; else delete state.wallpapers[th.key]; save(); closeSheet(); renderThread(); });
     const ne=$('roNewEvent'); if(ne){ ne.onclick=()=>openCreateEvent(th); renderRoomEvents(th); }
-    const rv=$('roVoice'); if(rv)rv.onclick=()=>openVoiceChannel(th);
+    const rv=$('roVoice'); if(rv)rv.onclick=()=>openVoiceChannel(th.roomId,th.title);
+    if(th.serverId){ renderVoiceChannelList(th); const vc=$('roVoiceCreate'); if(vc)vc.onclick=async ()=>{ const name=$('roVoiceName').value.trim(); if(!name)return; vc.disabled=true; try{ await db.voice.create(th.serverId,name); $('roVoiceName').value=''; renderVoiceChannelList(th); }catch(e){ toast('Could not create channel'); } vc.disabled=false; }; }
+    const rm=$('roManage'); if(rm)rm.onclick=()=>{ closeSheet(); online()?serverManageOnline(th.serverId,th.serverOwner,th.title):serverManage(th.serverId); };
+  }
+  async function renderVoiceChannelList(th){
+    const box=$('roVoiceList'); if(!box)return;
+    try{ const chans=await db.voice.list(th.serverId); if(!$('roVoiceList'))return;
+      if(!chans.length){ box.innerHTML='<div class="empty" style="padding:8px 0">No voice channels yet — start one below.</div>'; return; }
+      box.innerHTML=chans.map(c=>`<div class="row" style="padding-left:0;padding-right:0"><div class="r-main"><div class="r-name">${IC.phone} ${esc(c.name)}</div></div><button class="chip" data-joinvc="${attr(c.id)}">Join</button></div>`).join('');
+      box.querySelectorAll('[data-joinvc]').forEach(b=>b.onclick=()=>{ const c=chans.find(x=>x.id===b.dataset.joinvc); openVoiceChannel(c.id,c.name); });
+    }catch(e){ if($('roVoiceList'))box.innerHTML='<div class="empty" style="padding:8px 0">Voice channels need the pending database update.</div>'; }
   }
   let voiceCh=null, voiceMuted=false;
   function leaveVoice(){ if(voiceCh){ try{ voiceCh.untrack(); sb.removeChannel(voiceCh); }catch(e){} voiceCh=null; } }
-  function openVoiceChannel(th){
+  function openVoiceChannel(roomOrChannelId,label){
     leaveVoice();
-    let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Voice channel</div><div class="th-sub" style="margin-bottom:16px">Preview — shows who's here. Real audio needs a voice provider (e.g. LiveKit) wired in on the backend; not connected yet.</div>`;
+    let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">${esc(label||'Voice call')}</div><div class="th-sub" style="margin-bottom:16px">Preview — shows who's here. Real audio needs a voice provider (e.g. LiveKit) wired in on the backend; not connected yet.</div>`;
     h+=`<div id="voiceList" class="chips" style="margin-bottom:20px"><span class="chip">Connecting…</span></div>`;
     h+=`<div style="display:flex;gap:10px"><button class="btn ghost" style="flex:1" id="voiceMute">${IC.mic} Mute (local)</button><button class="btn" style="flex:1;background:var(--accent-hi)" id="voiceLeave">Leave</button></div><div style="height:16px"></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
     voiceMuted=false;
-    const draw=(state2)=>{ const box=$('voiceList'); if(!box)return; const people=Object.values(state2).flat(); if(!people.length){ box.innerHTML='<span class="chip">Just you so far</span>'; return; } box.innerHTML=people.map(p=>`<span class="chip">${p.muted?'🔇':'🎙️'} ${esc(p.name)}</span>`).join(''); };
-    voiceCh=sb.channel('voice:'+th.roomId,{config:{presence:{key:me().id}}});
+    const draw=(state2)=>{ const box=$('voiceList'); if(!box)return; const people=Object.values(state2).flat(); if(!people.length){ box.innerHTML='<span class="chip">Just you so far</span>'; return; } box.innerHTML=people.map(p=>`<span class="chip">${p.muted?IC.micOff:IC.mic} ${esc(p.name)}</span>`).join(''); };
+    voiceCh=sb.channel('voice:'+roomOrChannelId,{config:{presence:{key:me().id}}});
     voiceCh.on('presence',{event:'sync'},()=>draw(voiceCh.presenceState()));
     voiceCh.subscribe(async status=>{ if(status==='SUBSCRIBED')await voiceCh.track({name:me().name,muted:voiceMuted}); });
-    $('voiceMute').onclick=()=>{ voiceMuted=!voiceMuted; if(voiceCh)voiceCh.track({name:me().name,muted:voiceMuted}); $('voiceMute').textContent=(voiceMuted?'🔇 Unmute':'🎙️ Mute')+' (local)'; };
+    $('voiceMute').onclick=()=>{ voiceMuted=!voiceMuted; if(voiceCh)voiceCh.track({name:me().name,muted:voiceMuted}); $('voiceMute').innerHTML=(voiceMuted?IC.micOff+' Unmute':IC.mic+' Mute')+' (local)'; };
     $('voiceLeave').onclick=()=>{ leaveVoice(); closeSheet(); };
   }
   async function renderRoomEvents(th){
@@ -1326,14 +1385,32 @@
   function wireDebatesBack(){ const b=$('dbBack'); if(b) b.onclick=()=>{ state.screen='nexus'; save(); render(); }; }
   function renderDebates(){
     if(!online()){ $('s-debates').innerHTML=debatesBackHtml()+'<div class="empty" style="padding-top:40px">Debates need the live backend.</div>'; wireDebatesBack(); return; }
-    $('s-debates').innerHTML=debatesBackHtml()+`<div class="pad" style="padding-bottom:0"><div class="th-sub" style="margin-bottom:10px">Pick a side, argue it 1-on-1, and let the room decide who's winning. Win to climb the rank ladder.</div><div style="display:flex;gap:8px"><button class="btn block" id="dbNew" style="flex:1">${IC.plus} Start a debate</button><button class="btn ghost" id="dbBoard">🏆</button></div></div><div id="dbList" style="padding-top:6px"><div class="empty" style="padding-top:20px">Loading…</div></div>`;
+    if(!state.seenDebatesIntro){ renderDebatesIntro(); return; }
+    const u=me(); const hasRank=u.debateWins||u.debateLosses||u.debateTies;
+    const rankCard = hasRank ? `<div class="debate-rank-card">${debateRankBadge(u.elo,'big')}<div class="drc-wl">${u.debateWins}W · ${u.debateLosses}L${u.debateTies?' · '+u.debateTies+'T':''}</div></div>` : '';
+    $('s-debates').innerHTML=debatesBackHtml()+`<div class="pad" style="padding-bottom:0">${rankCard}<div class="th-sub" style="margin-bottom:10px">Pick a side, argue it 1-on-1, and let the room decide who's winning. Win to climb the rank ladder.</div><div style="display:flex;gap:8px"><button class="btn block" id="dbNew" style="flex:1">${IC.plus} Start a debate</button><button class="btn ghost" id="dbBoard">${IC.trophy}</button></div></div><div id="dbList" style="padding-top:6px"><div class="empty" style="padding-top:20px">Loading…</div></div>`;
     wireDebatesBack();
     $('dbNew').onclick=openCreateDebate;
     $('dbBoard').onclick=openDebateLeaderboard;
     loadDebates();
   }
+  function renderDebatesIntro(){
+    $('s-debates').innerHTML=debatesBackHtml()+`<div class="debate-intro">
+      <div class="debate-intro-ic">${IC.fist}</div>
+      <h2>Welcome to Debates</h2>
+      <p>Pick a side. Argue it 1-on-1. The room decides who's winning — and every win pushes your rank higher.</p>
+      <div class="debate-intro-steps">
+        <div class="dis"><span class="dis-n">1</span>Start a debate with a title and your position</div>
+        <div class="dis"><span class="dis-n">2</span>An opponent joins — spectators vote live as you argue</div>
+        <div class="dis"><span class="dis-n">3</span>End it, most votes wins, and ELO shifts for both of you</div>
+      </div>
+      <button class="btn block" id="dbIntroGo">${IC.trophy} Let's go</button>
+    </div>`;
+    wireDebatesBack();
+    $('dbIntroGo').onclick=()=>{ state.seenDebatesIntro=true; save(); renderDebates(); };
+  }
   async function openDebateLeaderboard(){
-    let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px">🏆 Debate leaderboard</div></div><div id="lbList" style="max-height:64vh;overflow-y:auto"><div class="empty" style="padding:16px">Loading…</div></div><div style="height:16px"></div>`;
+    let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px;display:flex;align-items:center;gap:8px">${IC.trophy} Debate leaderboard</div></div><div id="lbList" style="max-height:64vh;overflow-y:auto"><div class="empty" style="padding:16px">Loading…</div></div><div style="height:16px"></div>`;
     $('sheet').className='sheet'; showSheet(h);
     try{
       const list=await db.debates.leaderboard();
@@ -1390,14 +1467,15 @@
   function renderDebateComposer(d){
     if(d.status==='ended'){
       const uid=me().id, tie=!d.winnerId, isParticipant=uid===d.creatorId||uid===d.opponentId, iWon=d.winnerId===uid;
-      const emoji = tie?'🤝':(iWon?'🏆':(isParticipant?'🥊':'🏁'));
+      const resultIc = tie?IC.handshake:(iWon?IC.trophy:(isParticipant?IC.fist:IC.trophy));
+      const resultColor = tie?'var(--muted)':(iWon?'var(--gold)':(isParticipant?'var(--danger)':'var(--muted)'));
       const winnerName = d.winnerId?esc(person(d.winnerId).name):'';
       const label = tie ? 'This debate ended in a tie' : (iWon ? 'You won this debate!' : (isParticipant ? 'You lost this debate' : winnerName+' won this debate'));
       let deltaHtml='';
       if(d.eloDelta && d.opponentId && isParticipant && !tie) deltaHtml=`<span style="color:${iWon?'var(--green)':'var(--danger)'};font-weight:700;font-family:var(--mono);font-size:13px">${iWon?'+':'-'}${d.eloDelta} ELO</span>`;
       else if(d.eloDelta && d.opponentId && !tie) deltaHtml=`<span style="color:var(--muted);font-family:var(--mono);font-size:12px">±${d.eloDelta} ELO</span>`;
       return `<div class="note" style="text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;padding:16px 10px">
-        <div style="font-size:28px;line-height:1">${emoji}</div>
+        <div style="color:${resultColor}">${resultIc}</div>
         <div style="font-weight:700;font-size:14.5px">${label}</div>
         ${deltaHtml}
       </div>`;
@@ -1433,16 +1511,17 @@
       confettiHtml=`<div class="rankfx-confetti">${pieces}</div>`;
     }
     const title = rankedUp ? 'RANK UP!' : (tie ? 'Debate tied' : (won ? 'Victory!' : 'Debate lost'));
-    const emoji = rankedUp ? '🎉' : (tie?'🤝':(won?'🏆':'🥊'));
+    const resultIc = rankedUp ? IC.sparkle : (tie?IC.handshake:(won?IC.trophy:IC.fist));
+    const resultColor = rankedUp ? 'var(--gold)' : (tie?'var(--muted)':(won?'var(--gold)':'var(--danger)'));
     const sub = rankedUp ? `You've reached ${esc(rankAfter.name)}` : (tie?'ELO nudged toward the midpoint':(won?'Your rank climbed':'Your rank dipped a little'));
     const scrim=el('div','rankfx-scrim');
     scrim.innerHTML=`<div class="rankfx-card">${confettiHtml}
-      <div class="rankfx-emoji">${emoji}</div>
+      <div class="rankfx-emoji" style="color:${resultColor}">${resultIc}</div>
       <div class="rankfx-title">${esc(title)}</div>
       <div class="rankfx-sub">${sub}</div>
       <div class="rankfx-badges">
-        ${rankBefore.name!==rankAfter.name?`<span class="rank-pill" style="background:${rankBefore.color}22;color:${rankBefore.color};border-color:${rankBefore.color}55;opacity:.5">${rankBefore.icon} ${esc(rankBefore.name)}</span><span class="rankfx-arrow">→</span>`:''}
-        <span class="rank-pill big" style="background:linear-gradient(135deg,${rankAfter.color}40,${rankAfter.color}18);color:${rankAfter.color};border-color:${rankAfter.color}77"><span class="rp-shine"></span>${rankAfter.icon} ${esc(rankAfter.name)}</span>
+        ${rankBefore.name!==rankAfter.name?`<span style="opacity:.5">${debateRankBadge(before)}</span><span class="rankfx-arrow">→</span>`:''}
+        ${debateRankBadge(after,'big')}
       </div>
       <div class="rankfx-elo ${up?'up':'down'}" id="rankfxElo">${before}</div>
       <button class="btn block" id="rankfxClose" style="margin-top:18px">Nice</button>
@@ -1961,32 +2040,31 @@
     if(!own){ const liked=state.likesGiven.includes(who); h+=`<div class="pad" style="display:flex;gap:8px"><button class="btn" style="flex:1" id="pDm">${IC.chat} Message</button><button class="btn ghost" id="pFr">${online()?friendLabel(who):(state.friends.includes(who)?'Friends':'Add')}</button><button class="btn ghost" id="pLike" style="${liked?'border-color:var(--accent);color:var(--accent-hi)':''}">${glyph} ${liked?'Liked':'Like'}</button></div>`;
       h+=`<div id="pMutual"></div><div id="pMutServers"></div>`;
       if(!online()){ const mut=mutualFriends(who); if(mut.length)h+=`<div class="trait-group"><div class="tg-k">Mutual friends — ${mut.length}</div><div class="chips">${mut.map(m=>`<span class="chip" data-mini="${attr(m)}">${esc(person(m).name)}</span>`).join('')}</div></div>`; } }
-    h+=traitBlock('◎ Chasing',u.goals||[],'goal','life goals');
-    h+=traitBlock('⚑ Escaping',u.fears||[],'fear','fears');
-    h+=personalityBlock(u);
-    if(online() && (u.debateWins||u.debateLosses||u.debateTies)) h+=`<div class="trait-group"><div class="tg-k">🥊 Debate Rank</div><div class="prof-bio" style="padding:0">${debateRankBadge(u.elo)} — ${u.debateWins}W · ${u.debateLosses}L${u.debateTies?' · '+u.debateTies+'T':''}</div></div>`;
+    h+=personalityBlock(u,own);
+    if((u.goals&&u.goals.length)||(u.fears&&u.fears.length)){ const bits=[]; if(u.goals&&u.goals.length)bits.push('Chasing '+u.goals.map(esc).join(', ')); if(u.fears&&u.fears.length)bits.push('Escaping '+u.fears.map(esc).join(', ')); h+=`<div class="pad" style="padding:0 16px 12px;color:var(--dim);font-size:12.5px">${bits.join(' · ')}</div>`; }
+    if(online() && (u.debateWins||u.debateLosses||u.debateTies)) h+=`<div class="trait-group"><div class="tg-k">${IC.fist} Debate Rank</div><div class="prof-bio" style="padding:0">${debateRankBadge(u.elo)} — ${u.debateWins}W · ${u.debateLosses}L${u.debateTies?' · '+u.debateTies+'T':''}</div></div>`;
     if(own && (u.mbti&&u.mbti!=='Unsure' || u.enneagramCore&&u.enneagramCore!=='Unsure' || u.temperamentDominant&&u.temperamentDominant!=='Unsure')) h+=`<div class="pad" style="padding-top:0"><button class="btn ghost block" id="pShareCard">${IC.share} Share personality card</button></div>`;
-    h+=`<div class="trait-group"><div class="tg-k">✦ Badges</div><div id="pBadges"><div class="muted-note prof-bio" style="padding:0">No badges yet.</div></div></div>`;
+    h+=`<div class="trait-group"><div class="tg-k">${IC.badge} Badges</div><div id="pBadges"><div class="muted-note prof-bio" style="padding:0">No badges yet.</div></div></div>`;
     // posts
     h+=`<div class="trait-group"><div class="tg-k">▶ Posts</div></div>`;
     if(own && online()) h+=`<div class="pad" style="padding-top:0"><button class="btn ghost block" id="pCompose">${IC.plus} Create a post</button></div>`;
     h+=renderPostsGrid(key,own);
     if(own){
-      h+=`<div class="sec-title">Settings</div>`;
+      h+=`<div class="sec-title">Profile</div>`;
       h+=`<div class="settings-row" id="setFriends"><span class="sr-ic">${IC.people}</span> Friend list <span class="sr-r">${state.friends.length} ${IC.chev}</span></div>`;
-      h+=`<div class="settings-row" id="setMbti"><span class="sr-ic">🧭</span> MBTI <span class="sr-r">${u.mbti?esc(u.mbti):'Not set'} ${IC.chev}</span></div>`;
-      h+=`<div class="settings-row" id="setEnnea"><span class="sr-ic">◉</span> Enneagram <span class="sr-r">${esc(enneagramLabel(u)||'Not set')} ${IC.chev}</span></div>`;
-      h+=`<div class="settings-row" id="setTemp"><span class="sr-ic">◐</span> Temperament <span class="sr-r">${esc(temperamentLabel(u)||'Not set')} ${IC.chev}</span></div>`;
       if(online()){ h+=`<div class="settings-row" id="setBio"><span class="sr-ic">${IC.edit}</span> Edit bio <span class="sr-r">${IC.chev}</span></div>`;
         h+=`<div class="settings-row" id="setLoc"><span class="sr-ic">${IC.people}</span> Edit location <span class="sr-r">${esc(locStr(u))||'set'} ${IC.chev}</span></div>`; }
       h+=`<div class="settings-row" id="setLook"><span class="sr-ic">${IC.spark}</span> Appearance <span class="sr-r">color · likes</span></div>`;
-      h+=`<div class="settings-row" id="setTheme"><span class="sr-ic">🎨</span> Theme & display <span class="sr-r">${esc((APP_THEMES[state.appTheme||'crimson']||APP_THEMES.crimson).name)} ${IC.chev}</span></div>`;
       h+=`<div class="settings-row" id="setSaved"><span class="sr-ic">${IC.grid}</span> Saved posts <span class="sr-r">${IC.chev}</span></div>`;
+      h+=`<div class="sec-title">Display</div>`;
+      h+=`<div class="settings-row" id="setTheme"><span class="sr-ic">${IC.palette}</span> Theme & display <span class="sr-r">${esc((APP_THEMES[state.appTheme||'crimson']||APP_THEMES.crimson).name)} ${IC.chev}</span></div>`;
+      h+=`<div class="sec-title">Privacy &amp; security</div>`;
       if(online()){ h+=`<div class="settings-row" id="setPrivacy"><span class="sr-ic">${IC.lock}</span> Privacy <span class="sr-r">DMs: ${esc(u.dmPrivacy||'everyone')} ${IC.chev}</span></div>`;
         h+=`<div class="settings-row" id="setBlocked"><span class="sr-ic">${IC.shield}</span> Blocked users <span class="sr-r">${IC.chev}</span></div>`; }
       if(!online())h+=`<div class="settings-row" id="setAdmin"><span class="sr-ic">${IC.shield}</span> Admin mode <span class="sr-r">${u.isAdmin?'On':'Off'}</span></div>`;
       if(online())h+=`<div class="settings-row" id="setPass"><span class="sr-ic">${IC.lock2}</span> Set / change password <span class="sr-r">${IC.chev}</span></div>`;
       if(online())h+=`<div class="settings-row" id="setSignoutAll"><span class="sr-ic">${IC.door}</span> Sign out of all devices <span class="sr-r">${IC.chev}</span></div>`;
+      h+=`<div class="sec-title">Account</div>`;
       h+=`<div class="settings-row danger" id="setReset"><span class="sr-ic">${IC.out}</span> ${online()?'Log out':'Log out & reset'}</div>`;
       if(online())h+=`<div class="settings-row danger" id="setDelete"><span class="sr-ic">${IC.trash}</span> Delete account</div>`;
       h+=`<div style="height:24px"></div>`;
@@ -1994,6 +2072,7 @@
     h+=`</div>`;
     showSheet(h);
     if(online())loadBadges(own?me().id:who);
+    if(own)wirePersonalityEdit();
     { const pc=$('pCompose'); if(pc)pc.onclick=openCompose; }
     { const psc=$('pShareCard'); if(psc)psc.onclick=sharePersonalityCard; }
     $('sheet').querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>openMiniProfile(b.dataset.mini));
@@ -2003,9 +2082,6 @@
     const ul=$('sheet').querySelector('#unlockPosts'); if(ul)ul.onclick=async ()=>{ await setMembership('main'); toast('Welcome to Main.'); openProfile(who); };
     if(own){
       $('setFriends').onclick=openFriendList;
-      $('setMbti').onclick=()=>openMbtiPicker('profile');
-      $('setEnnea').onclick=()=>openEnneagramFlow('profile');
-      $('setTemp').onclick=()=>openTemperamentFlow('profile');
       { const sb3=$('setBio'); if(sb3)sb3.onclick=openEditBio; const sl2=$('setLoc'); if(sl2)sl2.onclick=openEditLocation; }
       const sl=$('setLook'); if(sl)sl.onclick=openAppearance;
       const st2=$('setTheme'); if(st2)st2.onclick=openThemeSettings;
@@ -2101,12 +2177,24 @@
       toast('Card downloaded');
     },'image/png');
   }
-  function personalityBlock(u){
+  function personEditBtn(id){ return `<button class="tg-edit" id="${id}" title="Edit">${IC.edit}</button>`; }
+  function personalityBlock(u,editable){
     let h='';
-    if(u.mbti){ if(u.mbti==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">🧭 MBTI — Unsure</div></div>`; } else if(MBTI_TYPES[u.mbti]){ const t=MBTI_TYPES[u.mbti]; h+=`<div class="trait-group"><div class="tg-k">🧭 MBTI — ${esc(u.mbti)}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}<br>Functions: ${t.fn.join(' · ')}</div></div>`; } }
-    if(u.enneagramCore){ if(u.enneagramCore==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">◉ Enneagram — Unsure</div></div>`; } else { const t=ENNEAGRAM_TYPES[u.enneagramCore]; h+=`<div class="trait-group"><div class="tg-k">◉ Enneagram — ${esc(enneagramLabel(u))}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}${u.enneagramTritype?'<br>Tritype: '+esc(u.enneagramTritype):''}</div></div>`; } }
-    if(u.temperamentDominant){ if(u.temperamentDominant==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">◐ Temperament — Unsure</div></div>`; } else { const t=TEMPERAMENT_TYPES[u.temperamentDominant]; h+=`<div class="trait-group"><div class="tg-k">◐ Temperament — ${esc(temperamentLabel(u))}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}</div></div>`; } }
+    const mbtiEdit=editable?personEditBtn('peMbti'):'';
+    const enneaEdit=editable?personEditBtn('peEnnea'):'';
+    const tempEdit=editable?personEditBtn('peTemp'):'';
+    if(u.mbti){ if(u.mbti==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">${IC.compass} MBTI — Unsure ${mbtiEdit}</div></div>`; } else if(MBTI_TYPES[u.mbti]){ const t=MBTI_TYPES[u.mbti]; h+=`<div class="trait-group"><div class="tg-k">${IC.compass} MBTI — ${esc(u.mbti)} ${mbtiEdit}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}<br>Functions: ${t.fn.join(' · ')}</div></div>`; } }
+    else if(editable) h+=`<div class="trait-group"><div class="tg-k">${IC.compass} MBTI — Not set ${mbtiEdit}</div></div>`;
+    if(u.enneagramCore){ if(u.enneagramCore==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">${IC.target} Enneagram — Unsure ${enneaEdit}</div></div>`; } else { const t=ENNEAGRAM_TYPES[u.enneagramCore]; h+=`<div class="trait-group"><div class="tg-k">${IC.target} Enneagram — ${esc(enneagramLabel(u))} ${enneaEdit}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}${u.enneagramTritype?'<br>Tritype: '+esc(u.enneagramTritype):''}</div></div>`; } }
+    else if(editable) h+=`<div class="trait-group"><div class="tg-k">${IC.target} Enneagram — Not set ${enneaEdit}</div></div>`;
+    if(u.temperamentDominant){ if(u.temperamentDominant==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">${IC.yinyang} Temperament — Unsure ${tempEdit}</div></div>`; } else { const t=TEMPERAMENT_TYPES[u.temperamentDominant]; h+=`<div class="trait-group"><div class="tg-k">${IC.yinyang} Temperament — ${esc(temperamentLabel(u))} ${tempEdit}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}</div></div>`; } }
+    else if(editable) h+=`<div class="trait-group"><div class="tg-k">${IC.yinyang} Temperament — Not set ${tempEdit}</div></div>`;
     return h;
+  }
+  function wirePersonalityEdit(){
+    const m=$('peMbti'); if(m)m.onclick=e=>{ e.stopPropagation(); openMbtiPicker('profile'); };
+    const en=$('peEnnea'); if(en)en.onclick=e=>{ e.stopPropagation(); openEnneagramFlow('profile'); };
+    const t=$('peTemp'); if(t)t.onclick=e=>{ e.stopPropagation(); openTemperamentFlow('profile'); };
   }
   async function savePersonalityFields(fields){
     Object.assign(me(),fields); save();
@@ -2123,7 +2211,7 @@
       return `<button type="button" class="trait-opt${on?' on':''}" data-mb="${attr(code)}"><div class="to-name">${code==='Unsure'?'Unsure':code+' · '+esc(t.name)}</div>${on?`<div class="to-desc">${esc(t.desc)}${t.fn?'<br>Functions: '+t.fn.join(' · '):''}</div>`:''}</button>`; };
     const draw=()=>{
       let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">MBTI</div><div class="th-sub" style="margin-bottom:16px">Tap a type to preview it, then save your pick.</div>`;
-      h+=`<button class="btn ghost block" id="mbTest" style="margin-bottom:16px">🧭 Not sure? Take the test</button>`;
+      h+=`<button class="btn ghost block" id="mbTest" style="margin-bottom:16px">${IC.compass} Not sure? Take the test</button>`;
       h+=`<div class="sec-title" style="margin-left:0">Choose your type</div><div id="mbGrid">`+codes.map(row).join('')+`</div>`;
       h+=`<button class="btn block" id="mbSave" style="margin-top:16px">Save</button><div style="height:20px"></div></div>`;
       $('sheet').className='sheet'; showSheet(h);
@@ -2191,7 +2279,7 @@
       return `<button type="button" class="trait-opt${on?' on':''}" data-en="${attr(code)}"><div class="to-name">${code==='Unsure'?'Unsure':'Type '+code+' · '+esc(t.name)}</div>${on?`<div class="to-desc">${esc(t.desc)}</div>`:''}</button>`; };
     const draw=()=>{
       let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Enneagram — core type</div><div class="th-sub" style="margin-bottom:16px">Tap a type to preview it, then continue.</div>`;
-      h+=`<button class="btn ghost block" id="enTest" style="margin-bottom:16px">◉ Not sure? Take the test</button>`;
+      h+=`<button class="btn ghost block" id="enTest" style="margin-bottom:16px">${IC.target} Not sure? Take the test</button>`;
       h+=`<div class="sec-title" style="margin-left:0">Choose your core type</div><div id="enGrid">`+codes.map(row).join('')+`</div>`;
       h+=`<button class="btn block" id="enNext" style="margin-top:16px">${sel==='Unsure'?'Save':'Continue'}</button><div style="height:20px"></div></div>`;
       $('sheet').className='sheet'; showSheet(h);
@@ -2270,7 +2358,7 @@
       return `<button type="button" class="trait-opt${on?' on':''}" data-td="${attr(code)}"><div class="to-name">${esc(t.name)}</div>${on?`<div class="to-desc">${esc(t.desc)}</div>`:''}</button>`; };
     const draw=()=>{
       let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Temperament — dominant</div><div class="th-sub" style="margin-bottom:16px">Tap one to preview it, then continue.</div>`;
-      h+=`<button class="btn ghost block" id="tdTest" style="margin-bottom:16px">◐ Not sure? Take the test</button>`;
+      h+=`<button class="btn ghost block" id="tdTest" style="margin-bottom:16px">${IC.yinyang} Not sure? Take the test</button>`;
       h+=`<div id="tdGrid">`+names.map(row).join('')+`</div>`;
       h+=`<button class="btn block" id="tdNext" style="margin-top:16px">${sel==='Unsure'?'Save':'Continue'}</button><div style="height:20px"></div></div>`;
       $('sheet').className='sheet'; showSheet(h);
@@ -2360,7 +2448,7 @@
       let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:14px">Theme & display</div>`;
       h+=`<div class="field"><label>App theme</label><div class="theme-grid" id="thmGrid">`+Object.keys(APP_THEMES).map(k=>`<div class="thm-sw ${curTheme===k?'on':''}" data-thm="${k}" style="background:${APP_THEMES[k].accent}" title="${esc(APP_THEMES[k].name)}"></div>`).join('')+`</div><div class="th-sub" style="margin-top:8px">${esc(APP_THEMES[curTheme].name)} — recolors Maintrix for you only, nobody else sees it.</div></div>`;
       h+=`<div class="field"><label>Text size</label><div class="segmented" style="margin:0" id="thmSize"><button data-v="small" class="${curSize==='small'?'on':''}">Small</button><button data-v="medium" class="${curSize==='medium'?'on':''}">Medium</button><button data-v="large" class="${curSize==='large'?'on':''}">Large</button></div></div>`;
-      h+=`<div class="settings-row" id="thmMotion" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">✦</span> Reduce motion <span class="sr-r">${state.reduceMotion?'On':'Off'}</span></div>`;
+      h+=`<div class="settings-row" id="thmMotion" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">${IC.motion}</span> Reduce motion <span class="sr-r">${state.reduceMotion?'On':'Off'}</span></div>`;
       h+=`<div style="height:16px"></div></div>`;
       $('sheet').className='sheet'; showSheet(h);
       $('thmGrid').querySelectorAll('[data-thm]').forEach(sw=>sw.onclick=()=>{ state.appTheme=sw.dataset.thm; save(); applyAppTheme(); draw(); });
@@ -2457,20 +2545,22 @@
     async award(userId,label,icon,color){ await initSB(); return sb.from('badges').insert({ user_id:userId, label, icon:icon||null, color:color||null, awarded_by:me().id }); },
     async remove(id){ await initSB(); return sb.from('badges').delete().eq('id', id); }
   };
+  const BADGE_ICON_KEYS=['trophy','medal','flame','sparkle','badge','compass','target','yinyang','handshake','fist'];
   function openAwardBadge(){
-    let target=null, color=SWATCH[0];
+    let target=null, color=SWATCH[0], icon=BADGE_ICON_KEYS[0];
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:8px">Award a badge</div>`;
     h+=`<div class="searchbar" style="margin:0 0 8px">${IC.search}<input id="abUser" placeholder="Search a user by name or @handle"></div><div id="abResults"></div><div id="abTarget" class="th-sub" style="margin:6px 0"></div>`;
     h+=`<div class="field"><label>Badge label</label><input id="abLabel" placeholder="e.g. Founding Member" maxlength="30"></div>`;
-    h+=`<div class="field"><label>Icon — emoji (optional)</label><input id="abIcon" placeholder="🏆" maxlength="4"></div>`;
+    h+=`<div class="field"><label>Icon</label><div class="swatches" id="abIconPick">${BADGE_ICON_KEYS.map((k,i)=>`<div class="sw ic-sw ${i===0?'on':''}" data-ic="${k}">${IC[k]}</div>`).join('')}</div></div>`;
     h+=`<div class="field"><label>Color</label><div class="swatches" id="abColor">${SWATCH.map((c,i)=>`<div class="sw ${i===0?'on':''}" data-c="${c}" style="background:${c}"></div>`).join('')}</div></div>`;
     h+=`<button class="btn block" id="abGive" disabled style="opacity:.5">Give badge</button><div style="height:16px"></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
     $('abColor').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ color=b.dataset.c; $('abColor').querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.c===color)); });
+    $('abIconPick').querySelectorAll('[data-ic]').forEach(b=>b.onclick=()=>{ icon=b.dataset.ic; $('abIconPick').querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.ic===icon)); });
     const search=$('abUser'); search.oninput=()=>{ clearTimeout(search._t); search._t=setTimeout(async ()=>{ const list=await db.profiles.search(search.value.trim()); cacheProfiles(list); const box=$('abResults'); if(!box)return; box.innerHTML=list.slice(0,6).map(p=>`<div class="row" data-abpick="${attr(p.id)}">${avatar(p.id,36,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')}</div></div></div>`).join(''); box.querySelectorAll('[data-abpick]').forEach(b=>b.onclick=()=>{ target=b.dataset.abpick; $('abTarget').textContent='Awarding to @'+(person(target).handle||''); box.innerHTML=''; search.value='@'+(person(target).handle||''); $('abGive').disabled=false; $('abGive').style.opacity='1'; }); },300); };
-    $('abGive').onclick=async ()=>{ const label=$('abLabel').value.trim(); if(!target||!label){ toast('Pick a user and a label'); return; } try{ await db.badges.award(target,label,$('abIcon').value.trim(),color); toast('Badge awarded'); closeSheet(); }catch(e){ toast('Could not award — '+((e&&e.message)||'')); } };
+    $('abGive').onclick=async ()=>{ const label=$('abLabel').value.trim(); if(!target||!label){ toast('Pick a user and a label'); return; } try{ await db.badges.award(target,label,icon,color); toast('Badge awarded'); closeSheet(); }catch(e){ toast('Could not award — '+((e&&e.message)||'')); } };
   }
-  async function loadBadges(id){ const box=$('pBadges'); if(!box)return; try{ const data = await db.badges.list(id); if(!$('pBadges'))return; const list=data||[]; if(!list.length){ box.innerHTML='<div class="muted-note prof-bio" style="padding:0">No badges yet.</div>'; return; } box.innerHTML=`<div class="chips">${list.map(b=>`<span class="chip on" style="${b.color?`--accent-soft:${b.color}26;border-color:${b.color};color:${b.color}`:''}">${b.icon?esc(b.icon)+' ':''}${esc(b.label)}</span>`).join('')}</div>`; }catch(e){} }
+  async function loadBadges(id){ const box=$('pBadges'); if(!box)return; try{ const data = await db.badges.list(id); if(!$('pBadges'))return; const list=data||[]; if(!list.length){ box.innerHTML='<div class="muted-note prof-bio" style="padding:0">No badges yet.</div>'; return; } box.innerHTML=`<div class="chips">${list.map(b=>`<span class="chip on badge-chip" style="${b.color?`--accent-soft:${b.color}26;border-color:${b.color};color:${b.color}`:''}">${b.icon&&IC[b.icon]?IC[b.icon]:''} ${esc(b.label)}</span>`).join('')}</div>`; }catch(e){} }
 
   /* ═══ OVERWATCH ═══ */
   function renderOverwatch(){
@@ -2494,14 +2584,19 @@
     const targets=broadcastTargets();
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">${IC.shield} Overwatch tools</div><div class="th-sub" style="margin-bottom:16px">Broadcast anywhere, delete anything, moderate. Not private DMs.</div>`;
     h+=`<div class="field"><label>Broadcast target</label><select id="admWhere"><option value="ALL">Everywhere (all areas)</option>${targets.map(t=>`<option value="${attr(t.id)}">${esc(t.label)}</option>`).join('')}</select></div>`;
-    h+=`<div class="field"><label>Message — pinned for everyone</label><textarea id="admMsg" placeholder="Ship notes, a rule, a rally cry…"></textarea></div><button class="btn block" id="admSend">📌 Broadcast (pinned)</button>`;
+    h+=`<div class="field"><label>Message — pinned for everyone</label><textarea id="admMsg" placeholder="Ship notes, a rule, a rally cry…"></textarea></div><button class="btn block" id="admSend">${IC.pin} Broadcast (pinned)</button>`;
     if(!online()){ h+=`<div class="sec-title" style="margin-left:0">Members</div>`;
       ['nova','kestrel','dax','juno','sable','pip'].forEach(k=>{ h+=`<div class="row"><div data-user="${attr(k)}" style="display:flex;gap:13px;align-items:center;flex:1;min-width:0">${avatar(k,38,{dot:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">member</div></div></div><button class="chip" data-mute="${k}">Mute</button><button class="chip" data-kick="${k}" style="color:var(--danger);margin-left:6px">Kick</button></div>`; }); }
     else {
       h+=`<div class="sec-title" style="margin-left:0">Overview</div><div id="admStats" class="admin-stat-grid"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
       h+=`<div class="sec-title" style="margin-left:0">Manage a member</div><div class="searchbar" style="margin:0 0 8px">${IC.search}<input id="admUserSearch" placeholder="Search by name or @handle"></div><div id="admUserResults"></div><div id="admUserPanel"></div>`;
       h+=`<div class="sec-title" style="margin-left:0">Verify a server</div><div id="admServers"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
-      h+=`<div class="sec-title" style="margin-left:0">Moderation</div><button class="btn ghost block" id="admBadge" style="margin-bottom:8px">✦ Award a badge</button><div class="th-sub">Broadcasts post a pinned Overwatch message into the live room. Delete any message from its long-press menu, or any post from the feed.</div>`;
+      h+=`<div class="sec-title" style="margin-left:0">Debates</div><div id="admDebates"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
+      h+=`<div class="sec-title" style="margin-left:0">Moderation</div><button class="btn ghost block" id="admBadge" style="margin-bottom:8px">${IC.badge} Award a badge</button><div class="th-sub" style="margin-bottom:16px">Delete any message from its long-press menu, or any post from the feed.</div>`;
+      h+=`<div class="sec-title" style="margin-left:0">Maintenance banner</div><div class="settings-row" id="admMaintOn" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">${IC.lock}</span> Show maintenance banner <span class="sr-r" id="admMaintState">Off</span></div>`;
+      h+=`<div class="field"><label>Title</label><input id="admMaintTitle" placeholder="Update coming soon" maxlength="60"></div>`;
+      h+=`<div class="field"><label>Details (shown behind "More details")</label><textarea id="admMaintDetails" placeholder="What's changing, when maintenance starts…"></textarea></div>`;
+      h+=`<button class="btn ghost block" id="admMaintSave">Save banner</button>`;
     }
     h+=`<div style="height:24px"></div></div>`;
     showSheet(h);
@@ -2509,16 +2604,20 @@
       const dests=where==='ALL'?targets:targets.filter(t=>t.id===where);
       if(online()){ const b=$('admSend'); b.disabled=true; b.textContent='Broadcasting…';
         try{ for(const t of dests){ const rid=await db.rooms.bySlug(t.key); if(rid) await db.messages.send(rid, v, {system:true, pinned:true}); } toast('Pinned broadcast sent'); closeSheet(); if(active&&active.roomId)renderThread(); }
-        catch(e){ b.disabled=false; b.textContent='📌 Broadcast (pinned)'; toast('Broadcast failed'); } return; }
+        catch(e){ b.disabled=false; b.innerHTML=IC.pin+' Broadcast (pinned)'; toast('Broadcast failed'); } return; }
       dests.forEach(t=>{ if(t.key==='acolyte-hub'&&!state.msgs['acolyte-hub'])openAcolyteHubSeed(); (state.msgs[t.key]=state.msgs[t.key]||[]).push({a:'Overwatch',t:v,bot:true,pin:true,time:nowTime(),id:mid()}); });
       save(); toast('Pinned broadcast sent to '+(where==='ALL'?'every area':dests[0].label)); closeSheet(); if(active&&dests.some(d=>d.key===active.key))renderThread(); };
     document.querySelectorAll('[data-mute]').forEach(b=>b.onclick=()=>{ toast('Muted @'+b.dataset.mute); b.textContent='Muted'; });
     document.querySelectorAll('[data-kick]').forEach(b=>b.onclick=()=>toast('Kicked @'+b.dataset.kick));
     const ab=$('admBadge'); if(ab)ab.onclick=openAwardBadge;
     if(online()){
-      loadAdminStats(); loadAdminServers();
+      loadAdminStats(); loadAdminServers(); loadAdminDebates();
       const search=$('admUserSearch');
       search.oninput=()=>{ clearTimeout(search._t); search._t=setTimeout(async ()=>{ const q=search.value.trim(); const box=$('admUserResults'); if(!box)return; if(!q){ box.innerHTML=''; return; } const list=await db.profiles.search(q); cacheProfiles(list); box.innerHTML=list.slice(0,6).map(p=>`<div class="row" data-admpick="${attr(p.id)}">${avatar(p.id,32,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')}</div></div></div>`).join(''); box.querySelectorAll('[data-admpick]').forEach(r=>r.onclick=()=>renderAdminUserPanel(list.find(x=>x.id===r.dataset.admpick))); },300); };
+      let maintOn=false;
+      db.config.get().then(cfg=>{ if(!$('admMaintOn'))return; maintOn=!!(cfg&&cfg.maintenance_enabled); $('admMaintState').textContent=maintOn?'On':'Off'; $('admMaintTitle').value=(cfg&&cfg.maintenance_title)||''; $('admMaintDetails').value=(cfg&&cfg.maintenance_details)||''; }).catch(()=>{});
+      const mt=$('admMaintOn'); if(mt)mt.onclick=()=>{ maintOn=!maintOn; $('admMaintState').textContent=maintOn?'On':'Off'; };
+      const ms=$('admMaintSave'); if(ms)ms.onclick=async ()=>{ ms.disabled=true; try{ await db.config.setMaintenance(maintOn,$('admMaintTitle').value.trim(),$('admMaintDetails').value.trim()); toast('Banner saved'); checkMaintenanceBanner(); }catch(e){ toast('Could not save'); } ms.disabled=false; };
     }
   }
   async function loadAdminStats(){
@@ -2541,6 +2640,25 @@
       box.innerHTML=data.map(s=>`<div class="row" style="padding-left:0;padding-right:0"><div class="r-main"><div class="r-name">${esc(s.title)}${s.is_official?verifiedBadge():''}</div></div><button class="chip ${s.is_official?'on':''}" data-admsrv="${attr(s.id)}" data-cur="${s.is_official?'1':'0'}">${s.is_official?'Unverify':'Verify'}</button></div>`).join('');
       box.querySelectorAll('[data-admsrv]').forEach(b=>b.onclick=async ()=>{ const val=b.dataset.cur!=='1'; try{ await sb.rpc('admin_set_server_official',{target_room:b.dataset.admsrv,val}); toast(val?'Marked official':'Unmarked'); loadAdminServers(); }catch(e){ toast('Could not update'); } });
     }catch(e){ if($('admServers'))$('admServers').innerHTML='<div class="empty">Couldn’t load servers.</div>'; }
+  }
+  async function loadAdminDebates(){
+    const box=$('admDebates'); if(!box)return;
+    try{ const list=await db.debates.list(); if(!$('admDebates'))return;
+      if(!list.length){ box.innerHTML='<div class="empty" style="padding:10px 0">No debates yet.</div>'; return; }
+      await ensureProfiles(list.flatMap(d=>[d.creatorId,d.opponentId].filter(Boolean)));
+      box.innerHTML=list.slice(0,20).map(d=>`<div class="row" style="padding-left:0;padding-right:0"><div class="r-main"><div class="r-name">${esc(d.title)}</div><div class="r-sub">${esc(person(d.creatorId).name)} vs ${d.opponentId?esc(person(d.opponentId).name):'—'} · ${esc(d.status)}</div></div><button class="chip" data-admdeldeb="${attr(d.id)}" style="color:var(--danger)">${IC.trash}</button></div>`).join('');
+      box.querySelectorAll('[data-admdeldeb]').forEach(b=>b.onclick=()=>confirmDialog('Delete this debate for everyone?',async ()=>{ try{ await db.debates.adminDelete(b.dataset.admdeldeb); toast('Debate deleted'); loadAdminDebates(); }catch(e){ toast('Could not delete'); } }));
+    }catch(e){ if($('admDebates'))$('admDebates').innerHTML='<div class="empty">Couldn’t load debates.</div>'; }
+  }
+  async function checkMaintenanceBanner(){
+    const box=$('maintBanner'); if(!box||!online())return;
+    try{
+      const cfg=await db.config.get();
+      if(!cfg||!cfg.maintenance_enabled){ box.style.display='none'; return; }
+      box.style.display='flex';
+      box.innerHTML=`<span class="mb-ic">${IC.lock}</span><span class="mb-t">${esc(cfg.maintenance_title||'Maintenance coming soon')}</span>${cfg.maintenance_details?`<button id="mbMore">More details</button>`:''}`;
+      const more=$('mbMore'); if(more)more.onclick=()=>{ $('sheet').className='sheet'; showSheet(`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:10px">${esc(cfg.maintenance_title||'Maintenance')}</div><div class="prof-bio" style="padding:0">${fmt(cfg.maintenance_details||'')}</div><div style="height:16px"></div></div>`); };
+    }catch(e){}
   }
   function openAcolyteHubSeed(){ state.msgs['acolyte-hub']=[{a:'Overwatch',t:'The **Acolyte Hub** — only acolytes are here.',bot:true,pin:true,time:nowTime(),id:mid()}]; }
 
@@ -2600,10 +2718,25 @@
     edit:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 20h4l10-10-4-4L4 16v4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M13.5 6.5l4 4" stroke="currentColor" stroke-width="1.7"/></svg>',
     trash:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     bell:'<svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 19a2 2 0 004 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
-    gear:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    gear:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 00.12-.61l-1.92-3.32a.5.5 0 00-.59-.22l-2.39.96a7.15 7.15 0 00-1.62-.94l-.36-2.54a.5.5 0 00-.48-.41h-3.84a.5.5 0 00-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 00-.59.22L2.74 8.87a.5.5 0 00.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.5.5 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.04.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.5.5 0 00-.12-.61l-2.03-1.58zM12 15.6a3.6 3.6 0 110-7.2 3.6 3.6 0 010 7.2z"/></svg>',
     pin:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 4h6l-1 6 3 3H7l3-3-1-6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 16v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     clip:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 11l-8 8a4.5 4.5 0 01-6.4-6.4l8-8a3 3 0 014.3 4.3l-8 8a1.5 1.5 0 01-2.2-2.1l7-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    mic:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M6 11a6 6 0 0012 0M12 17v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'
+    mic:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M6 11a6 6 0 0012 0M12 17v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    micOff:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none"><rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M6 11a6 6 0 0012 0M12 17v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 4l16 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    phone:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 005 5L14 13l5 2v3a2 2 0 01-2.2 2C10.4 19.4 4.6 13.6 3 7.2A2 2 0 015 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    trophy:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 4h10v4a5 5 0 01-10 0V4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 5H4v2a4 4 0 004 4M17 5h3v2a4 4 0 01-4 4M10 17h4M12 13v4M8 21h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    medal:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="14" r="6" stroke="currentColor" stroke-width="1.7"/><path d="M9.5 3L7 9l3 1.5L12 14l2-3.5L17 9l-2.5-6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    fist:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 11V8a2 2 0 014 0M10 10.5V7a2 2 0 014 0v3.5M14 10V8a2 2 0 014 0v5a5 5 0 01-5 5H10a5 5 0 01-4.5-2.8L4 13" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+    handshake:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 11l4-3 4 2 3-2 3 1 4 3M6 8l5 5 2-2M15 11l2 2-2 2M11 15l-1.5 1.5a1.7 1.7 0 01-2.4 0 1.7 1.7 0 010-2.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    compass:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M15 9l-2 6-4 2 2-6 4-2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+    target:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
+    yinyang:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 3a4.5 4.5 0 010 9 4.5 4.5 0 000 9 9 9 0 010-18z" fill="currentColor"/></svg>',
+    badge:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.2 2.2 3-.4.4 3L20 10l-2.4 2.2.4 3-3-.4L12 17l-2.2-2.2-3 .4-.4-3L4 10l2.4-2.2-.4-3 3 .4L12 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 20l3-2 3 2-1-4h-4l-1 4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+    motion:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 8c2 0 2-3 4-3s2 3 4 3 2-3 4-3 2 3 4 3M3 16c2 0 2-3 4-3s2 3 4 3 2-3 4-3 2 3 4 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    palette:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3a9 8 0 100 16c1.2 0 1.5-1.4.6-2.2-.9-.8-.4-2.3.8-2.3H15a4 4 0 004-4c0-4.4-3.6-7.5-7-7.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="8" cy="10" r="1.1" fill="currentColor"/><circle cx="12" cy="7.5" r="1.1" fill="currentColor"/><circle cx="16" cy="10" r="1.1" fill="currentColor"/></svg>',
+    flame:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2c1 3-3 4-3 8a3 3 0 006 0c1 1 1.5 2.3 1.5 3.5A5.5 5.5 0 016 13.5C6 8 12 6 12 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    lock:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg>',
+    sparkle:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="currentColor"/></svg>'
   };
 
   /* ═══ ROUTER ═══ */
@@ -2616,14 +2749,35 @@
   function renderNav(){ $('botnav').innerHTML=navItems().map(([id,label,ic])=>`<button data-nav="${id}" class="${state.screen===id?'on':''}">${ic}<span>${label}</span>${PAID[id]&&me().tier!=='main'?'<span class="lockdot"></span>':''}</button>`).join(''); $('botnav').querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ state.screen=b.dataset.nav; save(); render(); }); }
   function updateChrome(){ const sc=state.screen==='_thread'?(active&&active.back)||'connect':state.screen; $('tbTitle').textContent=TITLES[sc]||'Maintrix'; $('tbSub').textContent=SUBS[sc]?'· '+SUBS[sc]:''; $('tierPill').textContent=me().tier==='main'?'Main ✦':'Lite'; $('tierPill').className='tier-pill'+(me().tier==='main'?' main':''); $('profileBtn').innerHTML=avatar(me().name,34,{ring:true}); $('globalSearchBtn').innerHTML=IC.search; $('globalSearchBtn').onclick=openGlobalSearch; paintBell(); renderNav(); }
   function render(){ if(state.screen==='live'||state.screen==='lobby')state.screen='nexus'; /* live + lobby hidden for now */ if(state.screen==='_thread'){ if(active){ renderThread(); return; } state.screen='nexus'; } $('app').classList.remove('thread-open'); const s2=$('s-thread'); if(s2)s2.classList.remove('on'); document.querySelectorAll('#view > .screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+state.screen)); if(state.screen==='nexus')renderNexus(); else if(state.screen==='connect')renderConnect(); else if(state.screen==='feed')renderFeed(); else if(state.screen==='debates')renderDebates(); else if(state.screen==='live')renderLive(); else if(state.screen==='lobby')renderLobby(); else if(state.screen==='overwatch')renderOverwatch(); $('view').scrollTop=0; updateChrome(); }
+  function dmNotifText(n,count){
+    if(count>=2) return `sent you ${count>=9?'9+':count} dm${count===1?'':'s'}`;
+    const mk=n.entity&&n.entity.media_kind;
+    if(mk==='image')return 'sent you a picture!';
+    if(mk==='video')return 'sent you a video!';
+    if(mk==='audio')return 'sent you a voice note!';
+    return 'dmed you!';
+  }
+  function groupNotifs(ns){
+    const out=[]; let i=0;
+    while(i<ns.length){
+      const n=ns[i];
+      if(n.type==='dm'&&n.entity&&n.entity.room_id){
+        let j=i+1,count=1;
+        while(j<ns.length && ns[j].type==='dm' && ns[j].who===n.who && ns[j].entity && ns[j].entity.room_id===n.entity.room_id){ j++; count++; }
+        out.push(Object.assign({},n,{count,srcIdx:i})); i=j;
+      } else { out.push(Object.assign({},n,{count:1,srcIdx:i})); i++; }
+    }
+    return out;
+  }
   function openNotifications(){
     const ns=state.notifications||[];
-    let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px">Notifications</div><div class="th-sub">Tags · replies · likes on your posts · new likes</div></div>`;
-    if(!ns.length)h+=`<div class="empty">Nothing yet. When people tag, reply, or like you, it lands here.</div>`;
-    ns.forEach((n,i)=>{ const nm=person(n.who).name; const nav=(n.type==='friend'||n.type==='friend_request')?'': ' data-notif="'+i+'"'; h+=`<div class="notif ${n.read?'':'unread'}"${nav}><div class="n-ic" data-user="${attr(n.who)}">${NOTIF_IC[n.type]||'•'}</div><div class="n-body"><div class="n-t"><b data-user="${attr(n.who)}">@${esc(nm)}</b> ${esc(n.t)}</div><div class="n-time">${esc(n.time)}</div></div></div>`; });
+    const groups=groupNotifs(ns);
+    let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px">Notifications</div><div class="th-sub">DMs · tags · replies · likes on your posts · new likes</div></div>`;
+    if(!ns.length)h+=`<div class="empty">Nothing yet. When people message, tag, reply, or like you, it lands here.</div>`;
+    groups.forEach((n,i)=>{ const nm=person(n.who).name; const nav=(n.type==='friend'||n.type==='friend_request')?'': ' data-notif="'+i+'"'; const label=n.type==='dm'?dmNotifText(n,n.count):esc(n.t); h+=`<div class="notif ${n.read?'':'unread'}"${nav}><div class="n-ic" data-user="${attr(n.who)}">${NOTIF_IC[n.type]||'•'}</div><div class="n-body"><div class="n-t"><b data-user="${attr(n.who)}">@${esc(nm)}</b> ${label}</div><div class="n-time">${esc(n.time)}</div></div></div>`; });
     h+=`<div style="height:24px"></div>`;
     $('sheet').className='sheet'; showSheet(h);
-    $('sheet').querySelectorAll('[data-notif]').forEach(el2=>el2.onclick=e=>{ if(e.target.closest('[data-user]'))return; openNotifTarget(ns[+el2.dataset.notif]); });
+    $('sheet').querySelectorAll('[data-notif]').forEach(el2=>el2.onclick=e=>{ if(e.target.closest('[data-user]'))return; openNotifTarget(ns[groups[+el2.dataset.notif].srcIdx]); });
     (state.notifications||[]).forEach(n=>n.read=true); save(); paintBell(); if(online())db.notifs.markAllRead().catch(()=>{});
   }
   async function openGlobalSearch(){
@@ -2687,9 +2841,9 @@
   function renderObPersonality(){
     const box=$('obPersonality'); if(!box)return;
     let h='';
-    h+=`<div class="settings-row" id="obMbtiRow"><span class="sr-ic">🧭</span> MBTI <span class="sr-r">${esc(ob.mbti)} ${IC.chev}</span></div>`;
-    h+=`<div class="settings-row" id="obEnneaRow"><span class="sr-ic">◉</span> Enneagram <span class="sr-r">${esc(ob.enneagramCore==='Unsure'?'Unsure':ob.enneagramCore+(ob.enneagramWing?('w'+ob.enneagramWing):''))} ${IC.chev}</span></div>`;
-    h+=`<div class="settings-row" id="obTempRow"><span class="sr-ic">◐</span> Temperament <span class="sr-r">${esc(ob.temperamentDominant==='Unsure'?'Unsure':ob.temperamentDominant+(ob.temperamentSecondary?('-'+ob.temperamentSecondary):''))} ${IC.chev}</span></div>`;
+    h+=`<div class="settings-row" id="obMbtiRow"><span class="sr-ic">${IC.compass}</span> MBTI <span class="sr-r">${esc(ob.mbti)} ${IC.chev}</span></div>`;
+    h+=`<div class="settings-row" id="obEnneaRow"><span class="sr-ic">${IC.target}</span> Enneagram <span class="sr-r">${esc(ob.enneagramCore==='Unsure'?'Unsure':ob.enneagramCore+(ob.enneagramWing?('w'+ob.enneagramWing):''))} ${IC.chev}</span></div>`;
+    h+=`<div class="settings-row" id="obTempRow"><span class="sr-ic">${IC.yinyang}</span> Temperament <span class="sr-r">${esc(ob.temperamentDominant==='Unsure'?'Unsure':ob.temperamentDominant+(ob.temperamentSecondary?('-'+ob.temperamentSecondary):''))} ${IC.chev}</span></div>`;
     box.innerHTML=h;
     $('obMbtiRow').onclick=()=>openMbtiPicker('onboard');
     $('obEnneaRow').onclick=()=>openEnneagramFlow('onboard');
@@ -2716,7 +2870,7 @@
     if(online()){ const btn=$('obNext'); btn.disabled=true; btn.textContent='Saving…'; try{ await db.profiles.create(prof); }catch(e){ btn.disabled=false; btn.textContent='Enter Maintrix'; toast(/duplicate|unique/i.test(e.message||'')?'That @handle is taken':'Could not save — '+(e.message||'try again')); return; } }
     state.profile=prof; state.screen='nexus'; save(); enter();
   }
-  function enter(){ $('auth').classList.add('hidden'); const sa=$('supaAuth'); if(sa)sa.classList.add('hidden'); $('onboard').classList.add('hidden'); $('app').classList.add('on'); applyDensity(); applyAppTheme(); applyTextSize(); applyReduceMotion(); render(); if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+  function enter(){ $('auth').classList.add('hidden'); const sa=$('supaAuth'); if(sa)sa.classList.add('hidden'); $('onboard').classList.add('hidden'); $('app').classList.add('on'); applyDensity(); applyAppTheme(); applyTextSize(); applyReduceMotion(); render(); checkMaintenanceBanner(); if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 
   /* ═══ AUTH (Supabase email OTP) ═══ */
   function showSupaAuth(){ $('auth').classList.add('hidden'); $('onboard').classList.add('hidden'); $('supaAuth').classList.remove('hidden'); }
@@ -2748,6 +2902,7 @@
       else startOnboarding();
     }catch(e){ toast('Connection issue — try again'); showSupaAuth(); }
   }
+  applyAppTheme();
   (function runIntro(){ const intro=$('intro'); const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches || !!state.reduceMotion; let done=false; const finish=()=>{ if(done)return; done=true; intro.classList.add('gone'); setTimeout(()=>{intro.style.display='none';},650); }; const t=setTimeout(finish,reduce?1200:2700); intro.addEventListener('click',()=>{ clearTimeout(t); finish(); }); boot(); })();
 })();
 </script>
