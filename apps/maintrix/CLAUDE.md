@@ -200,7 +200,66 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
-## Build state (as of v0.12.1 — urgent fix)
+## Build state (as of v0.12.2 — Nexus-as-room, debate fixes, flashy ranks)
+
+Friend feedback round: the Nexus tab felt like an unnecessary extra tap, the
+bottom nav order was off, DMs were buried, and Debates couldn't actually be
+created (still migrations — see below) plus ranks looked flat.
+
+- **The Nexus tab IS the room now** — no more hub screen with a single "The
+  Nexus" card to tap through. `renderNexus()` now calls `renderNexusHome()`,
+  which sets `active` to the world-room config with `embed:true` and calls
+  `renderThread()` directly. `renderThread()` grew an `isEmbed` branch: when
+  `th.embed`, it renders into `#s-nexus` instead of the fullscreen `#s-thread`
+  overlay, skips the `thread-open` class (so the topbar + bottom nav stay
+  visible — this is a tab, not a drill-down), and omits the back button.
+  `#s-nexus.on` gets its own CSS (`display:flex;flex-direction:column;
+  height:100%`) so the embedded `.thread` fills it exactly like the fullscreen
+  version does. To avoid duplicate-ID collisions (`#thInput`, `#thScroll`,
+  etc. both existing at once if a real DM/server thread opened while the
+  embedded Nexus markup was still sitting in the hidden `#s-nexus`),
+  `renderThread()` now clears whichever host it's *not* using
+  (`#s-thread`/`#s-nexus`) at the top of every render. Verified in-browser:
+  exactly one `.thread` with a live `#thInput` exists at a time, in either
+  location, no matter how you navigate between them.
+- **Debates is no longer a bottom-nav tab.** It's reached via a small
+  debate-icon button top-right of the Nexus room header (`#thDebates`, only
+  rendered when `isEmbed`) and has its own back arrow (`renderDebates()` now
+  prepends a back button that returns to `state.screen='nexus'`) since it no
+  longer has a nav tab to return to.
+- **Bottom nav reordered**: Nexus · Feed · Connect (`navItems()`), Watch still
+  appended for admins. Feed is now the middle tab, matching the requested
+  layout.
+- **A "Messages" quick-access bar** now sits above the bottom nav
+  (`.msgbar`/`#msgBar`, global chrome, hidden together with the bottom nav
+  during a fullscreen thread) — tapping it jumps straight to Connect's DMs
+  tab (`state.connectTab='dms'`) instead of requiring Connect → DMs.
+- **Debate creation error clarity.** `db.debates.create()`/`.list()` failures
+  are now checked with `isMissingSchemaError()` (matches PostgREST's
+  "table/column not found" style errors) and surface a specific toast/empty-
+  state — *"Debates aren't set up on the server yet — ask an admin to run the
+  pending database update"* — instead of a generic "Could not create debate."
+  This doesn't fix debates (that's still the pending migrations — see
+  `supabase/RUN_THIS_ONCE.sql`, a straight concatenation of migrations
+  0009-0014 in order, added purely so there's one file to paste into the SQL
+  editor instead of six), but it makes the actual cause visible instead of
+  looking like a random bug.
+- **Flashy ranks.** `DEBATE_RANKS` entries got a tier icon (🔰🥉🥈⚔️🥇💎👑).
+  `.rank-pill` got a `.rp-shine` sweep animation (a skewed gradient sweeping
+  across every 3.4s) and a gradient background instead of flat fill; a `.big`
+  variant is used in the new result screens. A debate's ended-state composer
+  card (`renderDebateComposer`) is now a proper result card: emoji (🏆/🥊/🤝),
+  "You won!" / "You lost" / tie copy, and a colored ELO delta (green/red) —
+  personalized to the viewer instead of one generic line for everyone.
+  Ending a debate you're part of (or having it end while you're watching, via
+  the existing `debates` Realtime subscription) now triggers
+  `maybeCelebrateDebate()` → `showRankUpFx()`: a full-screen celebration card
+  with confetti (on a win or a rank-tier change), an animated ELO count-up/
+  down, and — if you crossed a tier boundary — a before→after badge
+  transition with a "RANK UP!" headline. All of this respects the existing
+  `body.reduce-motion` kill-switch (wildcard `animation-duration:.001ms`
+  selector already covers the new keyframes, no extra work needed). Verified
+  in-browser via a temporary debug hook (removed before shipping).
 
 **The merged v0.12 update went out before migrations 0009–0014 were ever run
 against the live database.** Confirmed directly against the live Supabase

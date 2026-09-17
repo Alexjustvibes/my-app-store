@@ -82,7 +82,12 @@
   .tb-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); } .tb-btn:hover { background:var(--hover); color:var(--text); }
   #view { flex:1; overflow-y:auto; overflow-x:hidden; position:relative; }
   .screen { display:none; min-height:100%; } .screen.on { display:block; animation:fade .28s ease; }
+  #s-nexus.on { display:flex; flex-direction:column; height:100%; animation:fade .28s ease; }
   @keyframes fade { from { opacity:0; } to { opacity:1; } }
+  .msgbar { flex:0 0 auto; padding:8px 12px; background:var(--ground); border-top:1px solid var(--line); }
+  .msgbar button { width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 0; border-radius:12px; background:var(--surface); border:1px solid var(--line); color:var(--text-hi); font-weight:700; font-size:13px; }
+  .msgbar button .ni { width:18px; height:18px; }
+  #app.thread-open .msgbar { display:none; }
   .pad { padding:16px; }
   .sec-title { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:22px 16px 10px; } .sec-title.first { margin-top:8px; }
   .botnav { flex:0 0 auto; display:flex; border-top:1px solid var(--line); background:var(--ground); padding-bottom:env(safe-area-inset-bottom); }
@@ -166,7 +171,26 @@
   .debate-vs-x { font-family:var(--mono); font-weight:700; color:var(--accent-hi); font-size:13px; }
   .debate-vote-panel { display:flex; gap:10px; }
   .debate-vote-panel button { flex:1; }
-  .rank-pill { display:inline-block; font-family:var(--mono); font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; border:1px solid; white-space:nowrap; }
+  .rank-pill { position:relative; display:inline-block; overflow:hidden; font-family:var(--mono); font-size:11px; font-weight:700; padding:2px 8px 2px 7px; border-radius:999px; border:1px solid; white-space:nowrap; }
+  .rp-shine { position:absolute; top:0; left:-60%; width:35%; height:100%; background:linear-gradient(115deg,transparent,rgba(255,255,255,.55),transparent); transform:skewX(-18deg); animation:rpShine 3.4s ease-in-out infinite; pointer-events:none; }
+  @keyframes rpShine { 0%{left:-60%;} 40%{left:130%;} 100%{left:130%;} }
+  .rank-pill.big { font-size:15px; padding:6px 16px 6px 13px; }
+  .rank-pill.big .rp-shine { width:25%; }
+  .rankfx-scrim { position:fixed; inset:0; z-index:999; background:rgba(0,0,0,.72); display:flex; align-items:center; justify-content:center; animation:rankfxFade .25s ease; }
+  @keyframes rankfxFade { from{opacity:0} to{opacity:1} }
+  .rankfx-card { position:relative; width:min(320px,86vw); background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:30px 22px 24px; text-align:center; animation:rankfxPop .45s cubic-bezier(.2,1.4,.4,1); overflow:hidden; }
+  @keyframes rankfxPop { from{ transform:scale(.7); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .rankfx-emoji { font-size:44px; line-height:1; margin-bottom:8px; animation:rankfxBounce 1.1s ease .2s 2; }
+  @keyframes rankfxBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .rankfx-title { font-family:var(--display); font-weight:800; font-size:21px; color:var(--text-hi); margin-bottom:4px; letter-spacing:.01em; }
+  .rankfx-sub { font-size:12.5px; color:var(--muted); margin-bottom:18px; }
+  .rankfx-badges { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .rankfx-arrow { color:var(--dim); font-size:18px; }
+  .rankfx-elo { font-family:var(--mono); font-size:28px; font-weight:800; }
+  .rankfx-elo.up { color:var(--green); } .rankfx-elo.down { color:var(--danger); }
+  .rankfx-confetti { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+  .rankfx-confetti span { position:absolute; top:-14px; width:7px; height:13px; opacity:.9; border-radius:1px; animation:rankfxFall linear forwards; }
+  @keyframes rankfxFall { to { transform:translateY(420px) rotate(540deg); opacity:0; } }
   .lb-rank { width:22px; flex:0 0 22px; text-align:center; font-family:var(--mono); font-weight:700; color:var(--dim); font-size:13px; }
 
   /* ── admin dashboard ── */
@@ -410,6 +434,7 @@
       <section class="screen" id="s-lobby"></section>
       <section class="screen" id="s-overwatch"></section>
     </div>
+    <div class="msgbar" id="msgBar"><button id="msgBarBtn"></button></div>
     <nav class="botnav" id="botnav"></nav>
   </div>
 
@@ -442,16 +467,16 @@
   async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
   function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
   const DEBATE_RANKS = [
-    {min:0,name:'Novice',color:'#8a8a8a'},
-    {min:1000,name:'Contender',color:'#4a9eff'},
-    {min:1100,name:'Skilled',color:'#3ba55d'},
-    {min:1250,name:'Sharp',color:'#f0b232'},
-    {min:1400,name:'Expert',color:'#f0663b'},
-    {min:1600,name:'Elite',color:'#a855f7'},
-    {min:1800,name:'Master',color:'#ed2e44'}
+    {min:0,name:'Novice',color:'#8a8a8a',icon:'🔰'},
+    {min:1000,name:'Contender',color:'#4a9eff',icon:'🥉'},
+    {min:1100,name:'Skilled',color:'#3ba55d',icon:'🥈'},
+    {min:1250,name:'Sharp',color:'#f0b232',icon:'⚔️'},
+    {min:1400,name:'Expert',color:'#f0663b',icon:'🥇'},
+    {min:1600,name:'Elite',color:'#a855f7',icon:'💎'},
+    {min:1800,name:'Master',color:'#ed2e44',icon:'👑'}
   ];
   function debateRankFor(elo){ let r=DEBATE_RANKS[0]; for(const x of DEBATE_RANKS){ if(elo>=x.min)r=x; } return r; }
-  function debateRankBadge(elo,size){ const r=debateRankFor(elo); return `<span class="rank-pill" style="background:${r.color}22;color:${r.color};border-color:${r.color}55;${size==='sm'?'font-size:10px;padding:1px 6px':''}">${esc(r.name)} · ${elo}</span>`; }
+  function debateRankBadge(elo,size){ const r=debateRankFor(elo); return `<span class="rank-pill" style="background:linear-gradient(135deg,${r.color}30,${r.color}12);color:${r.color};border-color:${r.color}66;${size==='sm'?'font-size:10px;padding:1px 6px 1px 5px':''}"><span class="rp-shine"></span>${r.icon} ${esc(r.name)} · ${elo}</span>`; }
   // db.* is the swap seam for later phases; Phase 1 implements profiles/auth.
   const db = {
     auth:{
@@ -1070,21 +1095,23 @@
     const th=active; const isCommons=th.key==='commons';
     if(isCommons && (!state.msgs.commons||!state.msgs.commons.length)) state.msgs.commons=[{a:'Overwatch',t:'This is **The Commons** — a live public room. Anyone on the internet running Maintrix and in here sees what you type, in real time. It’s public, so keep it clean.',bot:true,time:nowTime(),id:mid()}];
     const list=state.msgs[th.key]=state.msgs[th.key]||[];
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
-    let host=$('s-thread'); if(!host){ host=el('section','screen'); host.id='s-thread'; $('view').appendChild(host); }
-    host.classList.add('on');
+    const isEmbed=!!th.embed;
+    let host;
+    if(isEmbed){ const st=$('s-thread'); if(st) st.innerHTML=''; host=$('s-nexus'); }
+    else { const nx=$('s-nexus'); if(nx) nx.innerHTML=''; document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); host=$('s-thread'); if(!host){ host=el('section','screen'); host.id='s-thread'; $('view').appendChild(host); } host.classList.add('on'); }
     const tag=th.roomTag?`<div class="room-tag"><div class="rt-main">${esc(th.roomTag.main)}</div>${th.roomTag.sub?`<div class="rt-sub">${esc(th.roomTag.sub)}</div>`:''}</div>`:'';
     const srv=th.serverId?state.servers.find(x=>x.id===th.serverId):null;
     const canManage = online() ? !!th.serverId : (srv&&(isOwner(srv)||me().isAdmin));
     const isDebate = th.kind==='debate' && th.debate;
     const debaterCanType = isDebate && th.debate.status!=='ended' && (me().id===th.debate.creatorId || me().id===th.debate.opponentId);
-    let h=`<div class="thread${th.theme==='mono'?' mono-theme':''}"><div class="thread-head"><button class="back" id="thBack">${IC.back}</button>`;
+    let h=`<div class="thread${th.theme==='mono'?' mono-theme':''}"><div class="thread-head">${isEmbed?'':`<button class="back" id="thBack">${IC.back}</button>`}`;
     if(th.dmKey){ h+=`<div data-user="${attr(th.dmKey)}" style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">${avatar(th.dmKey,34,{dot:true,ring:true})}<div style="min-width:0"><div class="th-name">${esc(th.title)}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div></div>`; }
     else h+=`<div style="min-width:0;flex:1"><div class="th-name">${esc(th.title)}${th.official?verifiedBadge():''} ${isCommons?'<span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span>':''}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div>`;
     h+=tag;
     const isMuted=(state.mutedRooms||[]).includes(th.key);
     h+=`<button class="tb-btn${isMuted?' muted-on':''}" id="thOptions" style="margin-left:6px">${IC.bell}</button>`;
     if(canManage)h+=`<button class="tb-btn" id="thManage" style="margin-left:6px">${IC.gear}</button>`;
+    if(isEmbed)h+=`<button class="tb-btn" id="thDebates" title="Debates" style="margin-left:6px">${IC.debates}</button>`;
     h+=`</div>`;
     if(isDebate) h+=renderDebateHead(th.debate);
     const ice = th.dmKey ? personalityOverlap(me(),person(th.dmKey)) : [];
@@ -1101,12 +1128,13 @@
       h+=`<div class="box">${allowFiles?`<button class="attach" id="thAttach">${IC.clip}</button>`:''}${allowMic?`<button class="attach" id="thMic">${IC.mic}</button>`:''}${allowPoll?`<button class="attach" id="thPoll">${IC.grid}</button>`:''}<input id="thInput" placeholder="Message ${esc(th.dmKey?'@'+th.title:th.title)}" autocomplete="off"><button class="send" id="thSend">${IC.send}</button>${allowFiles?'<input type="file" id="thFile" accept="image/*,video/*" style="display:none">':''}</div>`; }
     h+=`</div></div>`;
     host.innerHTML=h;
-    $('app').classList.add('thread-open');
+    if(!isEmbed)$('app').classList.add('thread-open');
     const sc=$('thScroll'); sc.scrollTop=sc.scrollHeight;
     if(isCommons && online() && !th.roomSlug) th.roomSlug='commons';
     const onlineRoom = online() && !!(th.roomSlug || th.dmUser || th.topicId || th.roomId);
     const repaint=()=>{ const s=$('thScroll'); if(!s)return; const L=state.msgs[th.key]||[]; s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); };
-    $('thBack').onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); };
+    { const backBtn=$('thBack'); if(backBtn) backBtn.onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); }; }
+    { const debBtn=$('thDebates'); if(debBtn) debBtn.onclick=()=>{ state.screen='debates'; save(); render(); }; }
     { const idb=$('iceDismiss'); if(idb)idb.onclick=()=>{ state.dismissedIcebreakers=state.dismissedIcebreakers||[]; state.dismissedIcebreakers.push(th.key); save(); const ib=$('iceBanner'); if(ib)ib.remove(); }; }
     if(canManage)$('thManage').onclick=()=> online()?serverManageOnline(th.serverId, th.serverOwner, th.title):serverManage(th.serverId);
     $('thOptions').onclick=()=>openRoomOptions(th);
@@ -1148,7 +1176,7 @@
     if(onlineRoom && th.serverId) ensureServerComposer(th);
     updateChrome();
   }
-  async function ensureServerComposer(th){ try{ const rank=await db.servers.myRank(th.serverId); if(rank||!active||active.key!==th.key) return; const comp=document.querySelector('#s-thread .composer'); if(!comp) return; comp.innerHTML=`<div class="note" style="display:flex;gap:10px;align-items:center;justify-content:center;padding-bottom:calc(10px + env(safe-area-inset-bottom))"><span>Join to chat here</span><button class="chip on" id="joinToChat">Join server</button></div>`; $('joinToChat').onclick=async ()=>{ try{ await db.servers.join(th.serverId); toast('Joined'); renderThread(); }catch(e){ toast('Could not join'); } }; }catch(e){} }
+  async function ensureServerComposer(th){ try{ const rank=await db.servers.myRank(th.serverId); if(rank||!active||active.key!==th.key) return; const comp=document.querySelector('.thread .composer'); if(!comp) return; comp.innerHTML=`<div class="note" style="display:flex;gap:10px;align-items:center;justify-content:center;padding-bottom:calc(10px + env(safe-area-inset-bottom))"><span>Join to chat here</span><button class="chip on" id="joinToChat">Join server</button></div>`; $('joinToChat').onclick=async ()=>{ try{ await db.servers.join(th.serverId); toast('Joined'); renderThread(); }catch(e){ toast('Could not join'); } }; }catch(e){} }
   let mediaRec=null, recChunks=[];
   async function sendMedia(th, file, kindHint){ if(!online()||!th.roomId){ toast('Media isn’t available here'); return; } try{ toast('Uploading…'); const { path, kind } = await uploadMedia(file, kindHint); const m=await db.messages.send(th.roomId, '', { mediaPath:path, mediaKind:kind }); const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); } } } }catch(e){ toast('Upload failed — '+((e&&e.message)||'try again')); } }
   async function toggleRecord(th, btn){ if(mediaRec){ try{ mediaRec.stop(); }catch(e){} return; } if(!navigator.mediaDevices||!window.MediaRecorder){ toast('Recording not supported'); return; } try{ const stream=await navigator.mediaDevices.getUserMedia({audio:true}); recChunks=[]; mediaRec=new MediaRecorder(stream); mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); }; mediaRec.onstop=async ()=>{ stream.getTracks().forEach(t=>t.stop()); if(btn)btn.classList.remove('rec'); const blob=new Blob(recChunks,{type:'audio/webm'}); mediaRec=null; if(blob.size<600){ toast('Too short'); return; } await sendMedia(th, blob, 'audio'); }; mediaRec.start(); if(btn)btn.classList.add('rec'); toast('Recording… tap mic again to send'); }catch(e){ toast('Mic not available'); mediaRec=null; } }
@@ -1178,7 +1206,7 @@
     }catch(e){ if(active&&active.key===th.key){ const s=$('thScroll'); if(s)s.innerHTML='<div class="empty">Couldn’t load this room.</div>'; } }
   }
   function showJumpButton(){
-    const host=document.querySelector('#s-thread .thread'); if(!host)return;
+    const host=document.querySelector('.thread'); if(!host)return;
     let btn=document.getElementById('jumpBtn');
     if(!btn){ btn=document.createElement('button'); btn.id='jumpBtn'; btn.className='jump-btn'; btn.textContent='↓ New messages'; host.appendChild(btn); }
     btn.onclick=()=>{ const s=$('thScroll'); if(s)s.scrollTop=s.scrollHeight; btn.remove(); };
@@ -1293,9 +1321,13 @@
       catch(e){ b.disabled=false; b.textContent='Create'; toast('Could not create event'); } };
   }
   /* ═══ DEBATES (1-on-1, spectators vote) ═══ */
+  function isMissingSchemaError(e){ const m=((e&&e.message)||'')+' '+((e&&e.code)||''); return /PGRST20[25]|schema cache|does not exist|Could not find/i.test(m); }
+  function debatesBackHtml(){ return `<button class="back" id="dbBack" style="color:var(--muted);width:30px;height:32px;display:grid;place-items:center;margin:6px 0 -4px 10px">${IC.back}</button>`; }
+  function wireDebatesBack(){ const b=$('dbBack'); if(b) b.onclick=()=>{ state.screen='nexus'; save(); render(); }; }
   function renderDebates(){
-    if(!online()){ $('s-debates').innerHTML='<div class="empty" style="padding-top:60px">Debates need the live backend.</div>'; return; }
-    $('s-debates').innerHTML=`<div class="pad" style="padding-bottom:0"><div class="th-sub" style="margin-bottom:10px">Pick a side, argue it 1-on-1, and let the room decide who's winning. Win to climb the rank ladder.</div><div style="display:flex;gap:8px"><button class="btn block" id="dbNew" style="flex:1">${IC.plus} Start a debate</button><button class="btn ghost" id="dbBoard">🏆</button></div></div><div id="dbList" style="padding-top:6px"><div class="empty" style="padding-top:20px">Loading…</div></div>`;
+    if(!online()){ $('s-debates').innerHTML=debatesBackHtml()+'<div class="empty" style="padding-top:40px">Debates need the live backend.</div>'; wireDebatesBack(); return; }
+    $('s-debates').innerHTML=debatesBackHtml()+`<div class="pad" style="padding-bottom:0"><div class="th-sub" style="margin-bottom:10px">Pick a side, argue it 1-on-1, and let the room decide who's winning. Win to climb the rank ladder.</div><div style="display:flex;gap:8px"><button class="btn block" id="dbNew" style="flex:1">${IC.plus} Start a debate</button><button class="btn ghost" id="dbBoard">🏆</button></div></div><div id="dbList" style="padding-top:6px"><div class="empty" style="padding-top:20px">Loading…</div></div>`;
+    wireDebatesBack();
     $('dbNew').onclick=openCreateDebate;
     $('dbBoard').onclick=openDebateLeaderboard;
     loadDebates();
@@ -1321,7 +1353,7 @@
       const tally=await db.debates.votesFor(debates.map(d=>d.id));
       box.innerHTML=debates.map(d=>debateRowHtml(d,tally[d.id]||{})).join('');
       box.querySelectorAll('[data-debate]').forEach(r=>r.onclick=()=>openDebateRoom(debates.find(x=>x.id===r.dataset.debate)));
-    }catch(e){ if($('dbList'))box.innerHTML='<div class="empty">Couldn’t load debates.</div>'; }
+    }catch(e){ if($('dbList'))box.innerHTML=`<div class="empty">${isMissingSchemaError(e)?'Debates aren’t set up on the server yet — ask an admin to run the pending database update.':'Couldn’t load debates.'}</div>`; }
   }
   function debateRowHtml(d,tally){
     const cp=person(d.creatorId), op=d.opponentId?person(d.opponentId):null;
@@ -1341,7 +1373,7 @@
       if(!title||!desc){ toast('Add a title and description'); return; }
       const b=$('dbCreate'); b.disabled=true; b.textContent='Creating…';
       try{ const id=await db.debates.create(title,desc); closeSheet(); const d=await db.debates.get(id); openDebateRoom(d); }
-      catch(e){ b.disabled=false; b.textContent='Create debate'; toast('Could not create debate'); }
+      catch(e){ b.disabled=false; b.textContent='Create debate'; toast(isMissingSchemaError(e)?'Debates aren’t set up on the server yet — ask an admin to run the pending database update.':'Could not create debate'); }
     };
   }
   function openDebateRoom(d){ openThread({ key:'debate-'+d.id, roomId:d.roomId, kind:'debate', debate:d, title:d.title, sub:'Debate', back:'debates' }); }
@@ -1356,14 +1388,79 @@
     return h;
   }
   function renderDebateComposer(d){
-    if(d.status==='ended'){ const label = d.winnerId ? esc(person(d.winnerId).name)+' won this debate' : 'This debate ended in a tie'; const delta = (d.eloDelta && d.opponentId) ? ` · ${d.winnerId?'+':'±'}${d.eloDelta} / -${d.eloDelta} ELO` : ''; return `<div class="note" style="text-align:center">🏁 ${label}${delta}</div>`; }
+    if(d.status==='ended'){
+      const uid=me().id, tie=!d.winnerId, isParticipant=uid===d.creatorId||uid===d.opponentId, iWon=d.winnerId===uid;
+      const emoji = tie?'🤝':(iWon?'🏆':(isParticipant?'🥊':'🏁'));
+      const winnerName = d.winnerId?esc(person(d.winnerId).name):'';
+      const label = tie ? 'This debate ended in a tie' : (iWon ? 'You won this debate!' : (isParticipant ? 'You lost this debate' : winnerName+' won this debate'));
+      let deltaHtml='';
+      if(d.eloDelta && d.opponentId && isParticipant && !tie) deltaHtml=`<span style="color:${iWon?'var(--green)':'var(--danger)'};font-weight:700;font-family:var(--mono);font-size:13px">${iWon?'+':'-'}${d.eloDelta} ELO</span>`;
+      else if(d.eloDelta && d.opponentId && !tie) deltaHtml=`<span style="color:var(--muted);font-family:var(--mono);font-size:12px">±${d.eloDelta} ELO</span>`;
+      return `<div class="note" style="text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;padding:16px 10px">
+        <div style="font-size:28px;line-height:1">${emoji}</div>
+        <div style="font-weight:700;font-size:14.5px">${label}</div>
+        ${deltaHtml}
+      </div>`;
+    }
     if(d.status==='open'){ return `<div class="note" style="display:flex;gap:10px;align-items:center;justify-content:center"><span>Open for a 1-on-1 challenger</span><button class="chip on" id="dbJoin">Join as opponent</button></div>`; }
     return `<div class="debate-vote-panel" id="dbVotePanel"><button class="btn ghost" data-vote="${attr(d.creatorId)}">Vote ${esc(person(d.creatorId).name)}</button><button class="btn ghost" data-vote="${attr(d.opponentId)}">Vote ${esc(person(d.opponentId).name)}</button></div>`;
+  }
+  const _celebratedDebates=new Set();
+  async function maybeCelebrateDebate(d){
+    if(!online()||!d||d.status!=='ended')return;
+    const uid=me().id; if(!uid||(uid!==d.creatorId&&uid!==d.opponentId))return;
+    if(_celebratedDebates.has(d.id))return; _celebratedDebates.add(d.id);
+    const beforeElo=me().elo||1000;
+    try{
+      const fresh=await db.profiles.byId(uid); if(!fresh)return;
+      const afterElo=fresh.elo==null?beforeElo:fresh.elo;
+      Object.assign(state.profile,{ elo:fresh.elo, debateWins:fresh.debateWins, debateLosses:fresh.debateLosses, debateTies:fresh.debateTies });
+      cacheProfile(me()); save();
+      if(afterElo===beforeElo)return;
+      showRankUpFx({ before:beforeElo, after:afterElo, won:d.winnerId===uid, tie:!d.winnerId });
+    }catch(e){}
+  }
+  function showRankUpFx({before,after,won,tie}){
+    const rankBefore=debateRankFor(before), rankAfter=debateRankFor(after);
+    const up=after>before;
+    const rankedUp=rankAfter.name!==rankBefore.name&&up;
+    const showConfetti=won||rankedUp;
+    let confettiHtml='';
+    if(showConfetti){
+      const colors=['#ed2e44','#f0b232','#4a9eff','#3ba55d','#a855f7','#ffffff'];
+      let pieces='';
+      for(let i=0;i<26;i++){ const left=Math.round(Math.random()*100); const delay=(Math.random()*0.5).toFixed(2); const dur=(1.6+Math.random()*1.1).toFixed(2); pieces+=`<span style="left:${left}%;background:${colors[i%colors.length]};animation-delay:${delay}s;animation-duration:${dur}s"></span>`; }
+      confettiHtml=`<div class="rankfx-confetti">${pieces}</div>`;
+    }
+    const title = rankedUp ? 'RANK UP!' : (tie ? 'Debate tied' : (won ? 'Victory!' : 'Debate lost'));
+    const emoji = rankedUp ? '🎉' : (tie?'🤝':(won?'🏆':'🥊'));
+    const sub = rankedUp ? `You've reached ${esc(rankAfter.name)}` : (tie?'ELO nudged toward the midpoint':(won?'Your rank climbed':'Your rank dipped a little'));
+    const scrim=el('div','rankfx-scrim');
+    scrim.innerHTML=`<div class="rankfx-card">${confettiHtml}
+      <div class="rankfx-emoji">${emoji}</div>
+      <div class="rankfx-title">${esc(title)}</div>
+      <div class="rankfx-sub">${sub}</div>
+      <div class="rankfx-badges">
+        ${rankBefore.name!==rankAfter.name?`<span class="rank-pill" style="background:${rankBefore.color}22;color:${rankBefore.color};border-color:${rankBefore.color}55;opacity:.5">${rankBefore.icon} ${esc(rankBefore.name)}</span><span class="rankfx-arrow">→</span>`:''}
+        <span class="rank-pill big" style="background:linear-gradient(135deg,${rankAfter.color}40,${rankAfter.color}18);color:${rankAfter.color};border-color:${rankAfter.color}77"><span class="rp-shine"></span>${rankAfter.icon} ${esc(rankAfter.name)}</span>
+      </div>
+      <div class="rankfx-elo ${up?'up':'down'}" id="rankfxElo">${before}</div>
+      <button class="btn block" id="rankfxClose" style="margin-top:18px">Nice</button>
+    </div>`;
+    document.body.appendChild(scrim);
+    const closeIt=()=>{ if(scrim.parentNode)scrim.remove(); };
+    scrim.addEventListener('click',e=>{ if(e.target===scrim)closeIt(); });
+    const closeBtn=scrim.querySelector('#rankfxClose'); if(closeBtn)closeBtn.onclick=closeIt;
+    const eloEl=scrim.querySelector('#rankfxElo');
+    const t0=performance.now(), dur=900;
+    (function tick(t){ if(!eloEl||!scrim.parentNode)return; const p=Math.min(1,(t-t0)/dur); const eased=1-Math.pow(1-p,3); eloEl.textContent=Math.round(before+(after-before)*eased); if(p<1)requestAnimationFrame(tick); })(t0);
+    setTimeout(closeIt,5200);
   }
   function wireDebateRoom(th){
     const d=th.debate;
     refreshDebateTally(d);
-    const end=$('dbEnd'); if(end)end.onclick=()=>confirmDialog('End this debate now? Most votes wins — a tie if it’s even.',async ()=>{ try{ await db.debates.end(d.id); const fresh=await db.debates.get(d.id); th.debate=fresh; if(active&&active.key===th.key)renderThread(); }catch(e){ toast('Could not end debate'); } });
+    if(d.status==='ended') maybeCelebrateDebate(d);
+    const end=$('dbEnd'); if(end)end.onclick=()=>confirmDialog('End this debate now? Most votes wins — a tie if it’s even.',async ()=>{ try{ await db.debates.end(d.id); const fresh=await db.debates.get(d.id); th.debate=fresh; if(active&&active.key===th.key)renderThread(); maybeCelebrateDebate(fresh); }catch(e){ toast('Could not end debate'); } });
     const join=$('dbJoin'); if(join)join.onclick=async ()=>{ try{ await db.debates.join(d.id); const fresh=await db.debates.get(d.id); th.debate=fresh; toast('You joined the debate!'); if(active&&active.key===th.key)renderThread(); }catch(e){ toast((e&&e.message)||'Could not join'); } };
     document.querySelectorAll('#dbVotePanel [data-vote]').forEach(b=>b.onclick=async ()=>{ b.disabled=true; try{ await db.debates.vote(d.id,b.dataset.vote); toast('Vote cast'); refreshDebateTally(d); }catch(e){ toast('Could not vote'); } b.disabled=false; });
     subscribeDebate(th);
@@ -1383,7 +1480,7 @@
     if(!online()||!th.debate)return;
     debateCh=sb.channel('debate:'+th.debate.id)
       .on('postgres_changes',{event:'*',schema:'public',table:'debate_votes',filter:'debate_id=eq.'+th.debate.id},()=>{ if(active&&active.key===th.key)refreshDebateTally(th.debate); })
-      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'debates',filter:'id=eq.'+th.debate.id},p=>{ th.debate=rowToDebate(p.new); if(active&&active.key===th.key)renderThread(); })
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'debates',filter:'id=eq.'+th.debate.id},p=>{ th.debate=rowToDebate(p.new); if(active&&active.key===th.key)renderThread(); if(th.debate.status==='ended')maybeCelebrateDebate(th.debate); })
       .subscribe();
   }
   function serverManage(sid){
@@ -1445,11 +1542,13 @@
      grown enough to support splitting into multiple nexus rooms again, re-add their
      cards here (see git history for the previous renderNexus). */
   function renderNexus(){
-    const worldLabel=online()?((_presenceSynced&&ONLINE.size)?ONLINE.size+' online':'live'):(Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot).length+1)+' online';
-    let h=`<div class="sec-title first">One world</div>`;
-    h+=`<div class="card" id="nxWorld"><div class="c-k">◍ The Nexus · ${worldLabel}</div><div class="c-t">The Nexus</div><div class="c-s">One global room. Everyone in Maintrix, from everywhere, in one place.</div></div>`;
-    $('s-nexus').innerHTML=h;
-    $('nxWorld').onclick=()=>openThread({key:'world',roomSlug:'world',title:'The Nexus',sub:'everyone, everywhere',kind:'world',roomTag:{main:'The Nexus',sub:'live'},back:'nexus'});
+    // The Nexus tab IS the room now — no hub/card to tap through. See renderNexusHome().
+    renderNexusHome();
+  }
+  function renderNexusHome(){
+    active=Object.assign({back:'nexus'},{key:'world',roomSlug:'world',title:'The Nexus',sub:'everyone, everywhere',kind:'world',roomTag:{main:'The Nexus',sub:'live'},embed:true});
+    replyTo=null; editing=null;
+    renderThread();
   }
   function openYourWorld(){
     const t=me().goals[0]||'your path';
@@ -2475,6 +2574,7 @@
     connect:'<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="9" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="15" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M10.5 10.5l4 3" stroke="currentColor" stroke-width="1.8"/></svg>',
     feed:'<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M10 9l5 3-5 3V9z" fill="currentColor"/></svg>',
     debates:'<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6h9v7H8l-3 3v-3H3V6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M21 10h-6v6h3v3l3-3v-6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+    dm:'<svg class="ni" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H10l-4.5 4V16H4V5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
     live:'<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M7 7a7 7 0 000 10M17 7a7 7 0 010 10M4.5 4.5a11 11 0 000 15M19.5 4.5a11 11 0 010 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
     lobby:'<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.4 5 5.6.6-4 4 1 5.4-5-2.8-5 2.8 1-5.4-4-4 5.6-.6L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
     watch:'<svg class="ni" width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="11" r="2" fill="currentColor"/></svg>',
@@ -2512,7 +2612,7 @@
   const PAID={feed:1,live:1,lobby:1};
   // NOTE: Live/streaming is hidden for now (code kept below, just unreachable) — re-add ['live','Live',IC.live] to restore.
   // NOTE: Live and Lobby are hidden for now (code kept, just unreachable) — re-add ['live'...] / ['lobby','Lobby',IC.lobby] to restore.
-  function navItems(){ const b=[['nexus','Nexus',IC.nexus],['connect','Connect',IC.connect],['feed','Feed',IC.feed],['debates','Debates',IC.debates]]; if(me().isAdmin)b.push(['overwatch','Watch',IC.watch]); return b; }
+  function navItems(){ const b=[['nexus','Nexus',IC.nexus],['feed','Feed',IC.feed],['connect','Connect',IC.connect]]; if(me().isAdmin)b.push(['overwatch','Watch',IC.watch]); return b; }
   function renderNav(){ $('botnav').innerHTML=navItems().map(([id,label,ic])=>`<button data-nav="${id}" class="${state.screen===id?'on':''}">${ic}<span>${label}</span>${PAID[id]&&me().tier!=='main'?'<span class="lockdot"></span>':''}</button>`).join(''); $('botnav').querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>{ state.screen=b.dataset.nav; save(); render(); }); }
   function updateChrome(){ const sc=state.screen==='_thread'?(active&&active.back)||'connect':state.screen; $('tbTitle').textContent=TITLES[sc]||'Maintrix'; $('tbSub').textContent=SUBS[sc]?'· '+SUBS[sc]:''; $('tierPill').textContent=me().tier==='main'?'Main ✦':'Lite'; $('tierPill').className='tier-pill'+(me().tier==='main'?' main':''); $('profileBtn').innerHTML=avatar(me().name,34,{ring:true}); $('globalSearchBtn').innerHTML=IC.search; $('globalSearchBtn').onclick=openGlobalSearch; paintBell(); renderNav(); }
   function render(){ if(state.screen==='live'||state.screen==='lobby')state.screen='nexus'; /* live + lobby hidden for now */ if(state.screen==='_thread'){ if(active){ renderThread(); return; } state.screen='nexus'; } $('app').classList.remove('thread-open'); const s2=$('s-thread'); if(s2)s2.classList.remove('on'); document.querySelectorAll('#view > .screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+state.screen)); if(state.screen==='nexus')renderNexus(); else if(state.screen==='connect')renderConnect(); else if(state.screen==='feed')renderFeed(); else if(state.screen==='debates')renderDebates(); else if(state.screen==='live')renderLive(); else if(state.screen==='lobby')renderLobby(); else if(state.screen==='overwatch')renderOverwatch(); $('view').scrollTop=0; updateChrome(); }
@@ -2567,6 +2667,8 @@
   }
   $('profileBtn').onclick=()=>openProfile();
   $('notifBtn').onclick=openNotifications;
+  $('msgBarBtn').innerHTML=IC.dm+'<span>Messages</span>';
+  $('msgBarBtn').onclick=()=>{ state.connectTab='dms'; state.screen='connect'; save(); render(); };
 
   /* ═══ ONBOARDING (traits set here, locked after) ═══ */
   let ob={step:0,goals:[],fears:[],mbti:'Unsure',enneagramCore:'Unsure',enneagramWing:null,enneagramTritype:null,temperamentDominant:'Unsure',temperamentSecondary:null};
