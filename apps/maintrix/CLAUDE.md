@@ -200,7 +200,59 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
-## Build state (as of v0.13 — mobile fixes, icons-not-emoji, voice channels, badges/streaks, maintenance banner)
+## Build state (as of v0.13.1 — flashy debate ranks, DM-request fix, admin auto-grant)
+
+- **Debate ranks are dramatically flashier now.** `DEBATE_RANKS` entries got
+  a `t` (tier 1-7) field; `.rank-pill.rank-t5/6/7` get a progressively
+  faster pulsing `box-shadow:currentColor` glow (Expert/Elite/Master).
+  Debater avatars in the VS card (`debateAvatarRing()`) get a colored ring +
+  glow matching their own rank tier — two debaters at different tiers now
+  visibly look different. The "VS" is bigger, italic, and pulses. The vote
+  tally bar (`.debate-bar-fill`) got a gradient fill, a glow, and a
+  continuously sweeping shine. `renderDebateHead()`'s container gets a
+  subtle radial accent-colored glow from the top. The debate leaderboard
+  (`openDebateLeaderboard`) now shows a **podium** for the top 3 (crown on
+  #1, tier-colored glowing pedestals sized by placement) before falling
+  back to a plain list for 4th onward. The profile's debate-rank line is
+  now a full showcase card (`debateRankCardHtml()`, shared with the Debates
+  tab's own rank card) with a tier-tinted gradient background instead of a
+  plain text line.
+- **DM "message requests" now only apply to actual strangers.** Previously,
+  `can_post_dm()` only ever bypassed the one-message-then-wait gate for
+  friends or a formally-accepted request — an ongoing conversation where
+  the other person had already replied didn't count for anything, so
+  tightening your `dm_privacy` mid-conversation (or never having explicitly
+  "accepted") could still gate someone you'd already been talking to.
+  Migration `0016`: if the other person has ever sent a message in that DM
+  room, `can_post_dm()` returns true immediately, before any privacy/
+  friendship/request check — a real two-way conversation is never gated
+  again, full stop. Offline demo mirrors this via `dmFree()` checking local
+  message history for a reply from the other party.
+- **`ret`/`5` admin is now a standing rule, not a one-time grant.** Direct
+  production check found `auth.users` and `profiles` both completely
+  empty — **nobody has ever actually signed up through the live backend
+  yet** — which is the actual reason the earlier one-off
+  `update profiles set is_admin=true where handle in (...)` grants (0013,
+  0015) never took effect: there was no row to update. `lock_identity()`
+  (migration `0016`) now special-cases `new.handle in ('ret','5')` to force
+  `is_admin=true` on that row regardless of the acting user's own admin
+  status, so whenever either account actually signs up with that exact
+  handle, they become admin automatically at that moment — no re-running a
+  migration needed. (Couldn't be a separate trigger: the handle is set via
+  `UPDATE` during signup, not `INSERT`, and a same-event second trigger
+  would race `lock_identity()`'s own reset on alphabetical firing order —
+  simplest fix was teaching `lock_identity()` itself about the two handles.)
+- **Git identity**: commits now use a fully anonymous placeholder identity
+  (`5438252392` / `5438252392@users.noreply.github.com`) instead of the
+  collaborator's real GitHub username, at their request. Already-merged
+  commits on `main` from before this request still carry the old identity —
+  rewriting `main`'s history is blocked by Claude Code's own destructive-git
+  safety guardrail (same category that blocks direct merges), and even a
+  successful rewrite likely wouldn't scrub it from already-merged PR pages
+  #1/#2, which GitHub keeps as an independent permanent record regardless
+  of what `main`'s current history looks like.
+
+
 
 A large friend-feedback batch. Grouped by area:
 
