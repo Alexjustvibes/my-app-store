@@ -200,6 +200,61 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.15 — Web Push notifications, iOS included)
+
+- **Push works end-to-end** (migration `0020`, already run on production;
+  Edge Function `send-push` deployed via the dashboard editor with **Verify
+  JWT OFF**). Pipeline: any `insert into notifications` → `trg_notify_push`
+  checks the recipient's `profiles.notif_prefs` + that they have a
+  `push_subscriptions` row → builds title/body/url → `net.http_post` (pg_net)
+  to the function → function loads that user's subscriptions and sends via
+  the Web Push protocol (`npm:web-push`), deleting endpoints that 404/410.
+  **Verified live**: synthetic subscription on `ret` with a dead FCM endpoint
+  → badge notification insert → `net._http_response` shows `200
+  {"sent":0,"removed":1}` — trigger fired, secret accepted, payload
+  encrypted, FCM reached, dead endpoint pruned. Only the last hop (a real
+  phone) is unproven here; tap-test on an installed iPhone/Android.
+- **Secrets are in Supabase Vault, not in git**: `push_secret` (trigger→
+  function auth header `x-push-secret`), `vapid_public`, `vapid_private`.
+  The function reads all three via `push_secrets()` — a `security definer`
+  RPC granted **only to `service_role`**, so nothing had to be pasted into
+  Edge Function secrets. If Vault is empty the trigger silently skips and
+  the function answers 503. The public VAPID key is hardcoded client-side
+  (`VAPID_PUBLIC`) — it's public by design. To rotate: new keypair, update
+  the two vault rows + `VAPID_PUBLIC`, and existing subscriptions must
+  re-subscribe (they're bound to the old key).
+- **iOS reality**: push only reaches an app installed to the Home Screen on
+  iOS 16.4+ — a Safari tab can't subscribe at all. `PushMgr.status()`
+  returns `needs-install` in that case and the Notifications sheet explains
+  Share → Add to Home Screen. Other states: `on`/`off`/`blocked`/
+  `unsupported`.
+- **Client**: `PushMgr` (`enable` = permission → SW register → subscribe →
+  `db.push.save` upsert on `endpoint`; `disable`; `sync` runs on every boot
+  when permission is already granted, since browsers rotate endpoints and
+  iOS drops them). `sw.js` got `push` (always shows — Chrome and iOS both
+  penalize silent pushes) and `notificationclick` (focus an open window and
+  postMessage `push-open`, else `openWindow`). `routeFromUrl()` handles the
+  deep links pushes carry: `?post=`, `?room=`, `?notifs=1` (also used by
+  the SW message path when the app is already open).
+- **Notification settings** (Profile → Settings → Notifications, online
+  only): master push switch with live status, then per-type rows — DMs,
+  Mentions, Replies, Likes, Comments, Friends, Debates, Badges, Servers —
+  stored in `profiles.notif_prefs` jsonb (missing key = on). Enforced
+  **server-side in the trigger**, not just hidden client-side.
+- **New notification producers** ("almost everything"): `debate_join`
+  (opponent joined your debate), `debate_end` (both debaters, with a
+  per-recipient summary like `You won "X" · +24 ELO`), `badge` (trigger on
+  `badges` insert — covers auto-awards and admin awards), `server_join`
+  (someone joined a server you own). `on_message_notify` now stores a
+  140-char `preview` in entity so DM/reply/mention pushes show the text.
+- **Bug found and fixed on the way**: `notifications.type` check constraint
+  from `0006` was never widened when `0015` started inserting `'dm'`. After
+  this morning's `0015` run, **every DM send would have failed** (trigger
+  raises → message insert rolls back) — production showed 17 DM messages,
+  all pre-0015, and 0 `dm` notifications. `0020` recreates the constraint
+  with every type. If anyone reported "Send failed" in DMs today, that was
+  it.
+
 ## Build state (as of v0.14.1 — mobile typing fix (real root cause), medal podium, leaderboard reset)
 
 - **Mobile "typing pushes everything down" on small/medium text size — actually
