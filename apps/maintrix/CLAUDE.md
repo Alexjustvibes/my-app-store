@@ -200,6 +200,48 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.14.1 — mobile typing fix (real root cause), medal podium, leaderboard reset)
+
+- **Mobile "typing pushes everything down" on small/medium text size — actually
+  diagnosed this time.** Two stacked causes, both tied to text size being
+  implemented as CSS `zoom` on `.frame`:
+  1. **iOS Safari auto-zooms the page when a focused text field renders under
+     16px.** `.composer input` was 15px; under the frame's zoom that rendered
+     as 13.8px (small) / 15px (medium) / 16.5px (large). Only large cleared
+     the threshold — which is exactly the reported pattern. Fix: one rule
+     forces every text field in the frame to
+     `max(16.5px, calc(16.5px / var(--zoom)))` with `!important` (inline
+     styles exist on a few inputs). `max()` of both forms keeps it ≥16px
+     whether WebKit measures computed or zoom-adjusted size.
+  2. **Chromium scales viewport units by `zoom`** (verified in-browser: at
+     zoom .92, `height:100dvh` rendered 747px in an 812px viewport; at 1.1,
+     893px). So small always had a 65px gap under the bottom nav and large
+     always overflowed 81px (nav clipped) — on every screen, keyboard or not.
+     The old `fitViewport` IIFE pinned inline px height from `vv.height`
+     without dividing by zoom, so it had the identical bug, and it raced a
+     second near-duplicate handler (`syncFrameToVisualViewport`). Both
+     replaced by one `syncFrame()`: `height = vv.height / zoom`, `top =
+     vv.offsetTop / zoom` (iOS scrolls the layout viewport to reveal the
+     input), run on visualViewport resize/scroll, on load, and — crucially —
+     from `applyTextSize()` whenever zoom changes. px lengths scale by zoom
+     in every engine, so px ÷ zoom is the one measurement that lands exactly
+     right everywhere; CSS fallback is `calc(100dvh / var(--zoom))`.
+  Verified in-browser: frame is exactly viewport-height on all three sizes,
+  and stays glued to a keyboard-shrunk (480px) visual viewport with the
+  composer fully visible. **Still wants one real iPhone tap-test** — no
+  simulator here has an actual on-screen keyboard.
+- **Debate leaderboard podium is medal-colored**: 1st gold, 2nd silver, 3rd
+  bronze (`MEDAL` map inside `openDebateLeaderboard`) for the avatar ring,
+  pedestal gradient/border and placement number. The rank pill under each
+  name still shows the ELO tier color, so tier info isn't lost.
+- **Admin: Reset debate leaderboard** (Overwatch → Tools → Debates). Typed
+  `RESET` confirm (`confirmType` grew `{title,yes}` options — its hardcoded
+  "Delete?"/"Delete" copy was wrong for a reset). RPC
+  `admin_reset_debate_leaderboard()` (migration `0019`, **already run on
+  production**) sets every profile to `elo=1000`, wins/losses/ties `0`, and
+  returns the affected row count. Finished debates are kept — only standings
+  reset.
+
 ## Build state (as of v0.14 — full visual overhaul + synthesized sound)
 
 - **Sound system (`SFX`)**: every sound is synthesized live with Web Audio

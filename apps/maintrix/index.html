@@ -39,7 +39,7 @@
   input,textarea,select { font-family:inherit; }
   svg { display:block; }
   ::-webkit-scrollbar { width:7px; } ::-webkit-scrollbar-thumb { background:#00000066; border-radius:8px; } ::-webkit-scrollbar-track { background:transparent; }
-  .frame { position:relative; width:100%; max-width:480px; margin:0 auto; height:100vh; height:100dvh; background:var(--ground); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 80px #000a; }
+  .frame { position:relative; width:100%; max-width:480px; margin:0 auto; height:calc(100vh / var(--zoom,1)); height:calc(100dvh / var(--zoom,1)); background:var(--ground); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 80px #000a; }
   /* ambient aurora — slow drifting accent light behind everything */
   .frame::before { content:''; position:absolute; inset:-30%; z-index:0; pointer-events:none; opacity:.11;
     background:radial-gradient(closest-side circle at 50% 50%,var(--accent),transparent),radial-gradient(closest-side circle at 50% 50%,var(--accent-hi),transparent),radial-gradient(closest-side circle at 50% 50%,var(--accent-deep),transparent);
@@ -484,6 +484,12 @@
   @keyframes exWord { 0%{opacity:0; letter-spacing:-.06em; transform:scale(.94); filter:blur(7px);} 45%{opacity:1; filter:blur(0);} 100%{opacity:1; letter-spacing:.42em; transform:scale(1); filter:blur(0);} }
   @keyframes exSub { from{opacity:0; transform:translateY(8px);} to{opacity:.95; transform:none;} }
   @media (prefers-reduced-motion:reduce){ #intro .ex-ring{display:none;} #intro .ex-word{animation:exFade .5s ease forwards; letter-spacing:.42em;} #intro .ex-sub,#intro .ex-skip{animation:exFade .5s ease .3s forwards;} @keyframes exFade{from{opacity:0;}to{opacity:1;}} }
+
+  /* iOS Safari auto-zooms the page when a focused text field renders under 16px. The
+     frame's zoom (text size) multiplies font-size, so 15px became 13.8/15/16.5px on
+     small/medium/large — only large escaped. Keep every text field at ≥16px under any
+     zoom, measured either way WebKit might measure it (computed or zoom-adjusted). */
+  .frame input:not([type=file]):not([type=color]):not([type=checkbox]):not([type=radio]):not([type=range]), .frame textarea, .frame select { font-size:max(16.5px, calc(16.5px / var(--zoom,1))) !important; }
 
   /* ═══════════ VISUAL SYSTEM — depth, motion, polish ═══════════ */
   /* richer screen transition */
@@ -946,7 +952,8 @@
     async votes(id){ await initSB(); const { data } = await sb.from('debate_votes').select('vote_for,voter_id').eq('debate_id',id); const counts={}; let mine=null; (data||[]).forEach(v=>{ counts[v.vote_for]=(counts[v.vote_for]||0)+1; if(v.voter_id===me().id)mine=v.vote_for; }); return { counts, mine, total:(data||[]).length }; },
     async votesFor(ids){ if(!ids.length)return {}; await initSB(); const { data } = await sb.from('debate_votes').select('debate_id,vote_for').in('debate_id',ids); const tally={}; (data||[]).forEach(v=>{ tally[v.debate_id]=tally[v.debate_id]||{}; tally[v.debate_id][v.vote_for]=(tally[v.debate_id][v.vote_for]||0)+1; }); return tally; },
     async leaderboard(){ await initSB(); const { data } = await sb.from('profiles').select('id,name,handle,elo,debate_wins,debate_losses,debate_ties').or('debate_wins.gt.0,debate_losses.gt.0,debate_ties.gt.0').order('elo',{ascending:false}).limit(20); return data||[]; },
-    async adminDelete(id){ await initSB(); const { error } = await sb.rpc('admin_delete_debate',{d_id:id}); if(error) throw error; }
+    async adminDelete(id){ await initSB(); const { error } = await sb.rpc('admin_delete_debate',{d_id:id}); if(error) throw error; },
+    async adminResetLeaderboard(){ await initSB(); const { data, error } = await sb.rpc('admin_reset_debate_leaderboard'); if(error) throw error; return data||0; }
   };
   db.config = {
     async get(){ await initSB(); const { data } = await sb.from('app_config').select('*').eq('id',1).maybeSingle(); return data; },
@@ -1210,21 +1217,34 @@
       r.setProperty('--'+key, hslToHex(hue, s*satMul, l));
     });
   }
-  function applyTextSize(){ const frame=document.querySelector('.frame'); if(!frame)return; frame.style.zoom={small:0.92,medium:1,large:1.1}[state.textSize||'medium']; }
-  // Mobile keyboards (esp. iOS Safari, which ignores interactive-widget=resizes-content)
-  // shrink the visual viewport without resizing the layout viewport, so 100dvh keeps
-  // measuring the old, taller height and the composer gets pushed off-screen under the
-  // keyboard. Sync .frame's height directly to the visual viewport whenever it's
-  // smaller than the layout viewport (keyboard open), and let CSS's 100dvh take back
-  // over the moment it isn't.
-  (function syncFrameToVisualViewport(){
-    if(!window.visualViewport)return;
+  // Text size scales the whole frame via CSS zoom. Everything in px inside the frame
+  // gets multiplied by it — which is why the two places that set px sizes from
+  // viewport measurements (frame height below, input font-size in CSS via --zoom)
+  // must divide by it first.
+  function applyTextSize(){ const frame=document.querySelector('.frame'); if(!frame)return; const z={small:0.92,medium:1,large:1.1}[state.textSize||'medium']; frame.style.zoom=z; frame.style.setProperty('--zoom',z); syncFrame(); }
+  // The frame's height is pinned from JS, always, for two reasons:
+  // 1) Mobile keyboards (esp. iOS Safari, which ignores interactive-widget=resizes-content)
+  //    shrink the visual viewport without resizing the layout viewport, so 100dvh keeps
+  //    measuring the old, taller height and the composer gets pushed under the keyboard.
+  //    iOS also scrolls the layout viewport to reveal the input — offsetTop follows that.
+  // 2) Chromium scales viewport units (dvh) by CSS zoom, so 100dvh under zoom .92 rendered
+  //    the frame 8% short (gap under the bottom nav) and under 1.1 it overflowed 10%
+  //    (bottom nav clipped). px lengths scale by zoom in every engine, so px ÷ zoom is
+  //    the one measurement that lands exactly right everywhere. Re-run on text-size change.
+  function syncFrame(){
+    const frame=document.querySelector('.frame'); if(!frame)return;
     const vv=window.visualViewport;
-    const apply=()=>{ const frame=document.querySelector('.frame'); if(!frame)return;
-      const shrink = window.innerHeight - vv.height;
-      if(shrink>60){ frame.style.height=vv.height+'px'; } else { frame.style.height=''; }
-    };
-    vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply);
+    const z=parseFloat(frame.style.zoom)||1;
+    const h=vv?vv.height:window.innerHeight, top=vv?vv.offsetTop:0;
+    frame.style.height=(h/z)+'px';
+    frame.style.top=top?(top/z)+'px':'';
+    const ae=document.activeElement; if(ae&&ae.id==='thInput'){ const s=$('thScroll'); if(s)s.scrollTop=s.scrollHeight; }
+  }
+  (function wireSyncFrame(){
+    const vv=window.visualViewport;
+    if(vv){ vv.addEventListener('resize',syncFrame); vv.addEventListener('scroll',syncFrame); }
+    else window.addEventListener('resize',syncFrame);
+    syncFrame();
   })();
   function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); }
   const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦', diamond:'◆', moon:'☾', ring:'○', cross:'✚', spark:'✧', infinity:'∞', wave:'〜' };
@@ -1371,7 +1391,7 @@
     $('tuBtn').onclick=()=>{ if(done)return; clearTimeout(toastUndo._t); finish(); onUndo(); };
   }
   function confirmDialog(msg,onYes){ const s=$('confirmScrim'); s.innerHTML=`<div class="confirm"><h3>Are you sure?</h3><p>${esc(msg)}</p><div class="row2"><button class="btn ghost" id="cfNo">No</button><button class="btn" id="cfYes">Yes</button></div></div>`; s.classList.add('on'); $('cfNo').onclick=()=>s.classList.remove('on'); $('cfYes').onclick=()=>{ s.classList.remove('on'); onYes(); }; }
-  function confirmType(msg,match,onYes){ const s=$('confirmScrim'); s.innerHTML=`<div class="confirm"><h3>Delete?</h3><p>${esc(msg)}</p><input id="ctIn" placeholder="Type “${attr(match)}” to confirm" autocomplete="off" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;padding:11px;margin-bottom:14px;outline:none"><div class="row2"><button class="btn ghost" id="ctNo">Cancel</button><button class="btn" id="ctYes" disabled style="opacity:.4">Delete</button></div></div>`; s.classList.add('on'); const inp=$('ctIn'),yes=$('ctYes'); inp.oninput=()=>{ const ok=inp.value.trim()===match; yes.disabled=!ok; yes.style.opacity=ok?'1':'.4'; }; $('ctNo').onclick=()=>s.classList.remove('on'); yes.onclick=()=>{ if(inp.value.trim()!==match)return; s.classList.remove('on'); onYes(); }; setTimeout(()=>inp.focus(),50); }
+  function confirmType(msg,match,onYes,opt){ opt=opt||{}; const s=$('confirmScrim'); s.innerHTML=`<div class="confirm"><h3>${esc(opt.title||'Delete?')}</h3><p>${esc(msg)}</p><input id="ctIn" placeholder="Type “${attr(match)}” to confirm" autocomplete="off" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:15px;padding:11px;margin-bottom:14px;outline:none"><div class="row2"><button class="btn ghost" id="ctNo">Cancel</button><button class="btn" id="ctYes" disabled style="opacity:.4">${esc(opt.yes||'Delete')}</button></div></div>`; s.classList.add('on'); const inp=$('ctIn'),yes=$('ctYes'); inp.oninput=()=>{ const ok=inp.value.trim()===match; yes.disabled=!ok; yes.style.opacity=ok?'1':'.4'; }; $('ctNo').onclick=()=>s.classList.remove('on'); yes.onclick=()=>{ if(inp.value.trim()!==match)return; s.classList.remove('on'); onYes(); }; setTimeout(()=>inp.focus(),50); }
 
   /* ═══ THE COMMONS (live via ntfy) ═══ */
   const COMMONS_TOPIC='maintrix-commons-8a3f2'; const CLIENT_ID=Math.random().toString(36).slice(2); let commonsWS=null;
@@ -1729,15 +1749,17 @@
       const top3=list.slice(0,3), rest=list.slice(3);
       const podiumOrder=[1,0,2].filter(i=>top3[i]); // 2nd, 1st, 3rd left-to-right
       const heights={0:'92px',1:'68px',2:'52px'};
+      // podium is placement-colored (gold / silver / bronze), not rank-tier-colored — the rank pill under the name still shows the tier
+      const MEDAL={0:{c:'#f5c542',hi:'#ffe28a',lo:'#b8860b'},1:{c:'#c9ced6',hi:'#f0f3f7',lo:'#8a929c'},2:{c:'#cd7f32',hi:'#e9a56a',lo:'#8c5322'}};
       let h='';
       if(top3.length){
-        h+=`<div class="podium">`+podiumOrder.map(i=>{ const p=top3[i]; if(!p)return ''; const r=debateRankFor(p.elo);
+        h+=`<div class="podium">`+podiumOrder.map(i=>{ const p=top3[i]; if(!p)return ''; const m=MEDAL[i];
           return `<div class="podium-spot podium-${i+1}" data-lbuser="${attr(p.id)}">
             ${i===0?`<div class="podium-crown">${IC.trophy}</div>`:''}
-            <div class="deb-av-ring" style="box-shadow:0 0 0 3px ${r.color},0 0 20px 3px ${r.color}88">${avatar(p.id,i===0?56:46)}</div>
+            <div class="deb-av-ring" style="box-shadow:0 0 0 3px ${m.c},0 0 20px 3px ${m.c}88">${avatar(p.id,i===0?56:46)}</div>
             <div class="podium-name">${esc(p.name)}</div>
             ${debateRankBadge(p.elo,'sm')}
-            <div class="podium-pedestal" style="height:${heights[i]};background:linear-gradient(180deg,${r.color}55,${r.color}18);border-color:${r.color}77">${i+1}</div>
+            <div class="podium-pedestal" style="height:${heights[i]};background:linear-gradient(180deg,${m.hi}66,${m.c}44 45%,${m.lo}22);border-color:${m.c}99;color:${m.hi};text-shadow:0 0 12px ${m.c}">${i+1}</div>
           </div>`; }).join('')+`</div>`;
       }
       if(rest.length){ h+=`<div class="sec-title" style="margin:16px 0 4px 0">The field</div>`+rest.map((p,i)=>{ const wl=`${p.debate_wins}W · ${p.debate_losses}L${p.debate_ties?' · '+p.debate_ties+'T':''}`;
@@ -2949,7 +2971,7 @@
       h+=`<div class="sec-title" style="margin-left:0">Overview</div><div id="admStats" class="admin-stat-grid"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
       h+=`<div class="sec-title" style="margin-left:0">Manage a member</div><div class="searchbar" style="margin:0 0 8px">${IC.search}<input id="admUserSearch" placeholder="Search by name or @handle"></div><div id="admUserResults"></div><div id="admUserPanel"></div>`;
       h+=`<div class="sec-title" style="margin-left:0">Verify a server</div><div id="admServers"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
-      h+=`<div class="sec-title" style="margin-left:0">Debates</div><div id="admDebates"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
+      h+=`<div class="sec-title" style="margin-left:0">Debates</div><button class="btn ghost block" id="admResetLb" style="margin-bottom:10px;color:var(--danger);border-color:var(--danger-line)">${IC.trophy} Reset debate leaderboard</button><div class="th-sub" style="margin-bottom:10px">Sets every member back to 1000 ELO with 0 wins, losses and ties. Finished debates stay.</div><div id="admDebates"><div class="empty" style="padding:10px 0">Loading…</div></div>`;
       h+=`<div class="sec-title" style="margin-left:0">Moderation</div><button class="btn ghost block" id="admBadge" style="margin-bottom:8px">${IC.badge} Award a badge</button><div class="th-sub" style="margin-bottom:16px">Delete any message from its long-press menu, or any post from the feed.</div>`;
       h+=`<div class="sec-title" style="margin-left:0">Maintenance banner</div><div class="settings-row" id="admMaintOn" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">${IC.lock}</span> Show maintenance banner <span class="sr-r" id="admMaintState">Off</span></div>`;
       h+=`<div class="field"><label>Title</label><input id="admMaintTitle" placeholder="Update coming soon" maxlength="60"></div>`;
@@ -2970,6 +2992,7 @@
     const ab=$('admBadge'); if(ab)ab.onclick=openAwardBadge;
     if(online()){
       loadAdminStats(); loadAdminServers(); loadAdminDebates();
+      const rl=$('admResetLb'); if(rl)rl.onclick=()=>confirmType('Every member goes back to 1000 ELO with 0 wins, 0 losses and 0 ties. Finished debates are kept. This cannot be undone.','RESET',async ()=>{ try{ const n=await db.debates.adminResetLeaderboard(); toast(`Leaderboard reset — ${n} member${n===1?'':'s'} cleared`,IC.trophy); loadAdminStats(); }catch(e){ toast(isMissingSchemaError(e)?'Run the pending database update first':'Could not reset'); } },{title:'Reset leaderboard?',yes:'Reset'});
       const search=$('admUserSearch');
       search.oninput=()=>{ clearTimeout(search._t); search._t=setTimeout(async ()=>{ const q=search.value.trim(); const box=$('admUserResults'); if(!box)return; if(!q){ box.innerHTML=''; return; } const list=await db.profiles.search(q); cacheProfiles(list); box.innerHTML=list.slice(0,6).map(p=>`<div class="row" data-admpick="${attr(p.id)}">${avatar(p.id,32,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')}</div></div></div>`).join(''); box.querySelectorAll('[data-admpick]').forEach(r=>r.onclick=()=>renderAdminUserPanel(list.find(x=>x.id===r.dataset.admpick))); },300); };
       let maintOn=false;
@@ -3032,8 +3055,6 @@
     const end=()=>{ if(!dragging)return; dragging=false; sheet.style.transition='transform .2s cubic-bezier(.2,.8,.2,1)'; const flick=vel>0.4; if(dy>55 || (flick && dy>14)){ sheet.style.transform='translateY(100%)'; setTimeout(closeSheet,180); } else sheet.style.transform=''; };
     ['pointerup','pointercancel','pointerleave'].forEach(ev=>sheet.addEventListener(ev,end,{passive:true}));
   })();
-  /* keep the app sized to the visible viewport so the keyboard never pushes the chat header off-screen */
-  (function fitViewport(){ const vv=window.visualViewport; if(!vv)return; const frame=document.querySelector('.frame'); if(!frame)return; const apply=()=>{ frame.style.height=Math.round(vv.height)+'px'; const ae=document.activeElement; if(ae&&ae.id==='thInput'){ const s=$('thScroll'); if(s)s.scrollTop=s.scrollHeight; } }; vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply); apply(); })();
   // iOS keyboard can scroll the whole page to reveal a focused input — snap it back so the app never shifts up
   window.addEventListener('scroll',()=>{ if(window.scrollX||window.scrollY)window.scrollTo(0,0); },{passive:true});
   function openSub(h){ $('subscreen').innerHTML=h; $('subscreen').classList.add('on'); }
