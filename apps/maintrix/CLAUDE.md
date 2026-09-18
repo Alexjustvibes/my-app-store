@@ -200,6 +200,48 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.17 — sign-up/onboarding visual overhaul)
+
+- **Auth + sign-in screens** (`#auth`, `#supaAuth`): added `.auth-glow` — a
+  slower, dimmer version of the app frame's aurora technique, scoped behind
+  the hero instead of the whole app. Logo mark now has a pulsing glow ring
+  (`logoPulse`). Added a three-pill feature row under the tagline (Talk /
+  Grow / Become, reusing existing IC glyphs). Email/password inputs
+  rebuilt as `.field-ic` — icon-prefixed, matching the app's real input
+  language instead of ad-hoc inline styles — plus a working show/hide
+  password toggle (`saPassToggle`, eye icon swaps `type="password"` ↔
+  `"text"`).
+- **Onboarding progress replaced entirely**: the old thin `.ob-bar` fill is
+  gone, replaced with `.ob-dots` — four numbered dots joined by connector
+  lines, each dot glowing when current, filling solid with a checkmark
+  (`IC.check`) once passed, connector lines filling left-to-right as you
+  advance. `obShow()` now drives this instead of a bar width percentage.
+  Each step's eyebrow label also got a small matching icon (people/target/
+  shield/sparkle).
+- **Trait cards (goals/fears) got real visual identity.** `.trait-opt` grew
+  an icon slot (`GOAL_ICONS`/`FEAR_ICONS` maps onto existing `IC` glyphs —
+  no new SVGs) in a rounded-square tile that goes solid gradient + glows
+  when selected, plus an explicit checkmark badge in the corner — clearer
+  than the old plain-background swap. Fear chips got the same icons inline.
+  Both play the `like` SFX on select for a bit of tactile feedback.
+- **"Continue"/"Enter Maintrix" pulses when the step is actually ready** —
+  `.ready` class (reuses the `obReadyPulse` glow keyframe pattern from
+  elsewhere) turns on once name+handle are valid on step 1, and always on
+  the final step, so the button visibly invites the tap instead of sitting
+  static the whole time.
+- **A completion beat on finishing sign-up**: `showSignupFx()` fires the
+  `rankup` SFX + a haptic buzz + three quick expanding rings
+  (`.signupfx-scrim`/`.signupfx-burst`, same ring technique as the debate
+  rank-up celebration) between "profile saved" and actually landing in the
+  app, instead of an instant, uneventful cut. Skipped entirely under
+  `body.reduce-motion` (goes straight to `enter()`).
+- Verified in-browser end to end: dots correctly show done/current/pending
+  state and connector fill as you step through all 4 pages; selecting a
+  goal/fear shows the icon-tile + glow + checkmark; the ready-pulse
+  toggles on/off correctly typing into name/handle; the password
+  show/hide toggle flips the input's type; the completion burst fires and
+  the app boots normally afterward.
+
 ## Build state (as of v0.16.1 — regression fixes: viewport jump, send-scroll, DM call button)
 
 - **Fixed a real regression from `v0.14.1`'s keyboard/text-size fix**: the
