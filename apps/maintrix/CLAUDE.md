@@ -200,6 +200,58 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.13.4 — messaging visuals, flashier rank-ups, read receipts)
+
+- **Messaging got a full visual pass.** Messages now animate in
+  (`msgIn` keyframe on `.msg`) instead of popping in instantly. Reactions
+  get a spring "burst" animation on the exact chip you just toggled
+  (`_lastReactedKey` tracked through `applyReaction`→`repaintThread`,
+  since the whole list re-renders on every reaction and the specific
+  chip has to be re-found by its `data-react` value afterward). The
+  typing indicator is now a proper chat bubble with three bouncing dots
+  (`.typing-bubble`/`.typing-dots`) instead of a plain italic line.
+  Messages containing links now render a lightweight **link preview
+  card** below the text — domain + favicon (via Google's public favicon
+  service, so no backend fetch/CORS problem, at the cost of not showing a
+  real title/description) — client-only, works offline and online alike.
+- **Read receipts for DMs are real now, not cosmetic.** New `room_reads`
+  table (migration `0018`) + `db.rooms.markRead/getRead/subscribeReads`.
+  A room's members can see everyone's read marker in it (that's the
+  point — the other person has to see yours). `hydrateOnlineRoom` marks
+  the room read on open and on every new incoming message while you're
+  looking at it; for DMs it also fetches the other person's last-read
+  timestamp and a live Realtime subscription keeps it current while
+  you're both in the room. `renderMsgs` shows a small "Seen" + avatar
+  under the most recent message *you* sent that's at or before their
+  read timestamp — same one-line-under-the-last-message convention as
+  iMessage/Discord, not a receipt on every message.
+- **Debate rank-ups got measurably flashier.** Reaching a new tier now
+  triggers a brief screen shake (`rankfx-scrim.impact`) and three
+  expanding ring pulses in the new rank's color behind the result card
+  (`.rankfx-burst`), plus a haptic buzz on supported devices
+  (`navigator.vibrate`, pattern varies by rank-up vs. plain win vs.
+  loss). Added a **progress-to-next-rank bar** (`nextRankInfo()`/
+  `nextRankBarHtml()`) — shows `X% to <NextRank>` (or "Top rank reached"
+  at Master) — both on the rank-up result screen and permanently on the
+  `debateRankCardHtml()` card (profile + Debates tab), restructured that
+  card to stack badge-row/progress-bar vertically instead of cramming
+  the bar into the same flex row as the W/L/T text.
+- **A few global polish passes**: toast messages can now carry a small
+  leading icon (`toast(msg, icon)`, backward-compatible — existing
+  icon-less calls are unaffected) and got a springier slide+scale-in.
+  Room message loading now shows an animated shimmer skeleton
+  (`skeletonMsgs()`) instead of a bare "Loading…" line. Added a reusable
+  `emptyState(icon, text)` helper (icon in a soft circle + muted text)
+  and wired it into the "be the first to speak here" empty room state.
+  Added a very subtle animated noise texture over the whole `.frame`
+  (`::after`, SVG `feTurbulence`, 5% opacity, `mix-blend-mode:overlay`,
+  `pointer-events:none` so it never intercepts taps) — respects
+  `body.reduce-motion` by hiding entirely.
+
+**Migration `0018_read_receipts.sql` has already been run directly against
+production** (verified via the SQL editor — `room_reads` exists live), so
+read receipts work immediately, no pending action.
+
 ## Build state (as of v0.13.3 — personality sections collapse by default)
 
 - **MBTI / Enneagram / Temperament on a profile are collapsed by default.**

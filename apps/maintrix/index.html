@@ -29,6 +29,8 @@
   svg { display:block; }
   ::-webkit-scrollbar { width:7px; } ::-webkit-scrollbar-thumb { background:#00000066; border-radius:8px; } ::-webkit-scrollbar-track { background:transparent; }
   .frame { position:relative; width:100%; max-width:480px; margin:0 auto; height:100vh; height:100dvh; background:var(--ground); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 0 80px #000a; }
+  .frame::after { content:''; position:absolute; inset:0; pointer-events:none; z-index:1; opacity:.05; mix-blend-mode:overlay; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  body.reduce-motion .frame::after { display:none; }
   @media (min-width:500px){ .frame { border-left:1px solid var(--line); border-right:1px solid var(--line); } }
   .hidden { display:none !important; }
   .chip { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:20px; border:1px solid var(--line); background:var(--surface); color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:all .12s; user-select:none; }
@@ -128,8 +130,16 @@
   .thread-head .th-name { font-weight:700; font-size:16px; color:var(--text-hi); } .thread-head .th-sub { font-size:11px; color:var(--muted); }
   .room-tag { margin-left:auto; text-align:right; } .room-tag .rt-main { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-hi); } .room-tag .rt-sub { font-size:10px; color:var(--dim); }
   .thread-scroll { flex:1; overflow-y:auto; padding:10px 0 8px; }
-  .msg { display:flex; gap:11px; padding:4px 14px; position:relative; }
+  .msg { display:flex; gap:11px; padding:4px 14px; position:relative; animation:msgIn .28s cubic-bezier(.2,.8,.2,1); }
+  @keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .msg:hover { background:#ffffff05; } .msg.grouped { padding-top:1px; } .msg .m-av { width:38px; flex:0 0 38px; } .msg .m-gutter { width:38px; flex:0 0 38px; } .msg .m-body { flex:1; min-width:0; }
+  .read-receipt { display:flex; align-items:center; gap:4px; margin-top:3px; justify-content:flex-end; opacity:.6; }
+  .read-receipt .av { width:14px !important; height:14px !important; } .read-receipt span { font-size:10px; color:var(--dim); font-style:italic; }
+  .link-cards { display:flex; flex-direction:column; gap:6px; margin-top:6px; max-width:320px; }
+  .link-card { display:flex; align-items:center; gap:9px; background:var(--surface-2); border:1px solid var(--line); border-radius:10px; padding:8px 10px; text-decoration:none; transition:background .15s; }
+  .link-card:hover { background:var(--hover); } .link-card .lc-fav { width:20px; height:20px; border-radius:5px; flex:0 0 20px; }
+  .link-card .lc-body { min-width:0; } .link-card .lc-domain { font-size:12.5px; font-weight:700; color:var(--text-hi); }
+  .link-card .lc-url { font-size:11px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   body.density-compact .msg { padding:1px 14px; gap:8px; } body.density-compact .msg .m-av,body.density-compact .msg .m-gutter { width:26px; flex:0 0 26px; } body.density-compact .msg .m-text { font-size:13.5px; } body.density-compact .m-head { margin-bottom:0; }
   body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
   .theme-grid { display:flex; flex-wrap:wrap; gap:10px; position:relative; }
@@ -143,8 +153,14 @@
   .reply-quote { display:flex; gap:6px; align-items:center; font-size:12px; color:var(--muted); margin-bottom:2px; padding-left:2px; border-left:2px solid var(--faint); padding-left:8px; }
   .reply-quote b { color:var(--accent-hi); font-weight:600; }
   .composer { flex:0 0 auto; padding:8px 12px calc(10px + env(safe-area-inset-bottom)); }
-  .typing-hint { flex:0 0 auto; height:0; overflow:hidden; padding:0 16px; font-size:12px; color:var(--muted); font-style:italic; transition:height .15s ease; }
-  .typing-hint.on { height:20px; }
+  .typing-hint { flex:0 0 auto; height:0; overflow:hidden; padding:0 16px; transition:height .15s ease; }
+  .typing-hint.on { height:30px; display:flex; align-items:center; }
+  .typing-bubble { display:inline-flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:5px 10px 5px 12px; }
+  .typing-bubble .typing-name { font-size:11px; color:var(--muted); font-style:italic; }
+  .typing-dots { display:inline-flex; gap:3px; align-items:center; }
+  .typing-dots i { width:5px; height:5px; border-radius:50%; background:var(--dim); display:block; animation:typingBounce 1.2s ease-in-out infinite; }
+  .typing-dots i:nth-child(2) { animation-delay:.15s; } .typing-dots i:nth-child(3) { animation-delay:.3s; }
+  @keyframes typingBounce { 0%,60%,100% { transform:translateY(0); opacity:.5; } 30% { transform:translateY(-4px); opacity:1; } }
   .icebreaker { flex:0 0 auto; display:flex; align-items:center; gap:10px; background:var(--accent-soft); color:var(--text); font-size:12.5px; padding:8px 14px; } .icebreaker b { color:var(--accent-hi); } .icebreaker button { margin-left:auto; background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; }
 
   /* ── verified badge (official servers) ── */
@@ -190,7 +206,8 @@
   @keyframes rpShine { 0%{left:-60%;} 40%{left:130%;} 100%{left:130%;} }
   .rank-pill.big { font-size:15px; padding:6px 16px 6px 13px; }
   .rank-pill.big .rp-shine { width:25%; }
-  .debate-rank-card { display:flex; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:14px; }
+  .debate-rank-card { display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:14px; }
+  .debate-rank-card .drc-top { display:flex; align-items:center; justify-content:space-between; }
   .drc-wl { font-family:var(--mono); font-size:12px; color:var(--muted); }
   .debate-intro { padding:40px 24px 24px; text-align:center; display:flex; flex-direction:column; align-items:center; }
   .debate-intro-ic { color:var(--accent-hi); margin-bottom:14px; } .debate-intro-ic svg { width:52px; height:52px; }
@@ -229,6 +246,16 @@
   .rankfx-confetti { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
   .rankfx-confetti span { position:absolute; top:-14px; width:7px; height:13px; opacity:.9; border-radius:1px; animation:rankfxFall linear forwards; }
   @keyframes rankfxFall { to { transform:translateY(420px) rotate(540deg); opacity:0; } }
+  .rankfx-scrim.impact { animation:rankfxFade .25s ease, rankfxShake .5s ease .2s; }
+  @keyframes rankfxShake { 0%,100% { transform:translate(0,0); } 20% { transform:translate(-3px,2px); } 40% { transform:translate(3px,-2px); } 60% { transform:translate(-2px,-1px); } 80% { transform:translate(2px,1px); } }
+  .rankfx-burst { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:0; }
+  .rankfx-burst span { position:absolute; width:40px; height:40px; border-radius:50%; border:2px solid; opacity:0; animation:rankfxRing 1.3s ease-out infinite; }
+  .rankfx-burst span:nth-child(2) { animation-delay:.35s; } .rankfx-burst span:nth-child(3) { animation-delay:.7s; }
+  @keyframes rankfxRing { 0% { width:40px; height:40px; opacity:.7; } 100% { width:280px; height:280px; opacity:0; } }
+  .rank-progress { margin-top:14px; } .rank-progress .rp-track { height:6px; border-radius:4px; background:var(--surface-2); overflow:hidden; }
+  .rank-progress .rp-fill { height:100%; border-radius:4px; transition:width .6s cubic-bezier(.2,.8,.2,1); }
+  .rank-progress .rp-label { font-size:10.5px; color:var(--dim); margin-top:5px; text-align:center; font-family:var(--mono); }
+  .rank-progress.maxed .rp-label { color:var(--gold); }
   .lb-rank { width:22px; flex:0 0 22px; text-align:center; font-family:var(--mono); font-weight:700; color:var(--dim); font-size:13px; }
 
   /* ── admin dashboard ── */
@@ -262,8 +289,10 @@
   .poll-bar { position:absolute; left:0; top:0; bottom:0; background:var(--accent-soft); z-index:0; transition:width .3s ease; }
   .poll-label { position:relative; z-index:1; flex:1; font-size:13.5px; color:var(--text); } .poll-pct { position:relative; z-index:1; font-size:12px; color:var(--muted); font-family:var(--mono); }
   .poll-total { font-size:11px; color:var(--dim); margin-top:2px; }
-  .react { font-size:12px; background:var(--surface-2); border:1px solid var(--line); border-radius:20px; padding:2px 9px; cursor:pointer; user-select:none; }
+  .react { font-size:12px; background:var(--surface-2); border:1px solid var(--line); border-radius:20px; padding:2px 9px; cursor:pointer; user-select:none; display:inline-block; }
   .react.on { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-hi); }
+  .react.react-burst { animation:reactBurst .42s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes reactBurst { 0% { transform:scale(1); } 45% { transform:scale(1.45); box-shadow:0 0 0 6px var(--accent-soft); } 100% { transform:scale(1); box-shadow:0 0 0 0 transparent; } }
   .emoji-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; } .emoji-grid button { font-size:24px; height:46px; border-radius:10px; } .emoji-grid button:hover { background:var(--hover); }
   .msg-menu button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:12px 14px; font-size:14px; color:var(--text); }
   .msg-menu button:hover { background:var(--hover); } .msg-menu button.danger { color:var(--danger); }
@@ -345,10 +374,19 @@
   .lswatches { display:flex; gap:10px; flex-wrap:wrap; } .lsw { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; font-size:20px; background:var(--surface); border:2px solid var(--line); cursor:pointer; transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s,background .15s; } .lsw.on { border-color:var(--accent); background:var(--accent-soft); } .lsw:active { transform:scale(.88); }
   .ow-head { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); } .ow-head .ow-title { font-family:var(--display); font-weight:700; font-size:19px; color:var(--text-hi); display:flex; align-items:center; gap:8px; } .ow-head .chip { margin-left:auto; }
 
-  .toast { position:absolute; left:50%; bottom:calc(80px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:var(--elevated); border:1px solid var(--line); color:var(--text-hi); padding:11px 18px; border-radius:12px; font-size:14px; font-weight:600; z-index:90; opacity:0; pointer-events:none; transition:all .25s; box-shadow:0 8px 30px #000a; max-width:90%; text-align:center; } .toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast { position:absolute; left:50%; bottom:calc(80px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px) scale(.96); background:var(--elevated); border:1px solid var(--line); color:var(--text-hi); padding:11px 18px; border-radius:12px; font-size:14px; font-weight:600; z-index:90; opacity:0; pointer-events:none; transition:all .3s cubic-bezier(.2,.9,.25,1.2); box-shadow:0 8px 30px #000a; max-width:90%; text-align:center; display:flex; align-items:center; gap:8px; justify-content:center; } .toast.on { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+  .toast-ic { display:inline-flex; color:var(--accent-hi); flex:0 0 auto; } .toast-ic svg { width:16px; height:16px; }
   .toast.has-action { pointer-events:auto; display:flex; align-items:center; gap:12px; }
   .toast-undo { background:none; border:none; color:var(--accent-hi); font-weight:700; font-size:14px; cursor:pointer; padding:0; }
   .empty { text-align:center; color:var(--dim); font-size:15px; padding:40px 24px; line-height:1.6; }
+  .empty-state { text-align:center; color:var(--dim); font-size:14.5px; padding:48px 28px; line-height:1.6; animation:screenIn .3s ease; }
+  .empty-state .es-ic { width:46px; height:46px; margin:0 auto 12px; border-radius:50%; background:var(--surface-2); display:grid; place-items:center; color:var(--muted); } .empty-state .es-ic svg { width:22px; height:22px; }
+  .skel-msgs { padding:6px 14px; } .skel-row { display:flex; gap:11px; padding:8px 0; }
+  .skel-av { width:38px; height:38px; border-radius:50%; flex:0 0 38px; background:var(--surface-2); }
+  .skel-lines { flex:1; display:flex; flex-direction:column; gap:7px; padding-top:4px; }
+  .skel-line { height:11px; border-radius:6px; background:var(--surface-2); }
+  .skel-av, .skel-line { background-image:linear-gradient(90deg,var(--surface-2) 0%,var(--hover) 50%,var(--surface-2) 100%); background-size:200% 100%; animation:skelShimmer 1.4s ease-in-out infinite; }
+  @keyframes skelShimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
   .confirm-scrim { position:absolute; inset:0; z-index:95; background:#000b; display:none; place-items:center; padding:24px; } .confirm-scrim.on { display:grid; }
   .confirm { background:var(--elevated); border:1px solid var(--line); border-radius:16px; padding:22px; max-width:320px; width:100%; text-align:center; } .confirm h3 { font-size:18px; color:var(--text-hi); margin-bottom:8px; } .confirm p { font-size:14px; color:var(--muted); margin-bottom:18px; line-height:1.5; } .confirm .row2 { display:flex; gap:10px; } .confirm .row2 .btn { flex:1; }
 
@@ -523,8 +561,10 @@
     {min:1800,name:'Master',color:'#ed2e44',t:7,top:true}
   ];
   function debateRankFor(elo){ let r=DEBATE_RANKS[0]; for(const x of DEBATE_RANKS){ if(elo>=x.min)r=x; } return r; }
+  function nextRankInfo(elo){ const r=debateRankFor(elo); const idx=DEBATE_RANKS.indexOf(r); const next=DEBATE_RANKS[idx+1]; if(!next) return null; const pct=Math.max(0,Math.min(100,Math.round((elo-r.min)/(next.min-r.min)*100))); return {r,next,pct}; }
   function debateRankBadge(elo,size){ const r=debateRankFor(elo); const ic=r.top?IC.trophy:IC.medal; return `<span class="rank-pill rank-t${r.t}${size==='big'?' big':''}" style="background:linear-gradient(135deg,${r.color}30,${r.color}12);color:${r.color};border-color:${r.color}66;${size==='sm'?'font-size:10px;padding:1px 6px 1px 5px':''}"><span class="rp-shine"></span><span class="rp-ic">${ic}</span> ${esc(r.name)} · ${elo}</span>`; }
-  function debateRankCardHtml(elo,sub){ const r=debateRankFor(elo); return `<div class="debate-rank-card" style="background:linear-gradient(135deg,${r.color}26,var(--surface) 60%);border-color:${r.color}55">${debateRankBadge(elo,'big')}<div class="drc-wl">${esc(sub)}</div></div>`; }
+  function nextRankBarHtml(elo){ const ni=nextRankInfo(elo); if(!ni) return `<div class="rank-progress maxed"><div class="rp-track"><div class="rp-fill" style="width:100%;background:${DEBATE_RANKS[DEBATE_RANKS.length-1].color}"></div></div><div class="rp-label">Top rank reached</div></div>`; return `<div class="rank-progress"><div class="rp-track"><div class="rp-fill" style="width:${ni.pct}%;background:${ni.next.color}"></div></div><div class="rp-label">${ni.pct}% to ${esc(ni.next.name)}</div></div>`; }
+  function debateRankCardHtml(elo,sub){ const r=debateRankFor(elo); return `<div class="debate-rank-card" style="background:linear-gradient(135deg,${r.color}26,var(--surface) 60%);border-color:${r.color}55"><div class="drc-top">${debateRankBadge(elo,'big')}<div class="drc-wl">${esc(sub)}</div></div>${nextRankBarHtml(elo)}</div>`; }
   // db.* is the swap seam for later phases; Phase 1 implements profiles/auth.
   const db = {
     auth:{
@@ -556,7 +596,10 @@
       async remove(id){ await initSB(); await sb.from('rooms').delete().eq('id', id); },
       async mutedIds(){ await initSB(); const { data } = await sb.from('room_mutes').select('room_id').eq('user_id', me().id); return (data||[]).map(r=>r.room_id); },
       async mute(roomId){ await initSB(); await sb.from('room_mutes').insert({ user_id:me().id, room_id:roomId }); },
-      async unmute(roomId){ await initSB(); await sb.from('room_mutes').delete().eq('user_id', me().id).eq('room_id', roomId); }
+      async unmute(roomId){ await initSB(); await sb.from('room_mutes').delete().eq('user_id', me().id).eq('room_id', roomId); },
+      async markRead(roomId){ await initSB(); try{ await sb.from('room_reads').upsert({ room_id:roomId, user_id:me().id, read_at:new Date().toISOString() }); }catch(e){} },
+      async getRead(roomId, userId){ await initSB(); try{ const { data } = await sb.from('room_reads').select('read_at').eq('room_id', roomId).eq('user_id', userId).maybeSingle(); return data?data.read_at:null; }catch(e){ return null; } },
+      subscribeReads(roomId, on){ if(!sb) return null; const ch=sb.channel('reads:'+roomId).on('postgres_changes',{event:'*',schema:'public',table:'room_reads',filter:'room_id=eq.'+roomId}, payload=>on(payload)).subscribe(); return ch; }
     },
     dm:{
       async getOrCreate(otherId){ await initSB(); const { data, error } = await sb.rpc('get_or_create_dm', { other:otherId }); if(error) throw error; return data; },
@@ -1116,7 +1159,7 @@
 
   function fmt(t){ return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|\s)@([a-z0-9_]+)/gi,'$1<span class="mention" data-mention="$2">@$2</span>').replace(/(^|\s)#([a-z0-9_]+)/gi,'$1<span class="mention hashtag" data-hashtag="$2">#$2</span>'); }
   function avatar(a,size,opt){ opt=opt||{}; const p=person(a),s=size||40; const dotCls=online()?(isOnlineNow(a)?'online':'offline'):(p.status||'online'); const dot=opt.dot?`<span class="dot ${dotCls}" style="width:${s*.3}px;height:${s*.3}px"></span>`:''; const live=(opt.ring&&p.live)?' live':''; const bg=p.bot?'linear-gradient(150deg,#ff4257,#c11d31)':p.color; const inner=p.avatarPath?`<img src="${attr(postMediaUrl(p.avatarPath))}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:(p.bot?'<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':`<span style="font-size:${s*.4}px">${(p.name[0]||'?').toUpperCase()}</span>`); return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`; }
-  function toast(m){ const t=$('toast'); t.className='toast'; t.textContent=m; t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
+  function toast(m,icon){ const t=$('toast'); t.className='toast'; t.innerHTML = icon?`<span class="toast-ic">${icon}</span><span>${esc(m)}</span>`:esc(m); t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
   function toastUndo(msg,onUndo,onCommit,delay){
     delay=delay||5000; const t=$('toast'); clearTimeout(toast._t); clearTimeout(toastUndo._t);
     t.className='toast has-action on'; t.innerHTML=`<span>${esc(msg)}</span><button class="toast-undo" id="tuBtn">Undo</button>`;
@@ -1146,11 +1189,30 @@
   function reactChipsHtml(mid){ const list=REACT[mid]; if(!list||!list.length)return ''; const by={}; list.forEach(r=>{ (by[r.emoji]=by[r.emoji]||[]).push(r.user_id); }); return `<div class="reacts">`+Object.keys(by).map(e=>{ const users=by[e]; const mine=me()&&users.includes(me().id); return `<span class="react ${mine?'on':''}" data-react="${attr(mid)}|${attr(e)}">${e} ${users.length}</span>`; }).join('')+`</div>`; }
   function bumpRecent(emoji){ let rec=(state.recentEmojis||[]).filter(e=>e!==emoji); rec.unshift(emoji); state.recentEmojis=rec.slice(0,6); save(); }
   function quickEmojis(){ const rec=(state.recentEmojis||[]).filter(e=>e!=='❤️'); return ['❤️', rec[0]||'🔥', rec[1]||'👍']; }
-  async function applyReaction(mid,emoji){ const r=await db.reactions.toggle(mid,emoji).catch(()=>null); if(r===null)return; const l=REACT[mid]=REACT[mid]||[]; const i=l.findIndex(x=>x.user_id===me().id&&x.emoji===emoji); if(r&&i<0)l.push({user_id:me().id,emoji}); else if(!r&&i>=0)l.splice(i,1); bumpRecent(emoji); repaintThread(); }
-  function repaintThread(){ if(!active)return; const sc=$('thScroll'); if(!sc)return; const L=state.msgs[active.key]||[]; const keep=sc.scrollTop; sc.innerHTML=renderMsgs(L,active); sc.scrollTop=keep; wireMsgMenu(sc,L,active); }
+  let _lastReactedKey=null;
+  async function applyReaction(mid,emoji){ const r=await db.reactions.toggle(mid,emoji).catch(()=>null); if(r===null)return; const l=REACT[mid]=REACT[mid]||[]; const i=l.findIndex(x=>x.user_id===me().id&&x.emoji===emoji); if(r&&i<0)l.push({user_id:me().id,emoji}); else if(!r&&i>=0)l.splice(i,1); bumpRecent(emoji); if(r)_lastReactedKey=mid+'|'+emoji; repaintThread(); }
+  function repaintThread(){ if(!active)return; const sc=$('thScroll'); if(!sc)return; const L=state.msgs[active.key]||[]; const keep=sc.scrollTop; sc.innerHTML=renderMsgs(L,active); sc.scrollTop=keep; wireMsgMenu(sc,L,active);
+    if(_lastReactedKey){ const key=_lastReactedKey; _lastReactedKey=null; try{ const chip=sc.querySelector(`[data-react="${CSS.escape(key)}"]`); if(chip){ chip.classList.add('react-burst'); setTimeout(()=>chip.classList.remove('react-burst'),420); } }catch(e){} }
+  }
   function openEmojiPicker(mid){ let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:18px;margin-bottom:12px">Pick a reaction</div><div class="emoji-grid">${EMOJI_SET.map(e=>`<button data-emoji="${attr(e)}">${e}</button>`).join('')}</div><div style="height:16px"></div></div>`; $('sheet').className='sheet'; showSheet(h); $('sheet').querySelectorAll('[data-emoji]').forEach(b=>b.onclick=()=>{ closeSheet(); applyReaction(mid,b.dataset.emoji); }); }
+  function emptyState(icon,text){ return `<div class="empty-state">${icon?`<div class="es-ic">${icon}</div>`:''}<div class="es-txt">${esc(text)}</div></div>`; }
+  function skeletonMsgs(){ return `<div class="skel-msgs">`+Array.from({length:5}).map((_,i)=>`<div class="skel-row"><div class="skel-av"></div><div class="skel-lines"><div class="skel-line" style="width:${34+((i*17)%40)}%"></div><div class="skel-line" style="width:${55+((i*23)%35)}%"></div></div></div>`).join('')+`</div>`; }
+  function extractUrls(text){ return [...new Set((text||'').match(/https?:\/\/[^\s<]+/g)||[])].slice(0,3); }
+  function linkCardsHtml(text){
+    const urls=extractUrls(text); if(!urls.length) return '';
+    return `<div class="link-cards">`+urls.map(u=>{
+      let domain=u; try{ domain=new URL(u).hostname.replace(/^www\./,''); }catch(e){}
+      const fav=`https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+      return `<a class="link-card" href="${attr(u)}" target="_blank" rel="noopener noreferrer"><img class="lc-fav" src="${attr(fav)}" alt=""><div class="lc-body"><div class="lc-domain">${esc(domain)}</div><div class="lc-url">${esc(u)}</div></div></a>`;
+    }).join('')+`</div>`;
+  }
   function renderMsgs(list,ctx){
     let h='',prev=null;
+    let lastReadMineId=null;
+    if(ctx&&ctx.dmKey&&ctx.otherReadAt&&me()){
+      const meId=me().id;
+      (list||[]).forEach(mm=>{ if(mm.a===meId&&mm.created_at&&mm.created_at<=ctx.otherReadAt) lastReadMineId=mm.id; });
+    }
     (list||[]).forEach(mm=>{
       if(ctx&&ctx.unreadFromId&&mm.id===ctx.unreadFromId){ h+=`<div class="unread-divider"><span>New</span></div>`; prev=null; }
       if(mm.pin){ h+=`<div class="pinbar" data-mid="${mm.id||''}"><span class="pin-ic">${IC.pin}</span><div><div class="pin-k">Overwatch broadcast</div><div class="pin-t">${fmt(mm.t)}</div></div></div>`; prev=null; return; }
@@ -1164,10 +1226,12 @@
       const ed = mm.edited?'<span class="m-edited">(edited)</span>':'';
       const med = mm.mediaPath?msgMediaHtml(mm):'';
       const txt = mm.t?`<div class="m-text">${fmt(mm.t)} ${ed}</div>`:(ed?`<div class="m-text">${ed}</div>`:'');
+      const links = mm.t?linkCardsHtml(mm.t):'';
       const rc = mm.id?reactChipsHtml(mm.id):'';
       const poll = mm.poll?renderPollBlock(mm.id,mm.poll):'';
-      if(grouped){ h+=`<div class="msg grouped" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${med}${poll}${rc}</div></div>`; }
-      else h+=`<div class="msg" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${med}${poll}${rc}</div></div>`;
+      const seen = (mm.id===lastReadMineId)?`<div class="read-receipt">${avatar(ctx.dmKey,14)}<span>Seen</span></div>`:'';
+      if(grouped){ h+=`<div class="msg grouped" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${links}${med}${poll}${rc}${seen}</div></div>`; }
+      else h+=`<div class="msg" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${links}${med}${poll}${rc}${seen}</div></div>`;
       prev=mm;
     });
     return h;
@@ -1224,7 +1288,7 @@
     { const idb=$('iceDismiss'); if(idb)idb.onclick=()=>{ state.dismissedIcebreakers=state.dismissedIcebreakers||[]; state.dismissedIcebreakers.push(th.key); save(); const ib=$('iceBanner'); if(ib)ib.remove(); }; }
     { const optBtn=$('thOptions'); if(optBtn) optBtn.onclick=()=>{ if(isEmbed){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); }; }
     if(isDebate) wireDebateRoom(th);
-    if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML='<div class="empty">Loading…</div>'; hydrateOnlineRoom(th); }
+    if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML=skeletonMsgs(); hydrateOnlineRoom(th); }
     else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
     if(!dmLocked && $('thInput')){
       const input=$('thInput');
@@ -1266,8 +1330,8 @@
   async function sendMedia(th, file, kindHint){ if(!online()||!th.roomId){ toast('Media isn’t available here'); return; } try{ toast('Uploading…'); const { path, kind } = await uploadMedia(file, kindHint); const m=await db.messages.send(th.roomId, '', { mediaPath:path, mediaKind:kind }); const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); } } } }catch(e){ toast('Upload failed — '+((e&&e.message)||'try again')); } }
   async function toggleRecord(th, btn){ if(mediaRec){ try{ mediaRec.stop(); }catch(e){} return; } if(!navigator.mediaDevices||!window.MediaRecorder){ toast('Recording not supported'); return; } try{ const stream=await navigator.mediaDevices.getUserMedia({audio:true}); recChunks=[]; mediaRec=new MediaRecorder(stream); mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); }; mediaRec.onstop=async ()=>{ stream.getTracks().forEach(t=>t.stop()); if(btn)btn.classList.remove('rec'); const blob=new Blob(recChunks,{type:'audio/webm'}); mediaRec=null; if(blob.size<600){ toast('Too short'); return; } await sendMedia(th, blob, 'audio'); }; mediaRec.start(); if(btn)btn.classList.add('rec'); toast('Recording… tap mic again to send'); }catch(e){ toast('Mic not available'); mediaRec=null; } }
   /* ═══ online room hydration + realtime ═══ */
-  let roomChannel=null, reactChannel=null;
-  function leaveRoom(){ if(roomChannel){ db.messages.unsubscribe(roomChannel); roomChannel=null; } if(reactChannel){ db.messages.unsubscribe(reactChannel); reactChannel=null; } if(_typingCh){ try{ sb.removeChannel(_typingCh); }catch(e){} _typingCh=null; _typingChKey=null; } if(debateCh){ try{ sb.removeChannel(debateCh); }catch(e){} debateCh=null; } }
+  let roomChannel=null, reactChannel=null, readsChannel=null;
+  function leaveRoom(){ if(roomChannel){ db.messages.unsubscribe(roomChannel); roomChannel=null; } if(reactChannel){ db.messages.unsubscribe(reactChannel); reactChannel=null; } if(readsChannel){ db.messages.unsubscribe(readsChannel); readsChannel=null; } if(_typingCh){ try{ sb.removeChannel(_typingCh); }catch(e){} _typingCh=null; _typingChKey=null; } if(debateCh){ try{ sb.removeChannel(debateCh); }catch(e){} debateCh=null; } }
   async function hydrateOnlineRoom(th){
     try{
       if(!th.roomId){
@@ -1284,8 +1348,10 @@
       await attachPolls(msgs);
       if(prevRead){ const firstNew=msgs.find(m=>m.created_at>prevRead && m.a!==me().id); if(firstNew)th.unreadFromId=firstNew.id; }
       state.lastRead=state.lastRead||{}; state.lastRead[th.key]=new Date().toISOString(); save();
+      db.rooms.markRead(th.roomId);
+      if(th.dmKey) th.otherReadAt=await db.rooms.getRead(th.roomId, th.dmKey);
       state.msgs[th.key]=msgs;
-      if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(msgs,th)||'<div class="empty">Be the first to speak here.</div>'; wireMsgMenu(s,msgs,th);
+      if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(msgs,th)||emptyState(IC.chat,'Be the first to speak here.'); wireMsgMenu(s,msgs,th);
         if(th.unreadFromId){ const div=s.querySelector('.unread-divider'); if(div){ div.scrollIntoView({block:'center'}); showJumpButton(); } else s.scrollTop=s.scrollHeight; } else s.scrollTop=s.scrollHeight; } }
       subscribeRoom(th);
     }catch(e){ if(active&&active.key===th.key){ const s=$('thScroll'); if(s)s.innerHTML='<div class="empty">Couldn’t load this room.</div>'; } }
@@ -1301,12 +1367,13 @@
     roomChannel=db.messages.subscribe(th.roomId, async payload=>{
       if(!active||active.key!==th.key) return;
       const L=state.msgs[th.key]=state.msgs[th.key]||[];
-      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } if(m.pollId)await attachPolls([m]); L.push(m); }
+      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } if(m.pollId)await attachPolls([m]); L.push(m); db.rooms.markRead(th.roomId); }
       else if(payload.eventType==='UPDATE'){ const m=L.find(x=>x.id===payload.new.id); if(m){ m.t=payload.new.body; m.edited=payload.new.edited; m.pin=payload.new.pinned; } }
       else if(payload.eventType==='DELETE'){ const i=L.findIndex(x=>x.id===(payload.old&&payload.old.id)); if(i>=0)L.splice(i,1); }
       const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; s.innerHTML=renderMsgs(L,th); if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
     });
     reactChannel=db.reactions.subscribe(null, async payload=>{ if(!active||active.key!==th.key)return; const mid=(payload.new&&payload.new.message_id)||(payload.old&&payload.old.message_id); if(!mid)return; const L=state.msgs[th.key]||[]; if(!L.some(m=>m.id===mid))return; try{ const map=await db.reactions.forMessages([mid]); REACT[mid]=map[mid]||[]; repaintThread(); }catch(e){} });
+    if(th.dmKey) readsChannel=db.rooms.subscribeReads(th.roomId, payload=>{ if(!active||active.key!==th.key)return; const row=payload.new||payload.old; if(!row||row.user_id!==th.dmKey)return; th.otherReadAt=row.read_at; repaintThread(); });
   }
   function maybeTagNotif(m){ const h=me().handle; if(h && new RegExp('@'+h+'\\b','i').test(m.t||'')){ pushNotif('tag',m.a,'tagged you'); } }
   /* @-mention autocomplete */
@@ -1344,7 +1411,8 @@
   }
   function showTypingHint(name){
     const el2=$('typingHint'); if(!el2)return;
-    el2.textContent=name+' is typing…'; el2.classList.add('on');
+    el2.innerHTML=`<div class="typing-bubble"><span class="typing-name">${esc(name)}</span><span class="typing-dots"><i></i><i></i><i></i></span></div>`;
+    el2.classList.add('on');
     clearTimeout(_typingHideT); _typingHideT=setTimeout(()=>el2.classList.remove('on'),2500);
   }
   const WALLPAPERS = [ ['None',''], ['Rose','linear-gradient(160deg,#2a1418,#150e10)'], ['Amber','linear-gradient(160deg,#2a1f10,#150e10)'], ['Ocean','linear-gradient(160deg,#10202a,#150e10)'], ['Violet','linear-gradient(160deg,#221528,#150e10)'], ['Forest','linear-gradient(160deg,#132a1c,#150e10)'] ];
@@ -1573,8 +1641,9 @@
     const resultIc = rankedUp ? IC.sparkle : (tie?IC.handshake:(won?IC.trophy:IC.fist));
     const resultColor = rankedUp ? 'var(--gold)' : (tie?'var(--muted)':(won?'var(--gold)':'var(--danger)'));
     const sub = rankedUp ? `You've reached ${esc(rankAfter.name)}` : (tie?'ELO nudged toward the midpoint':(won?'Your rank climbed':'Your rank dipped a little'));
-    const scrim=el('div','rankfx-scrim');
-    scrim.innerHTML=`<div class="rankfx-card">${confettiHtml}
+    const burstHtml = rankedUp ? `<div class="rankfx-burst"><span style="border-color:${rankAfter.color}"></span><span style="border-color:${rankAfter.color}"></span><span style="border-color:${rankAfter.color}"></span></div>` : '';
+    const scrim=el('div','rankfx-scrim'+(rankedUp?' impact':''));
+    scrim.innerHTML=`<div class="rankfx-card">${confettiHtml}${burstHtml}
       <div class="rankfx-emoji" style="color:${resultColor}">${resultIc}</div>
       <div class="rankfx-title">${esc(title)}</div>
       <div class="rankfx-sub">${sub}</div>
@@ -1583,9 +1652,11 @@
         ${debateRankBadge(after,'big')}
       </div>
       <div class="rankfx-elo ${up?'up':'down'}" id="rankfxElo">${before}</div>
+      ${nextRankBarHtml(after)}
       <button class="btn block" id="rankfxClose" style="margin-top:18px">Nice</button>
     </div>`;
     document.body.appendChild(scrim);
+    if(navigator.vibrate){ try{ navigator.vibrate(rankedUp?[35,50,35,50,90]:(won?[30]:[15])); }catch(e){} }
     const closeIt=()=>{ if(scrim.parentNode)scrim.remove(); };
     scrim.addEventListener('click',e=>{ if(e.target===scrim)closeIt(); });
     const closeBtn=scrim.querySelector('#rankfxClose'); if(closeBtn)closeBtn.onclick=closeIt;
