@@ -102,8 +102,8 @@
   .topbar { flex:0 0 auto; height:calc(54px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 16px 0; display:flex; align-items:center; gap:12px; background:var(--glass); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); z-index:5; position:relative; }
   .topbar::after { content:''; position:absolute; left:0; right:0; bottom:0; height:1px; background:linear-gradient(90deg,transparent,var(--line) 18%,color-mix(in srgb,var(--accent) 40%,transparent) 50%,var(--line) 82%,transparent); }
   .topbar .tb-title { font-family:var(--display); font-weight:700; font-size:21px; color:var(--text-hi); flex:1; min-width:0; letter-spacing:-.01em; display:flex; align-items:baseline; gap:9px; white-space:nowrap; }
-  .topbar .tb-title > span:first-child { overflow:hidden; text-overflow:ellipsis; }
-  .topbar .tb-sub { font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); flex:0 0 auto; }
+  .topbar .tb-title > span:first-child { flex:0 0 auto; }
+  .topbar .tb-sub { font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
   .tier-pill { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
   .tier-pill.main { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-hi); }
   .tb-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); transition:transform .15s cubic-bezier(.2,.8,.2,1),background .15s,color .15s; } .tb-btn:hover { background:var(--hover); color:var(--text); } .tb-btn:active { transform:scale(.85); background:var(--hover); }
@@ -387,7 +387,9 @@
   .sub-body { flex:1; overflow-y:auto; }
 
   /* profile */
-  .prof-banner { height:88px; margin:-1px -1px 0; }
+  .prof-banner { height:106px; margin:-19px -1px 0; }
+  /* the grab handle floats over the banner instead of leaving a dark strip above it */
+  .sheet-grab { position:relative; z-index:3; box-shadow:0 1px 6px #0008; }
   .prof-hero { padding:10px 20px 16px; text-align:center; } .prof-hero .p-av { margin:-38px auto 12px; border-radius:50%; } .prof-hero h2 { font-family:var(--display); font-size:26px; font-weight:700; color:var(--text-hi); } .prof-hero .p-status { font-size:14px; color:var(--text); margin-top:4px; } .prof-hero .p-since { font-family:var(--mono); font-size:11px; color:var(--dim); margin-top:4px; }
   .prof-stats { display:flex; justify-content:center; gap:30px; margin:14px 0; } .prof-stats .ps { text-align:center; } .prof-stats .ps b { font-family:var(--display); font-size:20px; color:var(--text-hi); font-weight:700; display:block; } .prof-stats .ps span { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
   .prof-bio { font-size:15px; color:var(--text); line-height:1.55; padding:0 20px 16px; text-align:center; }
@@ -529,6 +531,11 @@
   #s-thread .thread-head { background:var(--glass); }
   .composer { background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--ground) 65%,transparent) 42%); }
   .msg:hover { background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 6%,transparent),#ffffff05 40%); }
+  /* mentioned you / replied to you */
+  .msg.msg-hi { background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 16%,transparent),color-mix(in srgb,var(--gold) 5%,transparent) 55%,transparent); box-shadow:inset 3px 0 0 var(--gold); }
+  .msg.msg-hi:hover { background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 22%,transparent),color-mix(in srgb,var(--gold) 8%,transparent) 55%,transparent); }
+  .msg.msg-hi .m-text .mention { color:#1a1207; background:var(--gold); box-shadow:0 0 12px -3px var(--gold); }
+  .thread.mono-theme .msg.msg-hi { background:#1a1a1a; box-shadow:inset 3px 0 0 #fff; }
   .msg .m-text .mention { box-shadow:0 0 12px -4px var(--accent); transition:box-shadow .2s; }
   .msg .m-text .mention:hover { box-shadow:0 0 16px -3px var(--accent); }
   .reply-quote { border-left-color:var(--accent); opacity:.9; }
@@ -1476,6 +1483,15 @@
       return `<a class="link-card" href="${attr(u)}" target="_blank" rel="noopener noreferrer"><img class="lc-fav" src="${attr(fav)}" alt=""><div class="lc-body"><div class="lc-domain">${esc(domain)}</div><div class="lc-url">${esc(u)}</div></div></a>`;
     }).join('')+`</div>`;
   }
+  // a message is "for me" when it @mentions my handle/name or replies to one of mine — highlighted in the thread
+  function forMe(mm){
+    const m=me(); if(!m||!mm||mm.bot) return false;
+    const mine = mm.a===m.id || mm.a===m.name; if(mine) return false;
+    if(mm.replyTo && mm.replyTo.a && (mm.replyTo.a===m.name || mm.replyTo.a===m.handle)) return true;
+    const t=mm.t||''; if(!t) return false;
+    const names=[m.handle, m.name].filter(Boolean).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+    return names.length ? new RegExp('(^|\\s)@(' + names.join('|') + ')(?![a-z0-9_])','i').test(t) : false;
+  }
   function renderMsgs(list,ctx){
     let h='',prev=null;
     let lastReadMineId=null;
@@ -1500,8 +1516,9 @@
       const rc = mm.id?reactChipsHtml(mm.id):'';
       const poll = mm.poll?renderPollBlock(mm.id,mm.poll):'';
       const seen = (mm.id===lastReadMineId)?`<div class="read-receipt">${avatar(ctx.dmKey,14)}<span>Seen</span></div>`:'';
-      if(grouped){ h+=`<div class="msg grouped" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${links}${med}${poll}${rc}${seen}</div></div>`; }
-      else h+=`<div class="msg" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${links}${med}${poll}${rc}${seen}</div></div>`;
+      const hi = forMe(mm)?' msg-hi':'';
+      if(grouped){ h+=`<div class="msg grouped${hi}" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${links}${med}${poll}${rc}${seen}</div></div>`; }
+      else h+=`<div class="msg${hi}" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${links}${med}${poll}${rc}${seen}</div></div>`;
       prev=mm;
     });
     return h;
