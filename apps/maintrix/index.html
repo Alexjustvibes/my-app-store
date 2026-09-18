@@ -79,10 +79,11 @@
   .topbar .tb-sub { font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
   .tier-pill { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
   .tier-pill.main { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-hi); }
-  .tb-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); } .tb-btn:hover { background:var(--hover); color:var(--text); }
+  .tb-btn { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; color:var(--muted); transition:transform .15s cubic-bezier(.2,.8,.2,1),background .15s,color .15s; } .tb-btn:hover { background:var(--hover); color:var(--text); } .tb-btn:active { transform:scale(.85); background:var(--hover); }
   #view { flex:1; overflow-y:auto; overflow-x:hidden; position:relative; }
-  .screen { display:none; min-height:100%; } .screen.on { display:block; animation:fade .28s ease; }
-  #s-nexus.on { display:flex; flex-direction:column; height:100%; animation:fade .28s ease; }
+  .screen { display:none; min-height:100%; } .screen.on { display:block; animation:screenIn .32s cubic-bezier(.2,.8,.2,1); }
+  @keyframes screenIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  #s-nexus.on { display:flex; flex-direction:column; height:100%; animation:screenIn .32s cubic-bezier(.2,.8,.2,1); }
   @keyframes fade { from { opacity:0; } to { opacity:1; } }
   .maint-banner { flex:0 0 auto; background:linear-gradient(90deg,var(--gold),#f0b232); color:#1a1207; padding:10px 14px; font-size:12.5px; display:flex; align-items:center; gap:8px; }
   .maint-banner .mb-ic { flex:0 0 auto; } .maint-banner .mb-ic svg { width:16px; height:16px; }
@@ -95,7 +96,7 @@
   .pad { padding:16px; }
   .sec-title { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:22px 16px 10px; } .sec-title.first { margin-top:8px; }
   .botnav { flex:0 0 auto; display:flex; border-top:1px solid var(--line); background:var(--ground); padding-bottom:env(safe-area-inset-bottom); }
-  .botnav button { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0 7px; color:var(--dim); font-size:10px; font-weight:600; position:relative; }
+  .botnav button { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0 7px; color:var(--dim); font-size:10px; font-weight:600; position:relative; transition:transform .12s,color .15s; } .botnav button:active { transform:scale(.9); }
   .botnav button.on { color:var(--accent-hi); } .botnav button.on .ni { filter:drop-shadow(0 0 8px var(--accent)); }
   .botnav .lockdot { position:absolute; top:6px; right:calc(50% - 18px); width:6px; height:6px; border-radius:50%; background:var(--gold); }
 
@@ -122,6 +123,7 @@
   /* thread */
   .thread { display:flex; flex-direction:column; height:100%; position:relative; }
   .thread-head { flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--line); }
+  #s-nexus .thread-head { border-bottom:none; background:transparent; padding:10px 14px 0; }
   .thread-head .back { color:var(--muted); width:30px; height:32px; display:grid; place-items:center; margin-left:-6px; }
   .thread-head .th-name { font-weight:700; font-size:16px; color:var(--text-hi); } .thread-head .th-sub { font-size:11px; color:var(--muted); }
   .room-tag { margin-left:auto; text-align:right; } .room-tag .rt-main { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-hi); } .room-tag .rt-sub { font-size:10px; color:var(--dim); }
@@ -130,9 +132,10 @@
   .msg:hover { background:#ffffff05; } .msg.grouped { padding-top:1px; } .msg .m-av { width:38px; flex:0 0 38px; } .msg .m-gutter { width:38px; flex:0 0 38px; } .msg .m-body { flex:1; min-width:0; }
   body.density-compact .msg { padding:1px 14px; gap:8px; } body.density-compact .msg .m-av,body.density-compact .msg .m-gutter { width:26px; flex:0 0 26px; } body.density-compact .msg .m-text { font-size:13.5px; } body.density-compact .m-head { margin-bottom:0; }
   body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
-  .theme-grid { display:flex; flex-wrap:wrap; gap:10px; }
-  .thm-sw { width:38px; height:38px; border-radius:50%; cursor:pointer; border:3px solid transparent; box-shadow:inset 0 0 0 1px #ffffff22; }
-  .thm-sw.on { border-color:#fff; transform:scale(1.08); }
+  .theme-grid { display:flex; flex-wrap:wrap; gap:10px; position:relative; }
+  .thm-sw { width:38px; height:38px; border-radius:50%; cursor:pointer; border:3px solid transparent; box-shadow:inset 0 0 0 1px #ffffff22; transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s; }
+  .thm-sw.on { border-color:#fff; transform:scale(1.08); } .thm-sw:active { transform:scale(.9); }
+  .thm-custom { display:grid; place-items:center; color:#fff; } .thm-custom svg { width:16px; height:16px; filter:drop-shadow(0 0 2px #000); }
   .msg .m-head { display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; } .msg .m-author { font-size:15px; font-weight:700; } .msg .m-time { font-size:11px; color:var(--dim); }
   .msg .m-trait { font-family:var(--mono); font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--accent-hi); background:var(--accent-soft); padding:1px 5px; border-radius:4px; }
   .msg .m-text { font-size:15px; line-height:1.4; color:var(--text); word-wrap:break-word; } .msg .m-text code { font-family:var(--mono); font-size:13px; background:#0006; padding:1px 5px; border-radius:5px; } .msg .m-text .mention { color:var(--accent-hi); background:var(--accent-soft); border-radius:3px; padding:0 3px; font-weight:600; }
@@ -329,12 +332,13 @@
   .trait-group { padding:4px 16px 10px; } .trait-group .tg-k { font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; display:flex; align-items:center; gap:6px; } .trait-group .muted-note { text-align:left; color:var(--dim); font-size:14px; }
   .tg-edit { margin-left:auto; color:var(--dim); width:22px; height:22px; display:grid; place-items:center; border-radius:6px; } .tg-edit:active { background:var(--hover); } .tg-edit svg { width:14px; height:14px; }
   .settings-row { display:flex; align-items:center; gap:13px; padding:15px 18px; border-top:1px solid var(--line); cursor:pointer; font-size:15px; color:var(--text); } .settings-row:hover { background:var(--hover); } .settings-row .sr-ic { color:var(--muted); } .settings-row .sr-r { margin-left:auto; color:var(--dim); font-size:13px; } .settings-row.danger { color:var(--danger); }
-  .swatches { display:flex; gap:12px; flex-wrap:wrap; } .sw { width:40px; height:40px; border-radius:50%; cursor:pointer; border:3px solid transparent; } .sw.on { border-color:#fff; transform:scale(1.1); }
+  .swatches { display:flex; gap:12px; flex-wrap:wrap; position:relative; } .sw { width:40px; height:40px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s; } .sw.on { border-color:#fff; transform:scale(1.1); } .sw:active { transform:scale(.9); }
+  .banner-sw { width:56px; height:36px; border-radius:8px; cursor:pointer; border:2px solid var(--line); transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s; } .banner-sw.on { border-color:#fff; transform:scale(1.05); } .banner-sw:active { transform:scale(.92); }
   .sw.ic-sw { background:var(--surface-2); color:var(--muted); display:grid; place-items:center; border-color:var(--line); } .sw.ic-sw.on { color:var(--accent-hi); border-color:var(--accent); transform:scale(1.08); }
   .badge-chip { display:inline-flex; align-items:center; gap:5px; }
   .wallpaper-grid { display:flex; flex-wrap:wrap; gap:10px; } .wp-sw { width:64px; height:44px; border-radius:10px; cursor:pointer; border:2px solid transparent; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--muted); } .wp-sw.on { border-color:var(--accent); }
   .tb-btn.muted-on { color:var(--accent-hi); }
-  .lswatches { display:flex; gap:10px; } .lsw { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; font-size:20px; background:var(--surface); border:2px solid var(--line); cursor:pointer; } .lsw.on { border-color:var(--accent); background:var(--accent-soft); }
+  .lswatches { display:flex; gap:10px; flex-wrap:wrap; } .lsw { width:44px; height:44px; border-radius:12px; display:grid; place-items:center; font-size:20px; background:var(--surface); border:2px solid var(--line); cursor:pointer; transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s,background .15s; } .lsw.on { border-color:var(--accent); background:var(--accent-soft); } .lsw:active { transform:scale(.88); }
   .ow-head { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); } .ow-head .ow-title { font-family:var(--display); font-weight:700; font-size:19px; color:var(--text-hi); display:flex; align-items:center; gap:8px; } .ow-head .chip { margin-left:auto; }
 
   .toast { position:absolute; left:50%; bottom:calc(80px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(20px); background:var(--elevated); border:1px solid var(--line); color:var(--text-hi); padding:11px 18px; border-radius:12px; font-size:14px; font-weight:600; z-index:90; opacity:0; pointer-events:none; transition:all .25s; box-shadow:0 8px 30px #000a; max-width:90%; text-align:center; } .toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
@@ -504,7 +508,7 @@
   const online = () => !!(SUPA.url && SUPA.anonKey);
   let sb = null;
   async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
-  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
+  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, bannerStyle:r.banner_style||'diagonal', dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
   const DEBATE_RANKS = [
     {min:0,name:'Novice',color:'#8a8a8a',t:1},
     {min:1000,name:'Contender',color:'#4a9eff',t:2},
@@ -905,17 +909,26 @@
   };
   const PERSONALITY_DB_COLS = { mbti:'mbti', enneagramCore:'enneagram_core', enneagramWing:'enneagram_wing', enneagramTritype:'enneagram_tritype', temperamentDominant:'temperament_dominant', temperamentSecondary:'temperament_secondary' };
 
-  const SWATCH = ['#ed2e44','#f0663b','#f0b232','#3ba55d','#4a9eff','#a855f7','#eb459e'];
+  const SWATCH = ['#ed2e44','#f0663b','#f0b232','#eab308','#84cc16','#3ba55d','#14b8a6','#0ea5e9','#4a9eff','#6366f1','#a855f7','#d946ef','#eb459e','#f43f5e','#8a8a8a','#ffffff'];
   /* ── app-wide themes (personal — recolors the whole app for you only) ── */
   const APP_THEMES = {
     crimson:{name:'Crimson',accent:'#ed2e44',hi:'#ff4257',press:'#c11d31'},
-    azure:{name:'Azure',accent:'#3b82f6',hi:'#60a5fa',press:'#2563eb'},
-    violet:{name:'Violet',accent:'#a855f7',hi:'#c084fc',press:'#9333ea'},
-    emerald:{name:'Emerald',accent:'#22c55e',hi:'#4ade80',press:'#16a34a'},
+    coral:{name:'Coral',accent:'#fb7185',hi:'#fda4af',press:'#e11d48'},
     amber:{name:'Amber',accent:'#f59e0b',hi:'#fbbf24',press:'#d97706'},
+    gold:{name:'Gold',accent:'#eab308',hi:'#fde047',press:'#ca8a04'},
+    lime:{name:'Lime',accent:'#84cc16',hi:'#a3e635',press:'#65a30d'},
+    emerald:{name:'Emerald',accent:'#22c55e',hi:'#4ade80',press:'#16a34a'},
+    teal:{name:'Teal',accent:'#14b8a6',hi:'#2dd4bf',press:'#0d9488'},
+    ocean:{name:'Ocean',accent:'#0ea5e9',hi:'#38bdf8',press:'#0284c7'},
+    azure:{name:'Azure',accent:'#3b82f6',hi:'#60a5fa',press:'#2563eb'},
+    indigo:{name:'Indigo',accent:'#6366f1',hi:'#818cf8',press:'#4f46e5'},
+    violet:{name:'Violet',accent:'#a855f7',hi:'#c084fc',press:'#9333ea'},
+    fuchsia:{name:'Fuchsia',accent:'#d946ef',hi:'#e879f9',press:'#c026d3'},
     rose:{name:'Rose',accent:'#f43f5e',hi:'#fb7185',press:'#e11d48'},
     graphite:{name:'Graphite',accent:'#6b7280',hi:'#9ca3af',press:'#4b5563',neutralSatMul:0}
   };
+  function synthTheme(hex){ const [h,s,l]=hexToHsl(hex); return { name:'Custom', accent:hex, hi:hslToHex(h,Math.min(1,s*1.05),Math.min(0.74,l+0.14)), press:hslToHex(h,s,Math.max(0.14,l-0.14)) }; }
+  function currentThemeObj(){ return (state.appTheme==='custom' && state.customThemeColor) ? synthTheme(state.customThemeColor) : (APP_THEMES[state.appTheme]||APP_THEMES.crimson); }
   function hexToHsl(hex){
     hex=hex.replace('#','');
     const r=parseInt(hex.slice(0,2),16)/255, g=parseInt(hex.slice(2,4),16)/255, b=parseInt(hex.slice(4,6),16)/255;
@@ -938,7 +951,7 @@
   }
   const BASE_NEUTRALS = { ground:'#150e10', surface:'#201417', 'surface-2':'#2a191d', elevated:'#332025', line:'#3a2429', hover:'#2b1a1f', muted:'#b7969c', dim:'#86636b', faint:'#5a3d44' };
   function applyAppTheme(){
-    const t=APP_THEMES[state.appTheme]||APP_THEMES.crimson; const r=document.documentElement.style;
+    const t=currentThemeObj(); const r=document.documentElement.style;
     r.setProperty('--accent',t.accent); r.setProperty('--accent-hi',t.hi); r.setProperty('--accent-press',t.press); r.setProperty('--accent-soft',t.accent+'26'); r.setProperty('--accent-deep',t.press);
     const [hue]=hexToHsl(t.accent);
     const satMul = t.neutralSatMul==null?1:t.neutralSatMul;
@@ -964,7 +977,8 @@
     vv.addEventListener('resize',apply); vv.addEventListener('scroll',apply);
   })();
   function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); }
-  const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦' };
+  const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦', diamond:'◆', moon:'☾', ring:'○', cross:'✚', spark:'✧', infinity:'∞', wave:'〜' };
+  const BANNER_STYLES = { diagonal:(c)=>`linear-gradient(140deg,${c}40,transparent)`, radial:(c)=>`radial-gradient(ellipse at 30% 20%,${c}55,transparent 70%)`, vertical:(c)=>`linear-gradient(180deg,${c}45,transparent)`, sunburst:(c)=>`conic-gradient(from 180deg at 50% 0%,${c}55,transparent 40%,transparent 60%,${c}55)` };
   const RANKS = ['Initiate','Operator','Architect','Owner'];
   const TOPIC_CATS = ['Philosophy','Psychology','Entrepreneurship','Fitness','Creativity','Technology','Spirituality','Finance'];
   const SERVER_CATS = ['Psychology','Philosophy','Spirituality','Other'];
@@ -1174,9 +1188,11 @@
     else h+=`<div style="min-width:0;flex:1"><div class="th-name">${esc(th.title)}${th.official?verifiedBadge():''} ${isCommons?'<span class="label-foreign" style="color:#fff;background:var(--live)">LIVE</span>':''}</div>${th.sub?`<div class="th-sub">${esc(th.sub)}</div>`:''}</div>`;
     if(!isEmbed) h+=tag;
     const isMuted=(state.mutedRooms||[]).includes(th.key);
-    const optIcon = th.serverId?IC.gear:(isEmbed?IC.phone:IC.bell);
-    const optTitle = th.serverId?'Room settings':(isEmbed?'Voice call':(isMuted?'Unmute':'Mute'));
-    h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isEmbed)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
+    if(!isDebate){
+      const optIcon = th.serverId?IC.gear:(isEmbed?IC.phone:IC.bell);
+      const optTitle = th.serverId?'Room settings':(isEmbed?'Voice call':(isMuted?'Unmute':'Mute'));
+      h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isEmbed)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
+    }
     if(isEmbed)h+=`<button class="tb-btn" id="thDebates" title="Debates" style="margin-left:6px">${IC.debates}</button>`;
     h+=`</div>`;
     if(isDebate) h+=renderDebateHead(th.debate);
@@ -1202,7 +1218,7 @@
     { const backBtn=$('thBack'); if(backBtn) backBtn.onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); }; }
     { const debBtn=$('thDebates'); if(debBtn) debBtn.onclick=()=>{ state.screen='debates'; save(); render(); }; }
     { const idb=$('iceDismiss'); if(idb)idb.onclick=()=>{ state.dismissedIcebreakers=state.dismissedIcebreakers||[]; state.dismissedIcebreakers.push(th.key); save(); const ib=$('iceBanner'); if(ib)ib.remove(); }; }
-    $('thOptions').onclick=()=>{ if(isEmbed){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); };
+    { const optBtn=$('thOptions'); if(optBtn) optBtn.onclick=()=>{ if(isEmbed){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); }; }
     if(isDebate) wireDebateRoom(th);
     if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML='<div class="empty">Loading…</div>'; hydrateOnlineRoom(th); }
     else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
@@ -2071,7 +2087,7 @@
     const sinceStr=(online()||own)?(u.since||'—'):sinceOf(key);
     const glyph=LIKE_ICONS[(u.likeIcon)||'heart']||'♥'; const ac=u.color||'#ed2e44';
     let h=`<div class="sheet-grab"></div><div style="--accent:${ac};--accent-hi:${ac};--accent-soft:${ac}26;--accent-press:${ac}">`;
-    const bannerStyle=u.bannerPath?`background:#000 url('${attr(postMediaUrl(u.bannerPath)||'')}') center/cover`:`background:linear-gradient(140deg,${ac}40,transparent)`;
+    const bannerStyle=u.bannerPath?`background:#000 url('${attr(postMediaUrl(u.bannerPath)||'')}') center/cover`:`background:${(BANNER_STYLES[u.bannerStyle]||BANNER_STYLES.diagonal)(ac)}`;
     h+=`<div class="prof-banner" style="${bannerStyle}"></div>`;
     h+=`<div class="prof-hero"><div class="p-av">${avatar(key,84,{dot:true,ring:true})}</div><h2>${esc(u.name)}</h2>${u.statusLine?`<div class="p-status">${esc(u.statusLine)}</div>`:''}<div class="p-since">${esc(locStr(u))} · member since ${sinceStr}</div></div>`;
     h+=`<div class="prof-stats"><div class="ps"><b id="likeStat">${online()?'…':likesOf(key).toLocaleString()}</b><span>${glyph} likes</span></div></div>`;
@@ -2484,20 +2500,25 @@
   function openThemeSettings(){
     const draw=()=>{
       const curTheme=state.appTheme||'crimson', curSize=state.textSize||'medium';
+      const curName = curTheme==='custom' ? 'Custom' : (APP_THEMES[curTheme]||APP_THEMES.crimson).name;
+      const customBg = state.customThemeColor || 'conic-gradient(from 0deg,#ed2e44,#f0b232,#3ba55d,#0ea5e9,#a855f7,#ed2e44)';
       let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:14px">Theme & display</div>`;
-      h+=`<div class="field"><label>App theme</label><div class="theme-grid" id="thmGrid">`+Object.keys(APP_THEMES).map(k=>`<div class="thm-sw ${curTheme===k?'on':''}" data-thm="${k}" style="background:${APP_THEMES[k].accent}" title="${esc(APP_THEMES[k].name)}"></div>`).join('')+`</div><div class="th-sub" style="margin-top:8px">${esc(APP_THEMES[curTheme].name)} — recolors Maintrix for you only, nobody else sees it.</div></div>`;
+      h+=`<div class="field"><label>App theme</label><div class="theme-grid" id="thmGrid">`+Object.keys(APP_THEMES).map(k=>`<div class="thm-sw ${curTheme===k?'on':''}" data-thm="${k}" style="background:${APP_THEMES[k].accent}" title="${esc(APP_THEMES[k].name)}"></div>`).join('')+`<div class="thm-sw thm-custom ${curTheme==='custom'?'on':''}" id="thmCustomSw" style="background:${customBg}" title="Custom color">${IC.palette}</div><input type="color" id="thmCustomInput" value="${state.customThemeColor||'#ed2e44'}" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"></div><div class="th-sub" style="margin-top:8px">${esc(curName)} — recolors Maintrix for you only, nobody else sees it.</div></div>`;
       h+=`<div class="field"><label>Text size</label><div class="segmented" style="margin:0" id="thmSize"><button data-v="small" class="${curSize==='small'?'on':''}">Small</button><button data-v="medium" class="${curSize==='medium'?'on':''}">Medium</button><button data-v="large" class="${curSize==='large'?'on':''}">Large</button></div></div>`;
       h+=`<div class="settings-row" id="thmMotion" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">${IC.motion}</span> Reduce motion <span class="sr-r">${state.reduceMotion?'On':'Off'}</span></div>`;
       h+=`<div style="height:16px"></div></div>`;
       $('sheet').className='sheet'; showSheet(h);
       $('thmGrid').querySelectorAll('[data-thm]').forEach(sw=>sw.onclick=()=>{ state.appTheme=sw.dataset.thm; save(); applyAppTheme(); draw(); });
+      $('thmCustomSw').onclick=()=>$('thmCustomInput').click();
+      $('thmCustomInput').oninput=e=>{ state.customThemeColor=e.target.value; state.appTheme='custom'; save(); applyAppTheme(); };
+      $('thmCustomInput').onchange=()=>draw();
       $('thmSize').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ state.textSize=b.dataset.v; save(); applyTextSize(); draw(); });
       $('thmMotion').onclick=()=>{ state.reduceMotion=!state.reduceMotion; save(); applyReduceMotion(); draw(); };
     };
     draw();
   }
   function openAppearance(){
-    const u=me(); const sel={color:u.color,like:u.likeIcon||'heart',density:state.density||'comfortable'}; let picFile=null, bannerFile=null;
+    const u=me(); const sel={color:u.color,like:u.likeIcon||'heart',density:state.density||'comfortable',bannerStyle:u.bannerStyle||'diagonal'}; let picFile=null, bannerFile=null;
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:14px">Appearance</div>`;
     if(online()){
       h+=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><div id="apPicPrev" style="cursor:pointer">${avatar(u.name,64)}</div><div><div style="font-weight:600">Profile picture</div><div style="font-size:13px;color:var(--muted)">Tap to change</div></div><input id="apPic" type="file" accept="image/*" style="display:none"></div>`;
@@ -2505,23 +2526,28 @@
       h+=`<div class="field"><label>Profile banner</label><div id="apBannerPrev" style="height:74px;border-radius:12px;${bannerBg};display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:13px">${u.bannerPath?'':'Tap to add a banner'}</div><input id="apBanner" type="file" accept="image/*" style="display:none"></div>`;
     }
     h+=`<div class="field"><label>Status — shows next to your name (optional)</label><input id="apStatus" maxlength="60" placeholder="what you're up to right now" value="${attr(u.statusLine||'')}"></div>`;
-    h+=`<div class="field"><label>Your color</label><div class="swatches" id="apColor">${SWATCH.map(c=>`<div class="sw ${c===u.color?'on':''}" data-c="${c}" style="background:${c}"></div>`).join('')}</div></div>`;
+    h+=`<div class="field"><label>Your color</label><div class="swatches" id="apColor">${SWATCH.map(c=>`<div class="sw ${c===u.color?'on':''}" data-c="${c}" style="background:${c}"></div>`).join('')}<div class="sw thm-custom${SWATCH.includes(u.color)?'':' on'}" id="apCustomSw" style="background:${SWATCH.includes(u.color)?'conic-gradient(from 0deg,#ed2e44,#f0b232,#3ba55d,#0ea5e9,#a855f7,#ed2e44)':u.color}">${IC.palette}</div><input type="color" id="apCustomInput" value="${/^#[0-9a-f]{6}$/i.test(u.color)?u.color:'#ed2e44'}" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"></div></div>`;
     h+=`<div class="field"><label>How your likes show</label><div class="lswatches" id="apLike">${Object.keys(LIKE_ICONS).map(k=>`<div class="lsw ${k===sel.like?'on':''}" data-l="${k}">${LIKE_ICONS[k]}</div>`).join('')}</div></div>`;
+    h+=`<div class="field"><label>Profile banner style</label><div class="swatches" id="apBannerStyle">${Object.keys(BANNER_STYLES).map(k=>`<div class="banner-sw ${sel.bannerStyle===k?'on':''}" data-bs="${k}" style="background:${BANNER_STYLES[k](sel.color)},var(--surface-2)" title="${k}"></div>`).join('')}</div></div>`;
     h+=`<div class="field"><label>Message density</label><div class="segmented" style="margin:0"><button id="apDenComf" class="${sel.density==='comfortable'?'on':''}">Comfortable</button><button id="apDenComp" class="${sel.density==='compact'?'on':''}">Compact</button></div></div>`;
     h+=`<button class="btn block" id="apSave">Save</button><div style="height:16px"></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
     const pp=$('apPicPrev'); if(pp){ pp.onclick=()=>$('apPic').click(); $('apPic').onchange=()=>{ picFile=$('apPic').files[0]; if(picFile){ const url=URL.createObjectURL(picFile); pp.innerHTML=`<div class="av" style="width:64px;height:64px"><img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`; } }; }
     const bp=$('apBannerPrev'); if(bp){ bp.onclick=()=>$('apBanner').click(); $('apBanner').onchange=()=>{ bannerFile=$('apBanner').files[0]; if(bannerFile){ const url=URL.createObjectURL(bannerFile); bp.style.background=`#000 url('${url}') center/cover`; bp.textContent=''; } }; }
-    $('apColor').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ sel.color=b.dataset.c; $('apColor').querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.c===sel.color)); });
+    const syncColorUI=()=>{ $('apColor').querySelectorAll('.sw[data-c]').forEach(x=>x.classList.toggle('on',x.dataset.c===sel.color)); $('apCustomSw').classList.toggle('on',!SWATCH.includes(sel.color)); $('apBannerStyle').querySelectorAll('.banner-sw').forEach(x=>x.style.background=BANNER_STYLES[x.dataset.bs](sel.color)+',var(--surface-2)'); };
+    $('apColor').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ sel.color=b.dataset.c; syncColorUI(); });
+    $('apCustomSw').onclick=()=>$('apCustomInput').click();
+    $('apCustomInput').oninput=e=>{ sel.color=e.target.value; $('apCustomSw').style.background=sel.color; syncColorUI(); };
     $('apLike').querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{ sel.like=b.dataset.l; $('apLike').querySelectorAll('.lsw').forEach(x=>x.classList.toggle('on',x.dataset.l===sel.like)); });
+    $('apBannerStyle').querySelectorAll('[data-bs]').forEach(b=>b.onclick=()=>{ sel.bannerStyle=b.dataset.bs; $('apBannerStyle').querySelectorAll('.banner-sw').forEach(x=>x.classList.toggle('on',x.dataset.bs===sel.bannerStyle)); });
     $('apDenComf').onclick=()=>{ sel.density='comfortable'; $('apDenComf').classList.add('on'); $('apDenComp').classList.remove('on'); };
     $('apDenComp').onclick=()=>{ sel.density='compact'; $('apDenComp').classList.add('on'); $('apDenComf').classList.remove('on'); };
-    $('apSave').onclick=async ()=>{ const b=$('apSave'); b.disabled=true; b.textContent='Saving…'; u.color=sel.color; u.likeIcon=sel.like; u.statusLine=$('apStatus').value.trim().slice(0,60); state.density=sel.density; applyDensity();
+    $('apSave').onclick=async ()=>{ const b=$('apSave'); b.disabled=true; b.textContent='Saving…'; u.color=sel.color; u.likeIcon=sel.like; u.statusLine=$('apStatus').value.trim().slice(0,60); u.bannerStyle=sel.bannerStyle; state.density=sel.density; applyDensity();
       if(online()){
         try{ const core={ color:sel.color, like_icon:sel.like }; if(picFile){ const up=await uploadMedia(picFile,'image'); core.avatar_path=up.path; u.avatarPath=up.path; } await db.profiles.update(core); cacheProfile(me()); }
         catch(e){ toast('Could not save picture'); }
-        // status_line / banner_path are newer columns — save separately so a not-yet-migrated DB can't block the save above
-        try{ const extra={ status_line:u.statusLine }; if(bannerFile){ const up2=await uploadMedia(bannerFile,'image'); extra.banner_path=up2.path; u.bannerPath=up2.path; } await db.profiles.update(extra); }
+        // status_line / banner_path / banner_style are newer columns — save separately so a not-yet-migrated DB can't block the save above
+        try{ const extra={ status_line:u.statusLine, banner_style:sel.bannerStyle }; if(bannerFile){ const up2=await uploadMedia(bannerFile,'image'); extra.banner_path=up2.path; u.bannerPath=up2.path; } await db.profiles.update(extra); }
         catch(e){}
       }
       save(); toast('Appearance saved'); closeSheet(); render(); };

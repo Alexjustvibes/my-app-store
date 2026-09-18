@@ -200,6 +200,45 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.13.2 — loads more appearance options, UI cleanup, animation polish)
+
+- **Appearance is dramatically bigger now.** `SWATCH` (profile color) went
+  from 7 to 16 preset colors; `APP_THEMES` from 7 to 14. Both also got a
+  **custom color swatch** — a native `<input type="color">` behind a
+  palette-icon tile — so color choice is effectively unlimited, not just
+  presets. `synthTheme(hex)`/`currentThemeObj()` synthesize a full theme
+  (accent/hi/press) from any single custom hex via the existing HSL
+  round-trip, so a custom app theme still gets the same hue-rotated
+  neutral-palette treatment as the presets. `LIKE_ICONS` grew from 5 to 12
+  glyphs. New **profile banner style** picker (diagonal/radial/vertical/
+  sunburst gradients built from your own color) — this had to become a real
+  `profiles.banner_style` column (migration `0017`, still pending — decoupled/
+  best-effort like `status_line`, so it degrades gracefully either way)
+  rather than local client state, since it's about how *your* profile looks
+  to *other* people, not a personal view preference like wallpapers/text
+  size are.
+- **Nexus header decluttered further**: the embedded room's `.thread-head`
+  no longer has a visible border/background bar — the phone + debates icons
+  now float directly over the top of the room instead of sitting in a
+  boxed strip (`#s-nexus .thread-head { border-bottom:none; background:
+  transparent; }`).
+- **Room Options removed from debate threads.** Mute/wallpaper/events/voice
+  never made sense for a 1-on-1 debate exchange — `renderThread()` now skips
+  rendering `#thOptions` entirely when `isDebate`, rather than showing a
+  generic room-options sheet that didn't fit the content.
+- **Animation polish pass**: `.tb-btn` (every icon button — gear, phone,
+  debates, bell, search, notif, profile, etc.) had *zero* tap feedback
+  before this — added a proper `:active` scale + background transition,
+  which matters a lot more than it sounds on a touch-first app. Same for
+  bottom-nav buttons. Color/theme/like/banner swatches got a springy
+  `cubic-bezier(.34,1.56,.64,1)` scale transition on select instead of
+  snapping instantly. Screen/tab transitions upgraded from a flat fade to a
+  fade+rise (`screenIn` keyframe, replaces the old bare `fade` one).
+- **Fixed**: the custom-color swatch in Appearance didn't show as selected
+  on reopening if the user's color was already a custom (non-preset) value
+  — cosmetic only (the color itself was always saved/applied correctly),
+  but the selection ring gave the wrong impression that nothing was chosen.
+
 ## Build state (as of v0.13.1 — flashy debate ranks, DM-request fix, admin auto-grant)
 
 - **Debate ranks are dramatically flashier now.** `DEBATE_RANKS` entries got
