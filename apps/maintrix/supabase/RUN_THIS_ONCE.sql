@@ -1,8 +1,9 @@
 -- Maintrix — ONE-TIME CATCH-UP SCRIPT
 -- ═══════════════════════════════════════════════════════════════
--- Migrations 0009 through 0016, concatenated in order. 0009-0016 have
--- all already been run against production as of this writing — this
--- file is idempotent, so running it again is always safe.
+-- Migrations 0009 through 0017, concatenated in order. 0009-0016 have
+-- already been run against production as of this writing; 0017 (banner
+-- style) is still pending. This file is idempotent, so running the
+-- whole thing again is always safe.
 -- ═══════════════════════════════════════════════════════════════
 
 -- ═══════════════════════════════════════════════════════════════
@@ -912,5 +913,20 @@ $$;
 -- catch anyone who already exists under those handles too (idempotent no-op
 -- today, since production has no signups yet)
 update public.profiles set is_admin = true where handle in ('ret','5');
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- migrations/0017_banner_style.sql
+-- ═══════════════════════════════════════════════════════════════
+-- Maintrix backend — 0017: profile banner style
+-- Run after 0016. Backs the new "Profile banner style" picker in Appearance
+-- (diagonal/radial/vertical/sunburst gradient treatments built from the
+-- user's own color) — needs to be a real column, not local client state,
+-- since it's about how a profile looks to OTHER people viewing it.
+
+alter table public.profiles add column if not exists banner_style text;
+alter table public.profiles drop constraint if exists profiles_banner_style_valid;
+alter table public.profiles add constraint profiles_banner_style_valid
+  check (banner_style is null or banner_style in ('diagonal','radial','vertical','sunburst'));
 
 
