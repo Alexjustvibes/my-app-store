@@ -200,6 +200,64 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.16 — right-click/long-press moderation, admin panel overhaul)
+
+- **Admins can right-click (desktop) or long-press (touch) any avatar/name
+  anywhere in the app** — messages, search results, profiles, mini-profiles,
+  DM headers, anywhere carrying `data-user` — to get a moderation menu
+  directly, no detour through Overwatch → Tools required (`showAdminUserMenu`,
+  wired once in `wireAdminUserMenu` on `.frame`). Right-clicking/long-pressing
+  a message's *body* instead of its avatar still opens the normal
+  reply/edit/delete menu, which now carries a "Moderate <name>…" entry for
+  admins that opens the same menu — so both entry points exist, as asked
+  ("even though it should be there too" → Overwatch Tools also got every
+  action, in a fuller "Manage a member" panel).
+- **Bug caught while wiring this**: the menu's own guard against moderating
+  yourself was `p.id===me().id||p.name===me().name` — offline demo profiles
+  have no `.id` field at all, so `undefined===undefined` was `true` and the
+  menu silently refused to open for *anyone* in local/demo mode. Fixed to
+  compare the lookup key itself (name offline, uuid online) against both of
+  `me()`'s identifiers. Caught by testing offline before shipping, not by a
+  report.
+- **New moderation powers** (migration `0021`, already run on production):
+  - **Timed mute** (1h/24h/7d, or Unmute) — `profiles.muted_until`,
+    enforced in `msg_insert`'s RLS policy via `is_muted()` alongside the
+    existing ban check. Can still read, can't post until it passes.
+  - **Remove a badge** — badge deletion already had an RLS policy
+    (`badges_delete`, admin-only, from `0007`) but no UI; added
+    `openRemoveBadge()` (a dedicated sheet, tap a badge to remove it) and an
+    inline "✕" on each badge chip in the Overwatch member panel.
+  - **Rename**, **clear bio & status**, **reset avatar & banner** —
+    `admin_edit_profile(target, patch jsonb)`, a single RPC that only ever
+    touches `name`/`bio`/`status_line`/`avatar_path`/`banner_path` — never
+    handle/goals/fears/tier/admin/banned, which all keep their own
+    dedicated, narrower RPCs.
+  - **Delete all of a member's messages** — `admin_delete_user_messages`,
+    gated behind `confirmType()`'s type-to-confirm ("DELETE"), returns the
+    row count so the toast can say how many were removed.
+  - **Reset one member's ELO** — `admin_reset_user_elo` (the single-user
+    sibling of `0019`'s leaderboard-wide reset).
+  - **Kick from a server** — `admin_kick(target, room)`, refuses to kick
+    the room's owner.
+- **Overwatch → Tools → Manage a member panel rewritten** to expose all of
+  the above (previously just admin/tier/ban toggles): grouped into Access /
+  Mute / Profile / Badges / Danger, each member's badges listed live with a
+  tap-to-remove "✕", header line shows ELO and remaining mute time.
+- Every action funnels through one `run(fn, successMessage)` helper (both
+  in the context menu and the Tools panel) — plays the success/error chime,
+  toasts, and re-renders from a fresh `db.profiles.byId()` fetch so the
+  panel never shows stale state after an action.
+- **Verified in-browser** (offline, since these are admin-privileged RPCs
+  with no local/demo equivalent to hit against a real DB): right-click on
+  an avatar opens the menu with the correct self-check now passing; the
+  message-menu's "Moderate…" entry chains into the same menu; the Tools
+  panel renders all 10-12 action chips correctly for muted/unmuted and
+  admin/banned member states; rename/wipe dialogs show correct copy;
+  Award/Remove badge sheets render and prefill the target. **Not
+  verified**: an actual live RPC round-trip (needs a second real admin
+  account to moderate) — logic verified against the confirmed-live
+  migration `0021` schema instead.
+
 ## Build state (as of v0.15.1 — profile sheet gap, mention/reply highlight)
 
 - **Profile sheet dark strip above the banner is gone.** `.sheet-grab`
