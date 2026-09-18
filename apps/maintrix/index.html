@@ -162,7 +162,11 @@
   .thread-head .th-name { font-weight:700; font-size:16px; color:var(--text-hi); } .thread-head .th-sub { font-size:11px; color:var(--muted); }
   .room-tag { margin-left:auto; text-align:right; } .room-tag .rt-main { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-hi); } .room-tag .rt-sub { font-size:10px; color:var(--dim); }
   .thread-scroll { flex:1; overflow-y:auto; padding:10px 0 8px; }
-  .msg { display:flex; gap:11px; padding:4px 14px; position:relative; animation:msgIn .28s cubic-bezier(.2,.8,.2,1); }
+  .msg { display:flex; gap:11px; padding:4px 14px; position:relative; }
+  /* only the just-sent/just-arrived row animates in — renderMsgs rebuilds the whole list on every
+     send/reaction/edit, so a blanket animation on .msg replayed for every row every time, reading
+     as the whole thread "jumping" right when you hit send */
+  .msg.msg-in { animation:msgIn .28s cubic-bezier(.2,.8,.2,1); }
   @keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .msg:hover { background:#ffffff05; } .msg.grouped { padding-top:1px; } .msg .m-av { width:38px; flex:0 0 38px; } .msg .m-gutter { width:38px; flex:0 0 38px; } .msg .m-body { flex:1; min-width:0; }
   .read-receipt { display:flex; align-items:center; gap:4px; margin-top:3px; justify-content:flex-end; opacity:.6; }
@@ -1285,22 +1289,24 @@
   // viewport measurements (frame height below, input font-size in CSS via --zoom)
   // must divide by it first.
   function applyTextSize(){ const frame=document.querySelector('.frame'); if(!frame)return; const z={small:0.92,medium:1,large:1.1}[state.textSize||'medium']; frame.style.zoom=z; frame.style.setProperty('--zoom',z); syncFrame(); }
-  // The frame's height is pinned from JS, always, for two reasons:
+  // The frame's height is pinned from JS so:
   // 1) Mobile keyboards (esp. iOS Safari, which ignores interactive-widget=resizes-content)
   //    shrink the visual viewport without resizing the layout viewport, so 100dvh keeps
   //    measuring the old, taller height and the composer gets pushed under the keyboard.
-  //    iOS also scrolls the layout viewport to reveal the input — offsetTop follows that.
   // 2) Chromium scales viewport units (dvh) by CSS zoom, so 100dvh under zoom .92 rendered
   //    the frame 8% short (gap under the bottom nav) and under 1.1 it overflowed 10%
   //    (bottom nav clipped). px lengths scale by zoom in every engine, so px ÷ zoom is
   //    the one measurement that lands exactly right everywhere. Re-run on text-size change.
+  // Deliberately does NOT touch frame.style.top: an earlier version also offset the frame by
+  // visualViewport.offsetTop to chase iOS's keyboard-open viewport panning, which on a real
+  // device instead made the whole app randomly jump upward and expose the OS status bar over
+  // the chat — worse than the keyboard-overlap bug it was trying to fix. Height-only is safe.
   function syncFrame(){
     const frame=document.querySelector('.frame'); if(!frame)return;
     const vv=window.visualViewport;
     const z=parseFloat(frame.style.zoom)||1;
-    const h=vv?vv.height:window.innerHeight, top=vv?vv.offsetTop:0;
+    const h=vv?vv.height:window.innerHeight;
     frame.style.height=(h/z)+'px';
-    frame.style.top=top?(top/z)+'px':'';
     const ae=document.activeElement; if(ae&&ae.id==='thInput'){ const s=$('thScroll'); if(s)s.scrollTop=s.scrollHeight; }
   }
   (function wireSyncFrame(){
@@ -1458,7 +1464,7 @@
 
   /* ═══ THE COMMONS (live via ntfy) ═══ */
   const COMMONS_TOPIC='maintrix-commons-8a3f2'; const CLIENT_ID=Math.random().toString(36).slice(2); let commonsWS=null;
-  function connectCommons(){ if(commonsWS)return; try{ commonsWS=new WebSocket('wss://ntfy.sh/'+COMMONS_TOPIC+'/ws'); commonsWS.onmessage=ev=>{ let d; try{d=JSON.parse(ev.data);}catch(e){return;} if(!d||d.event!=='message'||!d.message)return; let p; try{p=JSON.parse(d.message);}catch(e){return;} if(!p||p.cid===CLIENT_ID)return; const name=String(p.name||'guest').replace(/[^a-zA-Z0-9_ .-]/g,'').slice(0,20)||'guest'; const list=state.msgs.commons=state.msgs.commons||[]; list.push({a:name,t:String(p.text||'').slice(0,400),time:nowTime(),remote:true,color:/^#[0-9a-f]{6}$/i.test(p.color)?p.color:'#b7969c',id:mid()}); if(list.length>200)list.splice(0,list.length-200); save(); if(active&&active.key==='commons'){const sc=$('thScroll'); if(sc){sc.innerHTML=renderMsgs(list,active); sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,active);}} }; commonsWS.onclose=()=>{commonsWS=null; if(active&&active.key==='commons')setTimeout(connectCommons,3000);}; commonsWS.onerror=()=>{try{commonsWS.close();}catch(e){}}; }catch(e){} }
+  function connectCommons(){ if(commonsWS)return; try{ commonsWS=new WebSocket('wss://ntfy.sh/'+COMMONS_TOPIC+'/ws'); commonsWS.onmessage=ev=>{ let d; try{d=JSON.parse(ev.data);}catch(e){return;} if(!d||d.event!=='message'||!d.message)return; let p; try{p=JSON.parse(d.message);}catch(e){return;} if(!p||p.cid===CLIENT_ID)return; const name=String(p.name||'guest').replace(/[^a-zA-Z0-9_ .-]/g,'').slice(0,20)||'guest'; const list=state.msgs.commons=state.msgs.commons||[]; const newMsg={a:name,t:String(p.text||'').slice(0,400),time:nowTime(),remote:true,color:/^#[0-9a-f]{6}$/i.test(p.color)?p.color:'#b7969c',id:mid()}; list.push(newMsg); if(list.length>200)list.splice(0,list.length-200); save(); if(active&&active.key==='commons'){const sc=$('thScroll'); if(sc){active._animateId=newMsg.id; sc.innerHTML=renderMsgs(list,active); active._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,active);}} }; commonsWS.onclose=()=>{commonsWS=null; if(active&&active.key==='commons')setTimeout(connectCommons,3000);}; commonsWS.onerror=()=>{try{commonsWS.close();}catch(e){}}; }catch(e){} }
   function sendCommons(text){ try{ fetch('https://ntfy.sh/'+COMMONS_TOPIC,{method:'POST',body:JSON.stringify({cid:CLIENT_ID,name:me().name,text:text,color:me().color})}).catch(()=>{}); }catch(e){} }
 
   /* ═══ THREAD / ROOMS ═══ */
@@ -1526,8 +1532,9 @@
       const poll = mm.poll?renderPollBlock(mm.id,mm.poll):'';
       const seen = (mm.id===lastReadMineId)?`<div class="read-receipt">${avatar(ctx.dmKey,14)}<span>Seen</span></div>`:'';
       const hi = forMe(mm)?' msg-hi':'';
-      if(grouped){ h+=`<div class="msg grouped${hi}" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${links}${med}${poll}${rc}${seen}</div></div>`; }
-      else h+=`<div class="msg${hi}" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${links}${med}${poll}${rc}${seen}</div></div>`;
+      const anim = (ctx&&ctx._animateId&&mm.id===ctx._animateId)?' msg-in':'';
+      if(grouped){ h+=`<div class="msg grouped${hi}${anim}" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${links}${med}${poll}${rc}${seen}</div></div>`; }
+      else h+=`<div class="msg${hi}${anim}" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${links}${med}${poll}${rc}${seen}</div></div>`;
       prev=mm;
     });
     return h;
@@ -1553,9 +1560,10 @@
     if(!isEmbed) h+=tag;
     const isMuted=(state.mutedRooms||[]).includes(th.key);
     if(!isDebate){
-      const optIcon = th.serverId?IC.gear:(isEmbed?IC.phone:IC.bell);
-      const optTitle = th.serverId?'Room settings':(isEmbed?'Voice call':(isMuted?'Unmute':'Mute'));
-      h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isEmbed)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
+      const isCall = isEmbed||!!th.dmKey;
+      const optIcon = th.serverId?IC.gear:(isCall?IC.phone:IC.bell);
+      const optTitle = th.serverId?'Room settings':(isCall?'Voice call':(isMuted?'Unmute':'Mute'));
+      h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isCall)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
     }
     if(isEmbed)h+=`<button class="tb-btn" id="thDebates" title="Debates" style="margin-left:6px">${IC.debates}</button>`;
     h+=`</div>`;
@@ -1578,11 +1586,11 @@
     const sc=$('thScroll'); sc.scrollTop=sc.scrollHeight;
     if(isCommons && online() && !th.roomSlug) th.roomSlug='commons';
     const onlineRoom = online() && !!(th.roomSlug || th.dmUser || th.topicId || th.roomId);
-    const repaint=()=>{ const s=$('thScroll'); if(!s)return; const L=state.msgs[th.key]||[]; s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); };
+    const repaint=(animateId)=>{ const s=$('thScroll'); if(!s)return; const L=state.msgs[th.key]||[]; th._animateId=animateId||null; s.innerHTML=renderMsgs(L,th); th._animateId=null; s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); };
     { const backBtn=$('thBack'); if(backBtn) backBtn.onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); }; }
     { const debBtn=$('thDebates'); if(debBtn) debBtn.onclick=()=>{ state.screen='debates'; save(); render(); }; }
     { const idb=$('iceDismiss'); if(idb)idb.onclick=()=>{ state.dismissedIcebreakers=state.dismissedIcebreakers||[]; state.dismissedIcebreakers.push(th.key); save(); const ib=$('iceBanner'); if(ib)ib.remove(); }; }
-    { const optBtn=$('thOptions'); if(optBtn) optBtn.onclick=()=>{ if(isEmbed){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); }; }
+    { const optBtn=$('thOptions'); if(optBtn) optBtn.onclick=()=>{ if(isEmbed||th.dmKey){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); }; }
     if(isDebate) wireDebateRoom(th);
     if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML=skeletonMsgs(); hydrateOnlineRoom(th); }
     else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
@@ -1599,13 +1607,14 @@
           if(!th.roomId){ toast('Room still loading…'); return; }
           const rid=replyTo?replyTo.id:null, rprev=replyTo?{a:replyTo.a,t:(replyTo.t||'').slice(0,60)}:null; replyTo=null; input.value=''; clearDraft(); closeMentions(); renderReplyBar();
           SFX.play('send');
-          db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(); } }).catch(()=>{ SFX.play('error'); toast(th.dmKey?'One message until they accept your request':'Send failed'); });
+          db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(m.id); } }).catch(()=>{ SFX.play('error'); toast(th.dmKey?'One message until they accept your request':'Send failed'); });
           return;
         }
+        let justSentId=null;
         if(editing){ const m=list.find(x=>x.id===editing); if(m){m.t=v; m.edited=true;} editing=null; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); }
-        else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg); SFX.play('send');
+        else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg); justSentId=msg.id; SFX.play('send');
           if(th.dmKey && !dmFree(th.dmKey)){ state.sentDm.push(th.dmKey); save(); toast('DM request sent — one message until they accept'); setTimeout(()=>simAcceptDm(th.dmKey),4000); } }
-        replyTo=null; save(); input.value=''; clearDraft(); closeMentions(); renderReplyBar(); sc.innerHTML=renderMsgs(list,th); sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,th);
+        replyTo=null; save(); input.value=''; clearDraft(); closeMentions(); renderReplyBar(); th._animateId=justSentId; sc.innerHTML=renderMsgs(list,th); th._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,th);
         if(isCommons)sendCommons(v); else if(th.dmKey&&dmFree(th.dmKey))simReply(th.key,th.dmKey);
         if(th.dmKey&&!dmFree(th.dmKey))renderThread();
       };
@@ -1624,7 +1633,7 @@
   }
   async function ensureServerComposer(th){ try{ const rank=await db.servers.myRank(th.serverId); if(rank||!active||active.key!==th.key) return; const comp=document.querySelector('.thread .composer'); if(!comp) return; comp.innerHTML=`<div class="note" style="display:flex;gap:10px;align-items:center;justify-content:center;padding-bottom:calc(10px + env(safe-area-inset-bottom))"><span>Join to chat here</span><button class="chip on" id="joinToChat">Join server</button></div>`; $('joinToChat').onclick=async ()=>{ try{ await db.servers.join(th.serverId); toast('Joined'); renderThread(); }catch(e){ toast('Could not join'); } }; }catch(e){} }
   let mediaRec=null, recChunks=[];
-  async function sendMedia(th, file, kindHint){ if(!online()||!th.roomId){ toast('Media isn’t available here'); return; } try{ toast('Uploading…'); const { path, kind } = await uploadMedia(file, kindHint); const m=await db.messages.send(th.roomId, '', { mediaPath:path, mediaKind:kind }); const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); } } } }catch(e){ toast('Upload failed — '+((e&&e.message)||'try again')); } }
+  async function sendMedia(th, file, kindHint){ if(!online()||!th.roomId){ toast('Media isn’t available here'); return; } try{ toast('Uploading…'); const { path, kind } = await uploadMedia(file, kindHint); const m=await db.messages.send(th.roomId, '', { mediaPath:path, mediaKind:kind }); const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ th._animateId=m.id; s.innerHTML=renderMsgs(L,th); th._animateId=null; s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); } } } }catch(e){ toast('Upload failed — '+((e&&e.message)||'try again')); } }
   async function toggleRecord(th, btn){ if(mediaRec){ try{ mediaRec.stop(); }catch(e){} return; } if(!navigator.mediaDevices||!window.MediaRecorder){ toast('Recording not supported'); return; } try{ const stream=await navigator.mediaDevices.getUserMedia({audio:true}); recChunks=[]; mediaRec=new MediaRecorder(stream); mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); }; mediaRec.onstop=async ()=>{ stream.getTracks().forEach(t=>t.stop()); if(btn)btn.classList.remove('rec'); const blob=new Blob(recChunks,{type:'audio/webm'}); mediaRec=null; if(blob.size<600){ toast('Too short'); return; } await sendMedia(th, blob, 'audio'); }; mediaRec.start(); if(btn)btn.classList.add('rec'); toast('Recording… tap mic again to send'); }catch(e){ toast('Mic not available'); mediaRec=null; } }
   /* ═══ online room hydration + realtime ═══ */
   let roomChannel=null, reactChannel=null, readsChannel=null;
@@ -1664,10 +1673,11 @@
     roomChannel=db.messages.subscribe(th.roomId, async payload=>{
       if(!active||active.key!==th.key) return;
       const L=state.msgs[th.key]=state.msgs[th.key]||[];
-      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } if(m.pollId)await attachPolls([m]); L.push(m); if(m.a!==me().id)SFX.play('receive'); db.rooms.markRead(th.roomId); }
+      let newId=null;
+      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } if(m.pollId)await attachPolls([m]); L.push(m); newId=m.id; if(m.a!==me().id)SFX.play('receive'); db.rooms.markRead(th.roomId); }
       else if(payload.eventType==='UPDATE'){ const m=L.find(x=>x.id===payload.new.id); if(m){ m.t=payload.new.body; m.edited=payload.new.edited; m.pin=payload.new.pinned; } }
       else if(payload.eventType==='DELETE'){ const i=L.findIndex(x=>x.id===(payload.old&&payload.old.id)); if(i>=0)L.splice(i,1); }
-      const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; s.innerHTML=renderMsgs(L,th); if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
+      const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; th._animateId=newId; s.innerHTML=renderMsgs(L,th); th._animateId=null; if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
     });
     reactChannel=db.reactions.subscribe(null, async payload=>{ if(!active||active.key!==th.key)return; const mid=(payload.new&&payload.new.message_id)||(payload.old&&payload.old.message_id); if(!mid)return; const L=state.msgs[th.key]||[]; if(!L.some(m=>m.id===mid))return; try{ const map=await db.reactions.forMessages([mid]); REACT[mid]=map[mid]||[]; repaintThread(); }catch(e){} });
     if(th.dmKey) readsChannel=db.rooms.subscribeReads(th.roomId, payload=>{ if(!active||active.key!==th.key)return; const row=payload.new||payload.old; if(!row||row.user_id!==th.dmKey)return; th.otherReadAt=row.read_at; repaintThread(); });
@@ -2044,7 +2054,7 @@
     });
   }
   const REPLIES=['ha, true','say more','oh that’s good','holding you to it 🔒','agreed','let’s go','proud of you honestly'];
-  function simReply(key,dmKey){ setTimeout(()=>{ pushNotif('reply',dmKey,'replied to your message'); if(active&&active.key===key){ state.msgs[key].push({a:dmKey,t:REPLIES[Math.floor(Math.random()*REPLIES.length)],time:nowTime(),id:mid()}); save(); const sc=$('thScroll'); sc.innerHTML=renderMsgs(state.msgs[key],active); sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,state.msgs[key],active); } },1400); }
+  function simReply(key,dmKey){ setTimeout(()=>{ pushNotif('reply',dmKey,'replied to your message'); if(active&&active.key===key){ const newMsg={a:dmKey,t:REPLIES[Math.floor(Math.random()*REPLIES.length)],time:nowTime(),id:mid()}; state.msgs[key].push(newMsg); save(); const sc=$('thScroll'); active._animateId=newMsg.id; sc.innerHTML=renderMsgs(state.msgs[key],active); active._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,state.msgs[key],active); } },1400); }
   function simAcceptDm(k){ if(state.dmAccepted.includes(k))return; state.dmAccepted.push(k); state.sentDm=state.sentDm.filter(x=>x!==k); if(!state.dmAccepted.includes(k))return; save(); toast('@'+person(k).name+' accepted your DM'); if(active&&active.dmKey===k)renderThread(); }
 
   /* ═══ NEXUS HUB ═══

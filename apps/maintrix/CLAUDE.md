@@ -200,6 +200,52 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.16.1 — regression fixes: viewport jump, send-scroll, DM call button)
+
+- **Fixed a real regression from `v0.14.1`'s keyboard/text-size fix**: the
+  screen would randomly jump upward on a real phone, exposing the OS status
+  bar over the chat (reported with a screenshot). Root cause was
+  `syncFrame()` also setting `frame.style.top` to chase
+  `visualViewport.offsetTop`, meant to counter iOS repositioning fixed
+  content when the keyboard opens — but on-device this fought the
+  browser's own compensation and produced a visible upward shift instead.
+  That was never verified against a real device, only reasoned about; the
+  screenshot proved it wrong. Removed the `top` compensation entirely —
+  `syncFrame()` now only sets `.frame`'s height (the part that WAS verified,
+  against actual dvh/zoom scaling math). The existing
+  `window.addEventListener('scroll', ()=>scrollTo(0,0))` snap-back plus
+  `body{position:fixed}` already cover the layout-viewport-scroll case this
+  was also trying to handle.
+- **Fixed "sending a message scrolls the chat up."** `.msg` carried a
+  blanket `animation:msgIn` — since `renderMsgs()` rebuilds the *entire*
+  message list as one HTML blob on every send/receive/reaction/edit, that
+  animation replayed for **every message in the thread simultaneously**
+  each time, not just the new one. Right as `scrollTop` jumped to the
+  bottom, the whole history would visibly "rise into place" at once —
+  reads exactly like an unwanted scroll. Fixed by moving the animation to
+  a `.msg-in` class applied only to the specific message that just
+  arrived: `renderMsgs(list, ctx)` now checks `ctx._animateId` per row, and
+  every call site that appends exactly one message (online send, offline
+  send, media upload, the realtime INSERT handler, the offline simulated
+  reply, and the Commons relay) sets `th._animateId = <newMsgId>`
+  immediately before rendering and clears it right after — so a plain
+  reaction/edit repaint (which sets no `_animateId`) no longer animates
+  anything, and a send animates only its own bubble.
+- **DMs now show the same call/phone icon as the Nexus header**, replacing
+  Room Options there. `isCall = isEmbed || !!th.dmKey` drives both the
+  icon (`IC.phone` vs `IC.gear`/`IC.bell`) and the click handler
+  (`openVoiceChannel(th.roomId, th.title)` vs `openRoomOptions`) — DMs and
+  the embedded Nexus room now behave identically for this button. Servers
+  are unaffected (still gear → Room settings).
+- Verified in-browser: sending two messages in a row animates only the
+  second bubble and leaves history untouched; a DM thread's header button
+  reads "Voice call" with the phone glyph and routes into
+  `openVoiceChannel` (falls back to a toast offline, same as Nexus). The
+  viewport-jump fix couldn't be re-verified on a real device here (no
+  physical keyboard in this environment) — the removed code was the
+  unverified part in the first place, so this trades a speculative,
+  now-disproven fix for a plainer one that's actually been checked.
+
 ## Build state (as of v0.16 — right-click/long-press moderation, admin panel overhaul)
 
 - **Admins can right-click (desktop) or long-press (touch) any avatar/name
