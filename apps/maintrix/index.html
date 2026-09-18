@@ -162,7 +162,11 @@
   .thread-head .th-name { font-weight:700; font-size:16px; color:var(--text-hi); } .thread-head .th-sub { font-size:11px; color:var(--muted); }
   .room-tag { margin-left:auto; text-align:right; } .room-tag .rt-main { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-hi); } .room-tag .rt-sub { font-size:10px; color:var(--dim); }
   .thread-scroll { flex:1; overflow-y:auto; padding:10px 0 8px; }
-  .msg { display:flex; gap:11px; padding:4px 14px; position:relative; animation:msgIn .28s cubic-bezier(.2,.8,.2,1); }
+  .msg { display:flex; gap:11px; padding:4px 14px; position:relative; }
+  /* only the just-sent/just-arrived row animates in — renderMsgs rebuilds the whole list on every
+     send/reaction/edit, so a blanket animation on .msg replayed for every row every time, reading
+     as the whole thread "jumping" right when you hit send */
+  .msg.msg-in { animation:msgIn .28s cubic-bezier(.2,.8,.2,1); }
   @keyframes msgIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .msg:hover { background:#ffffff05; } .msg.grouped { padding-top:1px; } .msg .m-av { width:38px; flex:0 0 38px; } .msg .m-gutter { width:38px; flex:0 0 38px; } .msg .m-body { flex:1; min-width:0; }
   .read-receipt { display:flex; align-items:center; gap:4px; margin-top:3px; justify-content:flex-end; opacity:.6; }
@@ -493,6 +497,15 @@
      zoom, measured either way WebKit might measure it (computed or zoom-adjusted). */
   .frame input:not([type=file]):not([type=color]):not([type=checkbox]):not([type=radio]):not([type=range]), .frame textarea, .frame select { font-size:max(16.5px, calc(16.5px / var(--zoom,1))) !important; }
 
+  /* admin right-click / long-press menu */
+  .admin-menu { min-width:230px; max-width:280px; max-height:min(70vh,520px); overflow-y:auto; background:color-mix(in srgb,var(--elevated) 90%,transparent); backdrop-filter:blur(18px) saturate(1.4); -webkit-backdrop-filter:blur(18px) saturate(1.4); border-color:color-mix(in srgb,var(--accent) 35%,var(--line)); box-shadow:var(--sh-3),0 0 0 1px color-mix(in srgb,var(--accent) 20%,transparent); animation:confirmIn .22s var(--ease-out); }
+  .admin-menu .am-head { display:flex; align-items:center; gap:9px; padding:10px 12px 8px; border-bottom:1px solid var(--line); }
+  .admin-menu .am-name { font-weight:700; font-size:14px; color:var(--text-hi); } .admin-menu .am-sub { font-size:11px; color:var(--muted); font-family:var(--mono); }
+  .admin-menu .am-sep { height:1px; background:var(--line); margin:4px 0; }
+  .admin-menu .am-row { display:flex; align-items:center; gap:6px; padding:6px 12px; font-size:13.5px; color:var(--text); } .admin-menu .am-row > span { display:flex; align-items:center; gap:8px; flex:1; } .admin-menu .am-row .chip { padding:3px 9px; font-size:12px; }
+  .admin-menu button[data-aa] { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:9px 12px; font-size:13.5px; color:var(--text); } .admin-menu button[data-aa]:hover { background:var(--hover); } .admin-menu button.danger { color:var(--danger); }
+  .admin-menu svg { width:15px; height:15px; flex:0 0 15px; }
+
   /* ═══════════ VISUAL SYSTEM — depth, motion, polish ═══════════ */
   /* richer screen transition */
   @keyframes screenIn { from { opacity:0; transform:translateY(14px) scale(.986); } to { opacity:1; transform:translateY(0) scale(1); } }
@@ -766,7 +779,7 @@
   const online = () => !!(SUPA.url && SUPA.anonKey);
   let sb = null;
   async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
-  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, bannerStyle:r.banner_style||'diagonal', dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', notifPrefs:r.notif_prefs||{}, tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
+  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, bannerStyle:r.banner_style||'diagonal', dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', notifPrefs:r.notif_prefs||{}, tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, mutedUntil:r.muted_until||null, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
   const DEBATE_RANKS = [
     {min:0,name:'Novice',color:'#8a8a8a',t:1},
     {min:1000,name:'Contender',color:'#4a9eff',t:2},
@@ -1276,22 +1289,24 @@
   // viewport measurements (frame height below, input font-size in CSS via --zoom)
   // must divide by it first.
   function applyTextSize(){ const frame=document.querySelector('.frame'); if(!frame)return; const z={small:0.92,medium:1,large:1.1}[state.textSize||'medium']; frame.style.zoom=z; frame.style.setProperty('--zoom',z); syncFrame(); }
-  // The frame's height is pinned from JS, always, for two reasons:
+  // The frame's height is pinned from JS so:
   // 1) Mobile keyboards (esp. iOS Safari, which ignores interactive-widget=resizes-content)
   //    shrink the visual viewport without resizing the layout viewport, so 100dvh keeps
   //    measuring the old, taller height and the composer gets pushed under the keyboard.
-  //    iOS also scrolls the layout viewport to reveal the input — offsetTop follows that.
   // 2) Chromium scales viewport units (dvh) by CSS zoom, so 100dvh under zoom .92 rendered
   //    the frame 8% short (gap under the bottom nav) and under 1.1 it overflowed 10%
   //    (bottom nav clipped). px lengths scale by zoom in every engine, so px ÷ zoom is
   //    the one measurement that lands exactly right everywhere. Re-run on text-size change.
+  // Deliberately does NOT touch frame.style.top: an earlier version also offset the frame by
+  // visualViewport.offsetTop to chase iOS's keyboard-open viewport panning, which on a real
+  // device instead made the whole app randomly jump upward and expose the OS status bar over
+  // the chat — worse than the keyboard-overlap bug it was trying to fix. Height-only is safe.
   function syncFrame(){
     const frame=document.querySelector('.frame'); if(!frame)return;
     const vv=window.visualViewport;
     const z=parseFloat(frame.style.zoom)||1;
-    const h=vv?vv.height:window.innerHeight, top=vv?vv.offsetTop:0;
+    const h=vv?vv.height:window.innerHeight;
     frame.style.height=(h/z)+'px';
-    frame.style.top=top?(top/z)+'px':'';
     const ae=document.activeElement; if(ae&&ae.id==='thInput'){ const s=$('thScroll'); if(s)s.scrollTop=s.scrollHeight; }
   }
   (function wireSyncFrame(){
@@ -1449,7 +1464,7 @@
 
   /* ═══ THE COMMONS (live via ntfy) ═══ */
   const COMMONS_TOPIC='maintrix-commons-8a3f2'; const CLIENT_ID=Math.random().toString(36).slice(2); let commonsWS=null;
-  function connectCommons(){ if(commonsWS)return; try{ commonsWS=new WebSocket('wss://ntfy.sh/'+COMMONS_TOPIC+'/ws'); commonsWS.onmessage=ev=>{ let d; try{d=JSON.parse(ev.data);}catch(e){return;} if(!d||d.event!=='message'||!d.message)return; let p; try{p=JSON.parse(d.message);}catch(e){return;} if(!p||p.cid===CLIENT_ID)return; const name=String(p.name||'guest').replace(/[^a-zA-Z0-9_ .-]/g,'').slice(0,20)||'guest'; const list=state.msgs.commons=state.msgs.commons||[]; list.push({a:name,t:String(p.text||'').slice(0,400),time:nowTime(),remote:true,color:/^#[0-9a-f]{6}$/i.test(p.color)?p.color:'#b7969c',id:mid()}); if(list.length>200)list.splice(0,list.length-200); save(); if(active&&active.key==='commons'){const sc=$('thScroll'); if(sc){sc.innerHTML=renderMsgs(list,active); sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,active);}} }; commonsWS.onclose=()=>{commonsWS=null; if(active&&active.key==='commons')setTimeout(connectCommons,3000);}; commonsWS.onerror=()=>{try{commonsWS.close();}catch(e){}}; }catch(e){} }
+  function connectCommons(){ if(commonsWS)return; try{ commonsWS=new WebSocket('wss://ntfy.sh/'+COMMONS_TOPIC+'/ws'); commonsWS.onmessage=ev=>{ let d; try{d=JSON.parse(ev.data);}catch(e){return;} if(!d||d.event!=='message'||!d.message)return; let p; try{p=JSON.parse(d.message);}catch(e){return;} if(!p||p.cid===CLIENT_ID)return; const name=String(p.name||'guest').replace(/[^a-zA-Z0-9_ .-]/g,'').slice(0,20)||'guest'; const list=state.msgs.commons=state.msgs.commons||[]; const newMsg={a:name,t:String(p.text||'').slice(0,400),time:nowTime(),remote:true,color:/^#[0-9a-f]{6}$/i.test(p.color)?p.color:'#b7969c',id:mid()}; list.push(newMsg); if(list.length>200)list.splice(0,list.length-200); save(); if(active&&active.key==='commons'){const sc=$('thScroll'); if(sc){active._animateId=newMsg.id; sc.innerHTML=renderMsgs(list,active); active._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,active);}} }; commonsWS.onclose=()=>{commonsWS=null; if(active&&active.key==='commons')setTimeout(connectCommons,3000);}; commonsWS.onerror=()=>{try{commonsWS.close();}catch(e){}}; }catch(e){} }
   function sendCommons(text){ try{ fetch('https://ntfy.sh/'+COMMONS_TOPIC,{method:'POST',body:JSON.stringify({cid:CLIENT_ID,name:me().name,text:text,color:me().color})}).catch(()=>{}); }catch(e){} }
 
   /* ═══ THREAD / ROOMS ═══ */
@@ -1517,8 +1532,9 @@
       const poll = mm.poll?renderPollBlock(mm.id,mm.poll):'';
       const seen = (mm.id===lastReadMineId)?`<div class="read-receipt">${avatar(ctx.dmKey,14)}<span>Seen</span></div>`:'';
       const hi = forMe(mm)?' msg-hi':'';
-      if(grouped){ h+=`<div class="msg grouped${hi}" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${links}${med}${poll}${rc}${seen}</div></div>`; }
-      else h+=`<div class="msg${hi}" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${links}${med}${poll}${rc}${seen}</div></div>`;
+      const anim = (ctx&&ctx._animateId&&mm.id===ctx._animateId)?' msg-in':'';
+      if(grouped){ h+=`<div class="msg grouped${hi}${anim}" data-mid="${mm.id||''}"><div class="m-gutter"></div><div class="m-body">${rq}${txt}${links}${med}${poll}${rc}${seen}</div></div>`; }
+      else h+=`<div class="msg${hi}${anim}" data-mid="${mm.id||''}"><div class="m-av"${du}>${avatar(mm.a,38,{ring:true})}</div><div class="m-body">${rq}<div class="m-head"><span class="m-author"${du} style="color:${color}">${esc(p.name)}</span>${loc}${lab}<span class="m-time">${mm.time||''}</span></div>${txt}${links}${med}${poll}${rc}${seen}</div></div>`;
       prev=mm;
     });
     return h;
@@ -1544,9 +1560,10 @@
     if(!isEmbed) h+=tag;
     const isMuted=(state.mutedRooms||[]).includes(th.key);
     if(!isDebate){
-      const optIcon = th.serverId?IC.gear:(isEmbed?IC.phone:IC.bell);
-      const optTitle = th.serverId?'Room settings':(isEmbed?'Voice call':(isMuted?'Unmute':'Mute'));
-      h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isEmbed)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
+      const isCall = isEmbed||!!th.dmKey;
+      const optIcon = th.serverId?IC.gear:(isCall?IC.phone:IC.bell);
+      const optTitle = th.serverId?'Room settings':(isCall?'Voice call':(isMuted?'Unmute':'Mute'));
+      h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isCall)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
     }
     if(isEmbed)h+=`<button class="tb-btn" id="thDebates" title="Debates" style="margin-left:6px">${IC.debates}</button>`;
     h+=`</div>`;
@@ -1569,11 +1586,11 @@
     const sc=$('thScroll'); sc.scrollTop=sc.scrollHeight;
     if(isCommons && online() && !th.roomSlug) th.roomSlug='commons';
     const onlineRoom = online() && !!(th.roomSlug || th.dmUser || th.topicId || th.roomId);
-    const repaint=()=>{ const s=$('thScroll'); if(!s)return; const L=state.msgs[th.key]||[]; s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); };
+    const repaint=(animateId)=>{ const s=$('thScroll'); if(!s)return; const L=state.msgs[th.key]||[]; th._animateId=animateId||null; s.innerHTML=renderMsgs(L,th); th._animateId=null; s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); };
     { const backBtn=$('thBack'); if(backBtn) backBtn.onclick=()=>{ leaveRoom(); $('app').classList.remove('thread-open'); state.screen=th.back||'connect'; render(); }; }
     { const debBtn=$('thDebates'); if(debBtn) debBtn.onclick=()=>{ state.screen='debates'; save(); render(); }; }
     { const idb=$('iceDismiss'); if(idb)idb.onclick=()=>{ state.dismissedIcebreakers=state.dismissedIcebreakers||[]; state.dismissedIcebreakers.push(th.key); save(); const ib=$('iceBanner'); if(ib)ib.remove(); }; }
-    { const optBtn=$('thOptions'); if(optBtn) optBtn.onclick=()=>{ if(isEmbed){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); }; }
+    { const optBtn=$('thOptions'); if(optBtn) optBtn.onclick=()=>{ if(isEmbed||th.dmKey){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); }; }
     if(isDebate) wireDebateRoom(th);
     if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML=skeletonMsgs(); hydrateOnlineRoom(th); }
     else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
@@ -1590,13 +1607,14 @@
           if(!th.roomId){ toast('Room still loading…'); return; }
           const rid=replyTo?replyTo.id:null, rprev=replyTo?{a:replyTo.a,t:(replyTo.t||'').slice(0,60)}:null; replyTo=null; input.value=''; clearDraft(); closeMentions(); renderReplyBar();
           SFX.play('send');
-          db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(); } }).catch(()=>{ SFX.play('error'); toast(th.dmKey?'One message until they accept your request':'Send failed'); });
+          db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(m.id); } }).catch(()=>{ SFX.play('error'); toast(th.dmKey?'One message until they accept your request':'Send failed'); });
           return;
         }
+        let justSentId=null;
         if(editing){ const m=list.find(x=>x.id===editing); if(m){m.t=v; m.edited=true;} editing=null; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); }
-        else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg); SFX.play('send');
+        else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg); justSentId=msg.id; SFX.play('send');
           if(th.dmKey && !dmFree(th.dmKey)){ state.sentDm.push(th.dmKey); save(); toast('DM request sent — one message until they accept'); setTimeout(()=>simAcceptDm(th.dmKey),4000); } }
-        replyTo=null; save(); input.value=''; clearDraft(); closeMentions(); renderReplyBar(); sc.innerHTML=renderMsgs(list,th); sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,th);
+        replyTo=null; save(); input.value=''; clearDraft(); closeMentions(); renderReplyBar(); th._animateId=justSentId; sc.innerHTML=renderMsgs(list,th); th._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,th);
         if(isCommons)sendCommons(v); else if(th.dmKey&&dmFree(th.dmKey))simReply(th.key,th.dmKey);
         if(th.dmKey&&!dmFree(th.dmKey))renderThread();
       };
@@ -1615,7 +1633,7 @@
   }
   async function ensureServerComposer(th){ try{ const rank=await db.servers.myRank(th.serverId); if(rank||!active||active.key!==th.key) return; const comp=document.querySelector('.thread .composer'); if(!comp) return; comp.innerHTML=`<div class="note" style="display:flex;gap:10px;align-items:center;justify-content:center;padding-bottom:calc(10px + env(safe-area-inset-bottom))"><span>Join to chat here</span><button class="chip on" id="joinToChat">Join server</button></div>`; $('joinToChat').onclick=async ()=>{ try{ await db.servers.join(th.serverId); toast('Joined'); renderThread(); }catch(e){ toast('Could not join'); } }; }catch(e){} }
   let mediaRec=null, recChunks=[];
-  async function sendMedia(th, file, kindHint){ if(!online()||!th.roomId){ toast('Media isn’t available here'); return; } try{ toast('Uploading…'); const { path, kind } = await uploadMedia(file, kindHint); const m=await db.messages.send(th.roomId, '', { mediaPath:path, mediaKind:kind }); const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ s.innerHTML=renderMsgs(L,th); s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); } } } }catch(e){ toast('Upload failed — '+((e&&e.message)||'try again')); } }
+  async function sendMedia(th, file, kindHint){ if(!online()||!th.roomId){ toast('Media isn’t available here'); return; } try{ toast('Uploading…'); const { path, kind } = await uploadMedia(file, kindHint); const m=await db.messages.send(th.roomId, '', { mediaPath:path, mediaKind:kind }); const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key){ const s=$('thScroll'); if(s){ th._animateId=m.id; s.innerHTML=renderMsgs(L,th); th._animateId=null; s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); } } } }catch(e){ toast('Upload failed — '+((e&&e.message)||'try again')); } }
   async function toggleRecord(th, btn){ if(mediaRec){ try{ mediaRec.stop(); }catch(e){} return; } if(!navigator.mediaDevices||!window.MediaRecorder){ toast('Recording not supported'); return; } try{ const stream=await navigator.mediaDevices.getUserMedia({audio:true}); recChunks=[]; mediaRec=new MediaRecorder(stream); mediaRec.ondataavailable=e=>{ if(e.data&&e.data.size)recChunks.push(e.data); }; mediaRec.onstop=async ()=>{ stream.getTracks().forEach(t=>t.stop()); if(btn)btn.classList.remove('rec'); const blob=new Blob(recChunks,{type:'audio/webm'}); mediaRec=null; if(blob.size<600){ toast('Too short'); return; } await sendMedia(th, blob, 'audio'); }; mediaRec.start(); if(btn)btn.classList.add('rec'); toast('Recording… tap mic again to send'); }catch(e){ toast('Mic not available'); mediaRec=null; } }
   /* ═══ online room hydration + realtime ═══ */
   let roomChannel=null, reactChannel=null, readsChannel=null;
@@ -1655,10 +1673,11 @@
     roomChannel=db.messages.subscribe(th.roomId, async payload=>{
       if(!active||active.key!==th.key) return;
       const L=state.msgs[th.key]=state.msgs[th.key]||[];
-      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } if(m.pollId)await attachPolls([m]); L.push(m); if(m.a!==me().id)SFX.play('receive'); db.rooms.markRead(th.roomId); }
+      let newId=null;
+      if(payload.eventType==='INSERT'){ const m=rowToMsg(payload.new); if(L.some(x=>x.id===m.id))return; if(m.a&&!PC[m.a]&&(!me()||m.a!==me().id))await ensureProfiles([m.a]); if(m.replyToId){ const rm=L.find(x=>x.id===m.replyToId); if(rm)m.replyTo={a:person(rm.a).name,t:(rm.t||'').slice(0,60)}; } if(m.pollId)await attachPolls([m]); L.push(m); newId=m.id; if(m.a!==me().id)SFX.play('receive'); db.rooms.markRead(th.roomId); }
       else if(payload.eventType==='UPDATE'){ const m=L.find(x=>x.id===payload.new.id); if(m){ m.t=payload.new.body; m.edited=payload.new.edited; m.pin=payload.new.pinned; } }
       else if(payload.eventType==='DELETE'){ const i=L.findIndex(x=>x.id===(payload.old&&payload.old.id)); if(i>=0)L.splice(i,1); }
-      const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; s.innerHTML=renderMsgs(L,th); if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
+      const s=$('thScroll'); if(s){ const near=s.scrollTop+s.clientHeight>s.scrollHeight-90; th._animateId=newId; s.innerHTML=renderMsgs(L,th); th._animateId=null; if(near)s.scrollTop=s.scrollHeight; wireMsgMenu(s,L,th); }
     });
     reactChannel=db.reactions.subscribe(null, async payload=>{ if(!active||active.key!==th.key)return; const mid=(payload.new&&payload.new.message_id)||(payload.old&&payload.old.message_id); if(!mid)return; const L=state.msgs[th.key]||[]; if(!L.some(m=>m.id===mid))return; try{ const map=await db.reactions.forMessages([mid]); REACT[mid]=map[mid]||[]; repaintThread(); }catch(e){} });
     if(th.dmKey) readsChannel=db.rooms.subscribeReads(th.roomId, payload=>{ if(!active||active.key!==th.key)return; const row=payload.new||payload.old; if(!row||row.user_id!==th.dmKey)return; th.otherReadAt=row.read_at; repaintThread(); });
@@ -2000,9 +2019,11 @@
     scrollEl.querySelectorAll('.msg[data-mid]').forEach(row=>{
       const id=row.dataset.mid; if(!id)return;
       const open=(x,y)=>{ const m=list.find(z=>z.id===id); if(!m)return; showMsgMenu(x,y,m,list,th); };
-      row.addEventListener('pointerdown',e=>{ if(e.target.closest('[data-react]'))return; pressTimer=setTimeout(()=>open(e.clientX,e.clientY),450); });
+      // admins right-click/long-press the avatar or name to get the moderation menu instead of the reply menu — the message menu still offers "Moderate…" for anywhere else on the bubble
+      const onAvatar=e=>me()&&me().isAdmin&&e.target.closest('[data-user]');
+      row.addEventListener('pointerdown',e=>{ if(e.target.closest('[data-react]')||onAvatar(e))return; pressTimer=setTimeout(()=>open(e.clientX,e.clientY),450); });
       ['pointerup','pointerleave','pointermove','pointercancel'].forEach(ev=>row.addEventListener(ev,()=>clearTimeout(pressTimer)));
-      row.addEventListener('contextmenu',e=>{ e.preventDefault(); open(e.clientX,e.clientY); });
+      row.addEventListener('contextmenu',e=>{ if(onAvatar(e))return; e.preventDefault(); open(e.clientX,e.clientY); });
     });
     if(online()) scrollEl.querySelectorAll('[data-react]').forEach(el2=>el2.onclick=e=>{ e.stopPropagation(); const [mid,emoji]=el2.dataset.react.split('|'); applyReaction(mid,emoji); });
     if(online()) scrollEl.querySelectorAll('[data-poll]').forEach(block=>{ const mid=block.dataset.poll; const m=list.find(z=>z.id===mid); if(!m||!m.pollId)return; block.querySelectorAll('[data-pollvote]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); voteOnPoll(mid,m.pollId,+b.dataset.pollvote,th); }); });
@@ -2015,7 +2036,7 @@
     if(canReact){ h+=`<div class="react-quick">${quickEmojis().map(e=>`<button data-qreact="${attr(e)}">${e}</button>`).join('')}<button data-qreact-add>${IC.plus}</button></div>`; }
     h+=`<button data-act="reply">${IC.reply} Reply</button>`;
     if(mine){ h+=`<button data-act="edit">${IC.edit} Edit</button><button class="danger" data-act="del">${IC.trash} Delete</button>`; }
-    else if(me().isAdmin){ h+=`<button class="danger" data-act="del">${IC.shield} Delete (admin)</button>`; }
+    else if(me().isAdmin){ h+=`<button class="danger" data-act="del">${IC.shield} Delete (admin)</button>`; if(!m.bot) h+=`<button data-act="moderate">${IC.shield} Moderate ${esc(person(m.a).name)}…</button>`; }
     const menu=el('div','msg-menu',h); document.querySelector('.frame').appendChild(menu);
     const fr=document.querySelector('.frame').getBoundingClientRect();
     menu.style.left=Math.min(x-fr.left, fr.width-165)+'px'; menu.style.top=Math.min(y-fr.top, fr.height-200)+'px';
@@ -2026,13 +2047,14 @@
     const addB=menu.querySelector('[data-qreact-add]'); if(addB)addB.onclick=()=>{ close(); openEmojiPicker(m.id); };
     menu.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{ const a=b.dataset.act; close();
       if(a==='reply'){ replyTo={a:person(m.a).name,t:m.t,id:m.id}; renderReplyBar(); const i=$('thInput'); if(i)i.focus(); }
+      else if(a==='moderate'){ showAdminUserMenu(x,y,m.a,{serverId:th.serverId,roomId:th.roomId,rerender:()=>{}}); }
       else if(a==='edit'){ editing=m.id; const i=$('thInput'); if(i){i.value=m.t; i.focus(); i.placeholder='Editing…';} renderReplyBar(); }
       else if(a==='del'){ const idx=list.indexOf(m); if(idx>=0)list.splice(idx,1); if(!online())save(); $('thScroll').innerHTML=renderMsgs(list,th); wireMsgMenu($('thScroll'),list,th);
         toastUndo('Message deleted', ()=>{ list.splice(idx,0,m); if(!online())save(); if(active&&active.key===th.key){ $('thScroll').innerHTML=renderMsgs(list,th); wireMsgMenu($('thScroll'),list,th); } }, ()=>{ if(online()&&th.roomId)db.messages.remove(m.id); }); }
     });
   }
   const REPLIES=['ha, true','say more','oh that’s good','holding you to it 🔒','agreed','let’s go','proud of you honestly'];
-  function simReply(key,dmKey){ setTimeout(()=>{ pushNotif('reply',dmKey,'replied to your message'); if(active&&active.key===key){ state.msgs[key].push({a:dmKey,t:REPLIES[Math.floor(Math.random()*REPLIES.length)],time:nowTime(),id:mid()}); save(); const sc=$('thScroll'); sc.innerHTML=renderMsgs(state.msgs[key],active); sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,state.msgs[key],active); } },1400); }
+  function simReply(key,dmKey){ setTimeout(()=>{ pushNotif('reply',dmKey,'replied to your message'); if(active&&active.key===key){ const newMsg={a:dmKey,t:REPLIES[Math.floor(Math.random()*REPLIES.length)],time:nowTime(),id:mid()}; state.msgs[key].push(newMsg); save(); const sc=$('thScroll'); active._animateId=newMsg.id; sc.innerHTML=renderMsgs(state.msgs[key],active); active._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,state.msgs[key],active); } },1400); }
   function simAcceptDm(k){ if(state.dmAccepted.includes(k))return; state.dmAccepted.push(k); state.sentDm=state.sentDm.filter(x=>x!==k); if(!state.dmAccepted.includes(k))return; save(); toast('@'+person(k).name+' accepted your DM'); if(active&&active.dmKey===k)renderThread(); }
 
   /* ═══ NEXUS HUB ═══
@@ -3033,8 +3055,101 @@
     async remove(id){ await initSB(); return sb.from('badges').delete().eq('id', id); }
   };
   const BADGE_ICON_KEYS=['trophy','medal','flame','sparkle','badge','compass','target','yinyang','handshake','fist'];
-  function openAwardBadge(){
-    let target=null, color=SWATCH[0], icon=BADGE_ICON_KEYS[0];
+  db.admin = {
+    async setAdmin(t,v){ await initSB(); const {error}=await sb.rpc('admin_set_admin',{target:t,val:v}); if(error)throw error; },
+    async setTier(t,v){ await initSB(); const {error}=await sb.rpc('admin_set_tier',{target:t,val:v}); if(error)throw error; },
+    async setBanned(t,v){ await initSB(); const {error}=await sb.rpc('admin_set_banned',{target:t,val:v}); if(error)throw error; },
+    async setMuted(t,untilIso){ await initSB(); const {error}=await sb.rpc('admin_set_muted',{target:t,until_ts:untilIso}); if(error)throw error; },
+    async editProfile(t,patch){ await initSB(); const {error}=await sb.rpc('admin_edit_profile',{target:t,patch}); if(error)throw error; },
+    async deleteMessages(t){ await initSB(); const {data,error}=await sb.rpc('admin_delete_user_messages',{target:t}); if(error)throw error; return data||0; },
+    async resetElo(t){ await initSB(); const {error}=await sb.rpc('admin_reset_user_elo',{target:t}); if(error)throw error; },
+    async kick(t,room){ await initSB(); const {error}=await sb.rpc('admin_kick',{target:t,room}); if(error)throw error; }
+  };
+  /* ═══ ADMIN CONTEXT MENU — right-click / long-press any person ═══ */
+  const MUTE_OPTS=[['1h',3600e3],['24h',86400e3],['7d',7*86400e3]];
+  function muteLeft(p){ if(!p||!p.mutedUntil)return ''; const ms=new Date(p.mutedUntil)-Date.now(); if(ms<=0)return ''; const h=Math.round(ms/36e5); return h>=48?Math.round(h/24)+'d':h+'h'; }
+  async function showAdminUserMenu(x,y,key,ctx){
+    if(!me()||!me().isAdmin)return;
+    document.querySelectorAll('.msg-menu').forEach(n=>n.remove());
+    let p=person(key);
+    if(online()){ try{ const fresh=await db.profiles.byId(key); if(fresh){ cacheProfile(fresh); p=fresh; } }catch(e){} }
+    // offline demo profiles have no .id (only a .name key), so comparing p.id===me().id would be
+    // undefined===undefined — always true, and the menu could never open for anyone. Compare the
+    // lookup key itself (name offline, uuid online) against both of me()'s identifiers instead.
+    if(!p||key===me().id||key===me().name)return;
+    const live=online();
+    const ml=muteLeft(p);
+    const srvRoom=ctx&&ctx.serverId?ctx.roomId:null;
+    let h=`<div class="am-head">${avatar(key,28)}<div><div class="am-name">${esc(p.name)}</div><div class="am-sub">@${esc(p.handle||'')} · ${p.tier==='main'?'Main':'Lite'}${p.isAdmin?' · admin':''}${p.banned?' · banned':''}${ml?' · muted '+ml:''}</div></div></div>`;
+    h+=`<button data-aa="profile">${IC.people} View profile</button>`;
+    h+=`<button data-aa="dm">${IC.dm} Message</button>`;
+    if(live){
+      h+=`<div class="am-sep"></div>`;
+      h+=`<button data-aa="tier">${IC.sparkle} ${p.tier==='main'?'Revoke Main':'Grant Main'}</button>`;
+      h+=`<button data-aa="admin">${IC.shield} ${p.isAdmin?'Remove admin':'Make admin'}</button>`;
+      h+=`<button data-aa="badge">${IC.badge} Award badge</button>`;
+      h+=`<button data-aa="rmbadge">${IC.badge} Remove a badge…</button>`;
+      h+=`<div class="am-sep"></div>`;
+      h+=`<button data-aa="rename">${IC.edit} Rename…</button>`;
+      h+=`<button data-aa="clearbio">${IC.edit} Clear bio &amp; status</button>`;
+      h+=`<button data-aa="resetpic">${IC.trash} Reset avatar &amp; banner</button>`;
+      h+=`<button data-aa="resetelo">${IC.trophy} Reset debate ELO</button>`;
+      h+=`<div class="am-sep"></div>`;
+      if(ml) h+=`<button data-aa="unmute">${IC.bell} Unmute</button>`;
+      else h+=`<div class="am-row"><span>${IC.bell} Mute</span>${MUTE_OPTS.map(([l])=>`<button class="chip" data-mute="${l}">${l}</button>`).join('')}</div>`;
+      if(srvRoom) h+=`<button class="danger" data-aa="kick">${IC.out} Kick from this server</button>`;
+      h+=`<button class="danger" data-aa="wipe">${IC.trash} Delete all their messages</button>`;
+      h+=`<button class="danger" data-aa="ban">${IC.shield} ${p.banned?'Unban':'Ban'}</button>`;
+    } else h+=`<div class="am-sub" style="padding:8px 12px">Moderation needs the live backend.</div>`;
+    const menu=el('div','msg-menu admin-menu',h); document.querySelector('.frame').appendChild(menu);
+    const fr=document.querySelector('.frame').getBoundingClientRect();
+    const mw=menu.offsetWidth, mh=menu.offsetHeight;
+    menu.style.left=Math.max(8,Math.min(x-fr.left,fr.width-mw-8))+'px';
+    menu.style.top=Math.max(8,Math.min(y-fr.top,fr.height-mh-8))+'px';
+    const close=()=>menu.remove();
+    setTimeout(()=>document.addEventListener('pointerdown',function h2(e){ if(!menu.contains(e.target)){ close(); document.removeEventListener('pointerdown',h2); } }),0);
+    const refresh=()=>{ if(ctx&&ctx.rerender)ctx.rerender(); };
+    const run=async(fn,ok)=>{ try{ await fn(); if(ok)toast(ok,IC.shield); SFX.play('success'); refresh(); }catch(e){ SFX.play('error'); toast(isMissingSchemaError(e)?'Run the pending database update first':((e&&e.message)||'Failed')); } };
+    menu.querySelectorAll('[data-mute]').forEach(b=>b.onclick=()=>{ const [,ms]=MUTE_OPTS.find(o=>o[0]===b.dataset.mute); close(); run(()=>db.admin.setMuted(p.id,new Date(Date.now()+ms).toISOString()),`Muted ${b.dataset.mute}`); });
+    menu.querySelectorAll('[data-aa]').forEach(b=>b.onclick=()=>{ const a=b.dataset.aa; close();
+      if(a==='profile') return openProfile(key);
+      if(a==='dm') return openDm(key);
+      if(a==='tier') return run(()=>db.admin.setTier(p.id,p.tier==='main'?'lite':'main'),p.tier==='main'?'Main revoked':'Main granted');
+      if(a==='admin') return confirmDialog(p.isAdmin?`Remove admin from ${p.name}?`:`Make ${p.name} an admin? They get every power you have.`,()=>run(()=>db.admin.setAdmin(p.id,!p.isAdmin),p.isAdmin?'Admin removed':'Now an admin'));
+      if(a==='badge') return openAwardBadge(p.id);
+      if(a==='rmbadge') return openRemoveBadge(p.id);
+      if(a==='rename') return promptDialog(`Rename ${p.name}`,p.name,20,v=>run(()=>db.admin.editProfile(p.id,{name:v}),'Renamed'));
+      if(a==='clearbio') return run(()=>db.admin.editProfile(p.id,{bio:'Becoming.',status_line:''}),'Bio & status cleared');
+      if(a==='resetpic') return run(()=>db.admin.editProfile(p.id,{avatar_path:'',banner_path:''}),'Avatar & banner reset');
+      if(a==='resetelo') return confirmDialog(`Reset ${p.name} to 1000 ELO, 0 W/L/T?`,()=>run(()=>db.admin.resetElo(p.id),'ELO reset'));
+      if(a==='unmute') return run(()=>db.admin.setMuted(p.id,null),'Unmuted');
+      if(a==='kick') return confirmDialog(`Kick ${p.name} from this server?`,()=>run(()=>db.admin.kick(p.id,srvRoom),'Kicked'));
+      if(a==='wipe') return confirmType(`Every message ${p.name} has ever sent, in every room, gets deleted. This cannot be undone.`,'DELETE',()=>run(async()=>{ const n=await db.admin.deleteMessages(p.id); toast(`${n} message${n===1?'':'s'} deleted`,IC.trash); },null),{title:'Wipe messages?',yes:'Delete all'});
+      if(a==='ban') return confirmDialog(p.banned?`Unban ${p.name}?`:`Ban ${p.name}? They can still read but never post or join anything.`,()=>run(()=>db.admin.setBanned(p.id,!p.banned),p.banned?'Unbanned':'Banned'));
+    });
+  }
+  function promptDialog(title,initial,max,onOk){ const s=$('confirmScrim'); s.innerHTML=`<div class="confirm"><h3>${esc(title)}</h3><input id="pdIn" value="${attr(initial||'')}" maxlength="${max||60}" autocomplete="off" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px;margin-bottom:14px;outline:none"><div class="row2"><button class="btn ghost" id="pdNo">Cancel</button><button class="btn" id="pdYes">Save</button></div></div>`; s.classList.add('on'); const inp=$('pdIn'); $('pdNo').onclick=()=>s.classList.remove('on'); $('pdYes').onclick=()=>{ const v=inp.value.trim(); if(!v)return; s.classList.remove('on'); onOk(v); }; inp.addEventListener('keydown',e=>{ if(e.key==='Enter')$('pdYes').click(); }); setTimeout(()=>{ inp.focus(); inp.select(); },50); }
+  async function openRemoveBadge(userId){
+    let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Remove a badge</div><div class="th-sub" style="margin-bottom:12px">${esc(person(userId).name)} — tap a badge to remove it.</div><div id="rbList"><div class="empty" style="padding:12px">Loading…</div></div><div style="height:16px"></div></div>`;
+    $('sheet').className='sheet'; showSheet(h);
+    const draw=async()=>{ const box=$('rbList'); if(!box)return; try{ const list=await db.badges.list(userId); if(!$('rbList'))return; if(!list.length){ box.innerHTML=emptyState(IC.badge,'No badges to remove.'); return; }
+      box.innerHTML=list.map(b=>`<div class="row" style="padding-left:0;padding-right:0"><span class="chip on badge-chip" style="${b.color?`--accent-soft:${b.color}26;border-color:${b.color};color:${b.color}`:''}">${b.icon&&IC[b.icon]?IC[b.icon]:''} ${esc(b.label)}</span><div class="r-main"></div><button class="chip" data-rb="${attr(b.id)}" style="color:var(--danger);border-color:var(--danger-line)">${IC.trash} Remove</button></div>`).join('');
+      box.querySelectorAll('[data-rb]').forEach(btn=>btn.onclick=()=>confirmDialog('Remove this badge?',async()=>{ try{ const {error}=await db.badges.remove(btn.dataset.rb); if(error)throw error; toast('Badge removed'); draw(); }catch(e){ toast('Could not remove'); } }));
+    }catch(e){ if($('rbList'))$('rbList').innerHTML='<div class="empty">Couldn’t load badges.</div>'; } };
+    draw();
+  }
+  // wire: right-click or long-press on anything carrying data-user (admins only)
+  (function wireAdminUserMenu(){
+    const frame=document.querySelector('.frame'); if(!frame)return;
+    let t=null, sx=0, sy=0;
+    const ctxOf=()=>{ const th=(state.screen==='_thread'||document.querySelector('#s-thread.on, #s-nexus.on'))?active:null; return th?{serverId:th.serverId,roomId:th.roomId,rerender:()=>{}}:null; };
+    frame.addEventListener('contextmenu',e=>{ if(!me()||!me().isAdmin)return; const u=e.target.closest('[data-user]'); if(!u)return; e.preventDefault(); showAdminUserMenu(e.clientX,e.clientY,u.dataset.user,ctxOf()); });
+    frame.addEventListener('pointerdown',e=>{ if(!me()||!me().isAdmin||e.pointerType==='mouse')return; const u=e.target.closest('[data-user]'); if(!u)return; sx=e.clientX; sy=e.clientY; clearTimeout(t); t=setTimeout(()=>{ window.__adminLongPressAt=Date.now(); if(navigator.vibrate)try{navigator.vibrate(12);}catch(_){} showAdminUserMenu(sx,sy,u.dataset.user,ctxOf()); },520); },{passive:true});
+    ['pointerup','pointercancel','pointerleave'].forEach(ev=>frame.addEventListener(ev,()=>clearTimeout(t),{passive:true}));
+    frame.addEventListener('pointermove',e=>{ if(Math.abs(e.clientX-sx)>8||Math.abs(e.clientY-sy)>8)clearTimeout(t); },{passive:true});
+  })();
+  function openAwardBadge(prefill){
+    let target=prefill||null, color=SWATCH[0], icon=BADGE_ICON_KEYS[0];
     let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:8px">Award a badge</div>`;
     h+=`<div class="searchbar" style="margin:0 0 8px">${IC.search}<input id="abUser" placeholder="Search a user by name or @handle"></div><div id="abResults"></div><div id="abTarget" class="th-sub" style="margin:6px 0"></div>`;
     h+=`<div class="field"><label>Badge label</label><input id="abLabel" placeholder="e.g. Founding Member" maxlength="30"></div>`;
@@ -3045,6 +3160,7 @@
     $('abColor').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ color=b.dataset.c; $('abColor').querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.c===color)); });
     $('abIconPick').querySelectorAll('[data-ic]').forEach(b=>b.onclick=()=>{ icon=b.dataset.ic; $('abIconPick').querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.ic===icon)); });
     const search=$('abUser'); search.oninput=()=>{ clearTimeout(search._t); search._t=setTimeout(async ()=>{ const list=await db.profiles.search(search.value.trim()); cacheProfiles(list); const box=$('abResults'); if(!box)return; box.innerHTML=list.slice(0,6).map(p=>`<div class="row" data-abpick="${attr(p.id)}">${avatar(p.id,36,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')}</div></div></div>`).join(''); box.querySelectorAll('[data-abpick]').forEach(b=>b.onclick=()=>{ target=b.dataset.abpick; $('abTarget').textContent='Awarding to @'+(person(target).handle||''); box.innerHTML=''; search.value='@'+(person(target).handle||''); $('abGive').disabled=false; $('abGive').style.opacity='1'; }); },300); };
+    if(target){ const tp=person(target); $('abTarget').textContent='Awarding to @'+(tp.handle||tp.name||''); search.value='@'+(tp.handle||tp.name||''); $('abGive').disabled=false; $('abGive').style.opacity='1'; setTimeout(()=>{ const l=$('abLabel'); if(l)l.focus(); },80); }
     $('abGive').onclick=async ()=>{ const label=$('abLabel').value.trim(); if(!target||!label){ toast('Pick a user and a label'); return; } try{ await db.badges.award(target,label,icon,color); toast('Badge awarded'); closeSheet(); }catch(e){ toast('Could not award — '+((e&&e.message)||'')); } };
   }
   async function loadBadges(id){ const box=$('pBadges'); if(!box)return; try{ const data = await db.badges.list(id); if(!$('pBadges'))return; const list=data||[]; if(!list.length){ box.innerHTML='<div class="muted-note prof-bio" style="padding:0">No badges yet.</div>'; return; } box.innerHTML=`<div class="chips">${list.map(b=>`<span class="chip on badge-chip" style="${b.color?`--accent-soft:${b.color}26;border-color:${b.color};color:${b.color}`:''}">${b.icon&&IC[b.icon]?IC[b.icon]:''} ${esc(b.label)}</span>`).join('')}</div>`; }catch(e){} }
@@ -3116,10 +3232,41 @@
   }
   function renderAdminUserPanel(p){
     const box=$('admUserPanel'); if(!box)return;
-    box.innerHTML=`<div class="admin-user-panel"><div class="row" style="padding-left:0;padding-right:0">${avatar(p.id,38,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')}</div></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="chip ${p.isAdmin?'on':''}" id="admToggleAdmin">${p.isAdmin?'Remove admin':'Make admin'}</button><button class="chip ${p.tier==='main'?'on':''}" id="admToggleTier">${p.tier==='main'?'Set to Lite':'Grant Main'}</button><button class="chip" id="admToggleBan" style="${p.banned?'color:var(--danger);border-color:var(--danger-line)':''}">${p.banned?'Unban':'Ban'}</button></div></div>`;
-    $('admToggleAdmin').onclick=async ()=>{ try{ await sb.rpc('admin_set_admin',{target:p.id,val:!p.isAdmin}); p.isAdmin=!p.isAdmin; toast(p.isAdmin?'Now an admin':'Admin removed'); renderAdminUserPanel(p); }catch(e){ toast('Could not update'); } };
-    $('admToggleTier').onclick=async ()=>{ const newTier=p.tier==='main'?'lite':'main'; try{ await sb.rpc('admin_set_tier',{target:p.id,val:newTier}); p.tier=newTier; toast('Tier set to '+newTier); renderAdminUserPanel(p); }catch(e){ toast('Could not update'); } };
-    $('admToggleBan').onclick=async ()=>{ try{ await sb.rpc('admin_set_banned',{target:p.id,val:!p.banned}); p.banned=!p.banned; toast(p.banned?'Banned':'Unbanned'); renderAdminUserPanel(p); }catch(e){ toast('Could not update'); } };
+    const ml=muteLeft(p);
+    const chip=(id,label,on,danger)=>`<button class="chip ${on?'on':''}" data-adm="${id}" style="${danger?'color:var(--danger);border-color:var(--danger-line)':''}">${label}</button>`;
+    box.innerHTML=`<div class="admin-user-panel">
+      <div class="row" style="padding-left:0;padding-right:0">${avatar(p.id,38,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)}</div><div class="r-sub">@${esc(p.handle||'')} · ${p.tier==='main'?'Main':'Lite'}${p.isAdmin?' · admin':''}${p.banned?' · banned':''}${ml?' · muted '+ml:''} · ${p.elo||1000} ELO</div></div></div>
+      <div class="th-sub" style="margin:8px 0 4px">Access</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${chip('admin',p.isAdmin?'Remove admin':'Make admin',p.isAdmin)}${chip('tier',p.tier==='main'?'Set to Lite':'Grant Main',p.tier==='main')}${chip('ban',p.banned?'Unban':'Ban',false,true)}</div>
+      <div class="th-sub" style="margin:12px 0 4px">Mute</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${ml?chip('unmute','Unmute ('+ml+' left)',true):MUTE_OPTS.map(([l])=>chip('mute:'+l,l,false)).join('')}</div>
+      <div class="th-sub" style="margin:12px 0 4px">Profile</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${chip('rename','Rename')}${chip('clearbio','Clear bio & status')}${chip('resetpic','Reset avatar & banner')}${chip('resetelo','Reset ELO')}</div>
+      <div class="th-sub" style="margin:12px 0 4px">Badges</div>
+      <div id="admBadges" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="th-sub">Loading…</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">${chip('badge','Award badge')}</div>
+      <div class="th-sub" style="margin:12px 0 4px">Danger</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${chip('wipe','Delete all messages',false,true)}</div>
+    </div>`;
+    const rerender=async()=>{ try{ const f=await db.profiles.byId(p.id); if(f){ cacheProfile(f); renderAdminUserPanel(f); loadAdminStats(); return; } }catch(e){} renderAdminUserPanel(p); };
+    const run=async(fn,ok)=>{ try{ await fn(); if(ok)toast(ok,IC.shield); SFX.play('success'); rerender(); }catch(e){ SFX.play('error'); toast(isMissingSchemaError(e)?'Run the pending database update first':((e&&e.message)||'Could not update')); } };
+    box.querySelectorAll('[data-adm]').forEach(b=>b.onclick=()=>{ const a=b.dataset.adm;
+      if(a==='admin') return confirmDialog(p.isAdmin?'Remove admin from '+p.name+'?':'Make '+p.name+' an admin?',()=>run(()=>db.admin.setAdmin(p.id,!p.isAdmin),p.isAdmin?'Admin removed':'Now an admin'));
+      if(a==='tier') return run(()=>db.admin.setTier(p.id,p.tier==='main'?'lite':'main'),p.tier==='main'?'Set to Lite':'Main granted');
+      if(a==='ban') return confirmDialog(p.banned?'Unban '+p.name+'?':'Ban '+p.name+'?',()=>run(()=>db.admin.setBanned(p.id,!p.banned),p.banned?'Unbanned':'Banned'));
+      if(a.startsWith('mute:')){ const [,ms]=MUTE_OPTS.find(o=>o[0]===a.slice(5)); return run(()=>db.admin.setMuted(p.id,new Date(Date.now()+ms).toISOString()),'Muted '+a.slice(5)); }
+      if(a==='unmute') return run(()=>db.admin.setMuted(p.id,null),'Unmuted');
+      if(a==='rename') return promptDialog('Rename '+p.name,p.name,20,v=>run(()=>db.admin.editProfile(p.id,{name:v}),'Renamed'));
+      if(a==='clearbio') return run(()=>db.admin.editProfile(p.id,{bio:'Becoming.',status_line:''}),'Bio & status cleared');
+      if(a==='resetpic') return run(()=>db.admin.editProfile(p.id,{avatar_path:'',banner_path:''}),'Avatar & banner reset');
+      if(a==='resetelo') return confirmDialog('Reset '+p.name+' to 1000 ELO?',()=>run(()=>db.admin.resetElo(p.id),'ELO reset'));
+      if(a==='badge') return openAwardBadge(p.id);
+      if(a==='wipe') return confirmType('Every message '+p.name+' has ever sent gets deleted. This cannot be undone.','DELETE',()=>run(async()=>{ const n=await db.admin.deleteMessages(p.id); toast(n+' message'+(n===1?'':'s')+' deleted',IC.trash); },null),{title:'Wipe messages?',yes:'Delete all'});
+    });
+    (async()=>{ const bb=$('admBadges'); if(!bb)return; try{ const list=await db.badges.list(p.id); if(!$('admBadges'))return;
+      bb.innerHTML=list.length?list.map(b=>'<span class="chip on badge-chip" data-admrb="'+attr(b.id)+'" title="Tap to remove" style="'+(b.color?'--accent-soft:'+b.color+'26;border-color:'+b.color+';color:'+b.color:'')+'">'+(b.icon&&IC[b.icon]?IC[b.icon]:'')+' '+esc(b.label)+' <span style="opacity:.6;margin-left:2px">✕</span></span>').join(''):'<span class="th-sub">No badges.</span>';
+      bb.querySelectorAll('[data-admrb]').forEach(c=>c.onclick=()=>confirmDialog('Remove this badge?',async()=>{ try{ const {error}=await db.badges.remove(c.dataset.admrb); if(error)throw error; toast('Badge removed'); rerender(); }catch(e){ toast('Could not remove'); } }));
+    }catch(e){ bb.innerHTML='<span class="th-sub">Couldn’t load.</span>'; } })();
   }
   async function loadAdminServers(){
     const box=$('admServers'); if(!box)return;
@@ -3166,7 +3313,7 @@
   window.addEventListener('scroll',()=>{ if(window.scrollX||window.scrollY)window.scrollTo(0,0); },{passive:true});
   function openSub(h){ $('subscreen').innerHTML=h; $('subscreen').classList.add('on'); }
   function closeSub(){ $('subscreen').classList.remove('on'); $('subscreen').innerHTML=''; }
-  $('view').addEventListener('click',e=>{ const t=e.target.closest('[data-user]'); if(!t)return; const u=t.dataset.user; openProfile(me()&&u===me().name?undefined:u); });
+  $('view').addEventListener('click',e=>{ const t=e.target.closest('[data-user]'); if(!t)return; if(Date.now()-(window.__adminLongPressAt||0)<700)return; const u=t.dataset.user; openProfile(me()&&u===me().name?undefined:u); });
   document.querySelector('.frame').addEventListener('click',e=>{ const ht=e.target.closest('[data-hashtag]'); if(ht){ e.stopPropagation(); closeSheet(); const pv=$('pvScreen'); if(pv){pv.classList.remove('on'); pv.innerHTML='';} openHashtag(ht.dataset.hashtag); return; } const mn=e.target.closest('[data-mention]'); if(mn){ e.stopPropagation(); openProfileByHandle(mn.dataset.mention); } });
   function openProfileByHandle(handle){ if(!online()){ openProfile(handle); return; } db.profiles.byHandle(handle).then(p=>{ if(!p){ toast('@'+handle+' not found'); return; } cacheProfile(p); const pv=$('pvScreen'); if(pv&&pv.classList.contains('on')){pv.classList.remove('on'); pv.innerHTML='';} openProfile(p.id); }).catch(()=>{}); }
   // delegate data-user inside sheet + subscreen

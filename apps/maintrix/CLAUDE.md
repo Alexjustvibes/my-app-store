@@ -200,6 +200,110 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.16.1 — regression fixes: viewport jump, send-scroll, DM call button)
+
+- **Fixed a real regression from `v0.14.1`'s keyboard/text-size fix**: the
+  screen would randomly jump upward on a real phone, exposing the OS status
+  bar over the chat (reported with a screenshot). Root cause was
+  `syncFrame()` also setting `frame.style.top` to chase
+  `visualViewport.offsetTop`, meant to counter iOS repositioning fixed
+  content when the keyboard opens — but on-device this fought the
+  browser's own compensation and produced a visible upward shift instead.
+  That was never verified against a real device, only reasoned about; the
+  screenshot proved it wrong. Removed the `top` compensation entirely —
+  `syncFrame()` now only sets `.frame`'s height (the part that WAS verified,
+  against actual dvh/zoom scaling math). The existing
+  `window.addEventListener('scroll', ()=>scrollTo(0,0))` snap-back plus
+  `body{position:fixed}` already cover the layout-viewport-scroll case this
+  was also trying to handle.
+- **Fixed "sending a message scrolls the chat up."** `.msg` carried a
+  blanket `animation:msgIn` — since `renderMsgs()` rebuilds the *entire*
+  message list as one HTML blob on every send/receive/reaction/edit, that
+  animation replayed for **every message in the thread simultaneously**
+  each time, not just the new one. Right as `scrollTop` jumped to the
+  bottom, the whole history would visibly "rise into place" at once —
+  reads exactly like an unwanted scroll. Fixed by moving the animation to
+  a `.msg-in` class applied only to the specific message that just
+  arrived: `renderMsgs(list, ctx)` now checks `ctx._animateId` per row, and
+  every call site that appends exactly one message (online send, offline
+  send, media upload, the realtime INSERT handler, the offline simulated
+  reply, and the Commons relay) sets `th._animateId = <newMsgId>`
+  immediately before rendering and clears it right after — so a plain
+  reaction/edit repaint (which sets no `_animateId`) no longer animates
+  anything, and a send animates only its own bubble.
+- **DMs now show the same call/phone icon as the Nexus header**, replacing
+  Room Options there. `isCall = isEmbed || !!th.dmKey` drives both the
+  icon (`IC.phone` vs `IC.gear`/`IC.bell`) and the click handler
+  (`openVoiceChannel(th.roomId, th.title)` vs `openRoomOptions`) — DMs and
+  the embedded Nexus room now behave identically for this button. Servers
+  are unaffected (still gear → Room settings).
+- Verified in-browser: sending two messages in a row animates only the
+  second bubble and leaves history untouched; a DM thread's header button
+  reads "Voice call" with the phone glyph and routes into
+  `openVoiceChannel` (falls back to a toast offline, same as Nexus). The
+  viewport-jump fix couldn't be re-verified on a real device here (no
+  physical keyboard in this environment) — the removed code was the
+  unverified part in the first place, so this trades a speculative,
+  now-disproven fix for a plainer one that's actually been checked.
+
+## Build state (as of v0.16 — right-click/long-press moderation, admin panel overhaul)
+
+- **Admins can right-click (desktop) or long-press (touch) any avatar/name
+  anywhere in the app** — messages, search results, profiles, mini-profiles,
+  DM headers, anywhere carrying `data-user` — to get a moderation menu
+  directly, no detour through Overwatch → Tools required (`showAdminUserMenu`,
+  wired once in `wireAdminUserMenu` on `.frame`). Right-clicking/long-pressing
+  a message's *body* instead of its avatar still opens the normal
+  reply/edit/delete menu, which now carries a "Moderate <name>…" entry for
+  admins that opens the same menu — so both entry points exist, as asked
+  ("even though it should be there too" → Overwatch Tools also got every
+  action, in a fuller "Manage a member" panel).
+- **Bug caught while wiring this**: the menu's own guard against moderating
+  yourself was `p.id===me().id||p.name===me().name` — offline demo profiles
+  have no `.id` field at all, so `undefined===undefined` was `true` and the
+  menu silently refused to open for *anyone* in local/demo mode. Fixed to
+  compare the lookup key itself (name offline, uuid online) against both of
+  `me()`'s identifiers. Caught by testing offline before shipping, not by a
+  report.
+- **New moderation powers** (migration `0021`, already run on production):
+  - **Timed mute** (1h/24h/7d, or Unmute) — `profiles.muted_until`,
+    enforced in `msg_insert`'s RLS policy via `is_muted()` alongside the
+    existing ban check. Can still read, can't post until it passes.
+  - **Remove a badge** — badge deletion already had an RLS policy
+    (`badges_delete`, admin-only, from `0007`) but no UI; added
+    `openRemoveBadge()` (a dedicated sheet, tap a badge to remove it) and an
+    inline "✕" on each badge chip in the Overwatch member panel.
+  - **Rename**, **clear bio & status**, **reset avatar & banner** —
+    `admin_edit_profile(target, patch jsonb)`, a single RPC that only ever
+    touches `name`/`bio`/`status_line`/`avatar_path`/`banner_path` — never
+    handle/goals/fears/tier/admin/banned, which all keep their own
+    dedicated, narrower RPCs.
+  - **Delete all of a member's messages** — `admin_delete_user_messages`,
+    gated behind `confirmType()`'s type-to-confirm ("DELETE"), returns the
+    row count so the toast can say how many were removed.
+  - **Reset one member's ELO** — `admin_reset_user_elo` (the single-user
+    sibling of `0019`'s leaderboard-wide reset).
+  - **Kick from a server** — `admin_kick(target, room)`, refuses to kick
+    the room's owner.
+- **Overwatch → Tools → Manage a member panel rewritten** to expose all of
+  the above (previously just admin/tier/ban toggles): grouped into Access /
+  Mute / Profile / Badges / Danger, each member's badges listed live with a
+  tap-to-remove "✕", header line shows ELO and remaining mute time.
+- Every action funnels through one `run(fn, successMessage)` helper (both
+  in the context menu and the Tools panel) — plays the success/error chime,
+  toasts, and re-renders from a fresh `db.profiles.byId()` fetch so the
+  panel never shows stale state after an action.
+- **Verified in-browser** (offline, since these are admin-privileged RPCs
+  with no local/demo equivalent to hit against a real DB): right-click on
+  an avatar opens the menu with the correct self-check now passing; the
+  message-menu's "Moderate…" entry chains into the same menu; the Tools
+  panel renders all 10-12 action chips correctly for muted/unmuted and
+  admin/banned member states; rename/wipe dialogs show correct copy;
+  Award/Remove badge sheets render and prefill the target. **Not
+  verified**: an actual live RPC round-trip (needs a second real admin
+  account to moderate) — logic verified against the confirmed-live
+  migration `0021` schema instead.
+
 ## Build state (as of v0.15.1 — profile sheet gap, mention/reply highlight)
 
 - **Profile sheet dark strip above the banner is gone.** `.sheet-grab`
