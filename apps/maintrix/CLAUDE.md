@@ -200,6 +200,25 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.15.1 — profile sheet gap, mention/reply highlight)
+
+- **Profile sheet dark strip above the banner is gone.** `.sheet-grab`
+  (10px margin + 4px bar + 4px) sat above the banner as a bare band.
+  `.prof-banner` now gets `margin-top:-19px` (height bumped 88→106 so the
+  visible area is unchanged) and the grab handle floats over it
+  (`position:relative; z-index:3` + a small drop shadow so it reads on any
+  banner color).
+- **Messages that @mention you or reply to you are highlighted** in every
+  thread: `forMe(mm)` (handle/name mention regex, or `replyTo.a` matching
+  you; never your own messages) adds `.msg-hi` — gold left rail + gold
+  gradient wash, and the `@you` chip itself flips to solid gold. Mono
+  theme (Awake) gets a white rail on `#1a1a1a` instead.
+- **Fix**: the topbar title could shrink to nothing at narrow widths (title
+  span had `overflow:hidden` + default flex-shrink while the sub was
+  `flex:0 0 auto`, so "Nexus" collapsed to a dot on 375px). Flipped it: the
+  title is `flex:0 0 auto`, the `· one world` sub truncates with an
+  ellipsis instead.
+
 ## Build state (as of v0.15 — Web Push notifications, iOS included)
 
 - **Push works end-to-end** (migration `0020`, already run on production;
