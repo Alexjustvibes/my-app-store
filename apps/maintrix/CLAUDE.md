@@ -200,6 +200,51 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.14 — full visual overhaul + synthesized sound)
+
+- **Sound system (`SFX`)**: every sound is synthesized live with Web Audio
+  (oscillators + filtered noise) — no audio files shipped, works offline.
+  Bank: `tap`, `nav`, `send`, `receive`, `react`, `like`, `notify`, `open`,
+  `close`, `success`, `error`, `win`, `lose`, `rankup`. Master gain is low
+  (.16) on purpose. `SFX.arm()` runs on the first `pointerdown` because
+  browsers refuse audio before a real gesture. `state.sound` toggle lives in
+  Profile → Settings → Theme & display ("Sound effects"), default on. Wired
+  into: sheets open/close, message send/receive (receive skips own echo),
+  reactions, notifications, post/profile likes, debate results, bottom nav.
+- **Tactile layer**: one delegated `pointerdown` listener
+  (`wireTactile`) gives `.btn/.chip/.card/.row/.settings-row/.botnav
+  button/.tb-btn/.segmented button/...` a spawned `.ripple` span + the tap
+  sound. Ripple is skipped under `body.reduce-motion`.
+- **Design tokens** added to `:root`: `--glass`/`--glass-2`/`--glass-blur`
+  (backdrop-blur surfaces built with `color-mix` off the themed `--ground`/
+  `--surface`, so every theme stays correct), `--sh-1/2/3` shadows,
+  `--sh-glow`, `--ease-spring`, `--ease-out`.
+- **Ambient aurora**: `.frame::before` — three blurred accent radial
+  gradients drifting on a 42s loop, opacity .11. Tuned down from .3 after
+  it flooded the whole UI in-browser. `#app` got `position:relative;
+  z-index:1` so content sits above it. Frozen under reduce-motion.
+- **Glass chrome**: topbar, bottom nav, msgbar, thread-head, sheet, toast
+  all use `--glass` + `backdrop-filter`. Hairline borders are gradient
+  lines with an accent highlight in the middle instead of flat `--line`.
+- **Bottom nav**: animated active pill (`button::before`, spring scale-in)
+  behind the icon + `navPop` icon bounce on switch.
+- **Buttons/chips/cards**: gradient fills, glow shadows, inset top
+  highlight, spring `:active`, `.btn::after` shine sweep on hover, cards
+  lift 2px on hover.
+- **Avatars**: inset depth shadow; `.av.live` pulses (`liveRing`); status
+  dots glow in their color. Profile hero avatar gets a ground+accent double
+  ring — target `.p-av .av` not `.p-av` (the wrapper is full-width; ring on
+  it rendered as a giant ellipse, caught in-browser).
+- **Intro splash**: accent glow bloom (`#intro::before`, `exGlow`) + a
+  light sweep across the EXPANSION word (`ex-word::after`, `exShine`).
+- **Misc**: `screenIn` now translate+scale; display headings
+  (`#auth h1`, `.prof-hero h2`, `.lock h2`, `.ob-step h2`, `.prof-stats b`)
+  get a white-to-accent gradient text fill; MAIN tier pill shimmers; inputs
+  get an accent focus ring; `.likebtn.on`/`.tick.done` pop; topbar title
+  no longer wraps ("For You" was breaking onto two lines — `white-space:
+  nowrap` + ellipsis on the title span). Mono-theme (Awake) strips the
+  glass/aurora to stay stark.
+
 ## Build state (as of v0.13.4 — messaging visuals, flashier rank-ups, read receipts)
 
 - **Messaging got a full visual pass.** Messages now animate in
