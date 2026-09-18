@@ -1,8 +1,8 @@
 -- Maintrix — ONE-TIME CATCH-UP SCRIPT
 -- ═══════════════════════════════════════════════════════════════
--- Migrations 0009 through 0017, concatenated in order. 0009-0016 have
--- already been run against production as of this writing; 0017 (banner
--- style) is still pending. This file is idempotent, so running the
+-- Migrations 0009 through 0018, concatenated in order. 0009-0017 have
+-- already been run against production as of this writing; 0018 (read
+-- receipts) is still pending. This file is idempotent, so running the
 -- whole thing again is always safe.
 -- ═══════════════════════════════════════════════════════════════
 
@@ -19,7 +19,6 @@
 
 alter table public.posts add column if not exists caption text;
 
-
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0010_mbti.sql
 -- ═══════════════════════════════════════════════════════════════
@@ -34,7 +33,6 @@ alter table public.profiles
 alter table public.profiles
   add constraint profiles_mbti_valid
   check (mbti is null or mbti ~ '^[EI][SN][TF][JP]$');
-
 
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0011_enneagram_temperament.sql
@@ -72,7 +70,6 @@ alter table public.profiles add constraint profiles_temperament_dominant_valid
 alter table public.profiles drop constraint if exists profiles_temperament_secondary_valid;
 alter table public.profiles add constraint profiles_temperament_secondary_valid
   check (temperament_secondary is null or temperament_secondary in ('Sanguine','Choleric','Melancholic','Phlegmatic'));
-
 
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0012_qol_batch.sql
@@ -277,7 +274,6 @@ drop policy if exists evr_insert on public.event_rsvps;
 create policy evr_insert on public.event_rsvps for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists evr_delete on public.event_rsvps;
 create policy evr_delete on public.event_rsvps for delete to authenticated using (user_id = auth.uid());
-
 
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0013_debates_admin_awake.sql
@@ -525,7 +521,6 @@ insert into public.rooms (kind, title, category, is_public, is_official, theme, 
 select 'server', 'Awake', 'Philosophy', true, true, 'mono', jsonb_build_object('bio','Stay awake. No noise, no color — just the words.','icon','A')
 where not exists (select 1 from public.rooms where kind='server' and title='Awake');
 
-
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0014_debate_elo.sql
 -- ═══════════════════════════════════════════════════════════════
@@ -583,7 +578,6 @@ begin
     elo_delta = abs(delta)
     where id = d_id;
 end; $$;
-
 
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0015_voice_streaks_badges_maintenance.sql
@@ -834,7 +828,6 @@ grant execute on function public.admin_set_maintenance(boolean,text,text) to aut
 -- ═══════════════════════ Admin grants ═══════════════════════════════════
 update public.profiles set is_admin = true where handle in ('ret','5');
 
-
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0016_dm_conversations_auto_admin.sql
 -- ═══════════════════════════════════════════════════════════════
@@ -914,7 +907,6 @@ $$;
 -- today, since production has no signups yet)
 update public.profiles set is_admin = true where handle in ('ret','5');
 
-
 -- ═══════════════════════════════════════════════════════════════
 -- migrations/0017_banner_style.sql
 -- ═══════════════════════════════════════════════════════════════
@@ -929,4 +921,32 @@ alter table public.profiles drop constraint if exists profiles_banner_style_vali
 alter table public.profiles add constraint profiles_banner_style_valid
   check (banner_style is null or banner_style in ('diagonal','radial','vertical','sunburst'));
 
+-- ═══════════════════════════════════════════════════════════════
+-- migrations/0018_read_receipts.sql
+-- ═══════════════════════════════════════════════════════════════
+-- Maintrix backend — 0018: read receipts (DMs)
+-- Backs the "seen" avatar shown under the last message a DM partner has
+-- actually read. Run after 0017.
+
+create table if not exists public.room_reads (
+  room_id uuid references public.rooms(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete cascade,
+  read_at timestamptz not null default now(),
+  primary key (room_id, user_id)
+);
+alter table public.room_reads enable row level security;
+
+-- any member of the room can see everyone's read marker in it (that's the
+-- whole point of a receipt — the other person needs to see yours)
+drop policy if exists rreads_select on public.room_reads;
+create policy rreads_select on public.room_reads for select to authenticated
+  using (exists (select 1 from public.room_members where room_id = room_reads.room_id and user_id = auth.uid()));
+
+drop policy if exists rreads_insert on public.room_reads;
+create policy rreads_insert on public.room_reads for insert to authenticated
+  with check (user_id = auth.uid());
+
+drop policy if exists rreads_update on public.room_reads;
+create policy rreads_update on public.room_reads for update to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
 
