@@ -200,6 +200,21 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.13.3 — personality sections collapse by default)
+
+- **MBTI / Enneagram / Temperament on a profile are collapsed by default.**
+  `personalityBlock()`'s three rows used to always render their full
+  description text inline, which made the top of every profile a wall of
+  text. `personalityRow()` now renders each system as a single collapsed
+  line (icon, label, current value, a chevron) with the description/
+  functions/tritype detail hidden in a `.pt-detail` div until tapped —
+  `wirePersonalityToggles()` handles the expand/collapse (guarding against
+  the edit-pencil's own click via `closest('.tg-edit')`), wired both for
+  your own profile and for others' (previously only `wirePersonalityEdit()`
+  ran, which only fires `if(own)`). Verified in-browser: each row expands/
+  collapses independently and the edit pencil still opens its picker
+  without also toggling the row.
+
 ## Build state (as of v0.13.2 — loads more appearance options, UI cleanup, animation polish)
 
 - **Appearance is dramatically bigger now.** `SWATCH` (profile color) went

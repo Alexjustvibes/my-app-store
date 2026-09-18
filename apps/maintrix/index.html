@@ -331,6 +331,10 @@
   .prof-bio { font-size:15px; color:var(--text); line-height:1.55; padding:0 20px 16px; text-align:center; }
   .trait-group { padding:4px 16px 10px; } .trait-group .tg-k { font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; display:flex; align-items:center; gap:6px; } .trait-group .muted-note { text-align:left; color:var(--dim); font-size:14px; }
   .tg-edit { margin-left:auto; color:var(--dim); width:22px; height:22px; display:grid; place-items:center; border-radius:6px; } .tg-edit:active { background:var(--hover); } .tg-edit svg { width:14px; height:14px; }
+  .pt-toggle { cursor:pointer; }
+  .pt-chev { margin-left:auto; display:inline-flex; color:var(--dim); } .pt-chev svg { width:13px; height:13px; transition:transform .2s cubic-bezier(.2,.8,.2,1); }
+  .pt-toggle.open .pt-chev svg { transform:rotate(90deg); }
+  .pt-detail { display:none; margin-top:8px; animation:screenIn .2s ease; } .pt-detail.open { display:block; }
   .settings-row { display:flex; align-items:center; gap:13px; padding:15px 18px; border-top:1px solid var(--line); cursor:pointer; font-size:15px; color:var(--text); } .settings-row:hover { background:var(--hover); } .settings-row .sr-ic { color:var(--muted); } .settings-row .sr-r { margin-left:auto; color:var(--dim); font-size:13px; } .settings-row.danger { color:var(--danger); }
   .swatches { display:flex; gap:12px; flex-wrap:wrap; position:relative; } .sw { width:40px; height:40px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s; } .sw.on { border-color:#fff; transform:scale(1.1); } .sw:active { transform:scale(.9); }
   .banner-sw { width:56px; height:36px; border-radius:8px; cursor:pointer; border:2px solid var(--line); transition:transform .18s cubic-bezier(.34,1.56,.64,1),border-color .15s; } .banner-sw.on { border-color:#fff; transform:scale(1.05); } .banner-sw:active { transform:scale(.92); }
@@ -2127,7 +2131,7 @@
     h+=`</div>`;
     showSheet(h);
     if(online())loadBadges(own?me().id:who);
-    if(own)wirePersonalityEdit();
+    if(own)wirePersonalityEdit(); else wirePersonalityToggles();
     { const pc=$('pCompose'); if(pc)pc.onclick=openCompose; }
     { const psc=$('pShareCard'); if(psc)psc.onclick=sharePersonalityCard; }
     $('sheet').querySelectorAll('[data-mini]').forEach(b=>b.onclick=()=>openMiniProfile(b.dataset.mini));
@@ -2233,23 +2237,34 @@
     },'image/png');
   }
   function personEditBtn(id){ return `<button class="tg-edit" id="${id}" title="Edit">${IC.edit}</button>`; }
+  function personalityRow(key,icon,label,valueText,detailHtml,editBtn){
+    const toggleable = !!detailHtml;
+    let hh=`<div class="trait-group"><div class="tg-k${toggleable?' pt-toggle':''}"${toggleable?` data-pt="${key}"`:''}>${icon} ${label} — ${valueText}${toggleable?`<span class="pt-chev">${IC.chev}</span>`:''}${editBtn}</div>`;
+    if(toggleable) hh+=`<div class="prof-bio pt-detail" id="ptd-${key}" style="padding:0">${detailHtml}</div>`;
+    hh+=`</div>`;
+    return hh;
+  }
   function personalityBlock(u,editable){
     let h='';
     const mbtiEdit=editable?personEditBtn('peMbti'):'';
     const enneaEdit=editable?personEditBtn('peEnnea'):'';
     const tempEdit=editable?personEditBtn('peTemp'):'';
-    if(u.mbti){ if(u.mbti==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">${IC.compass} MBTI — Unsure ${mbtiEdit}</div></div>`; } else if(MBTI_TYPES[u.mbti]){ const t=MBTI_TYPES[u.mbti]; h+=`<div class="trait-group"><div class="tg-k">${IC.compass} MBTI — ${esc(u.mbti)} ${mbtiEdit}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}<br>Functions: ${t.fn.join(' · ')}</div></div>`; } }
-    else if(editable) h+=`<div class="trait-group"><div class="tg-k">${IC.compass} MBTI — Not set ${mbtiEdit}</div></div>`;
-    if(u.enneagramCore){ if(u.enneagramCore==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">${IC.target} Enneagram — Unsure ${enneaEdit}</div></div>`; } else { const t=ENNEAGRAM_TYPES[u.enneagramCore]; h+=`<div class="trait-group"><div class="tg-k">${IC.target} Enneagram — ${esc(enneagramLabel(u))} ${enneaEdit}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}${u.enneagramTritype?'<br>Tritype: '+esc(u.enneagramTritype):''}</div></div>`; } }
-    else if(editable) h+=`<div class="trait-group"><div class="tg-k">${IC.target} Enneagram — Not set ${enneaEdit}</div></div>`;
-    if(u.temperamentDominant){ if(u.temperamentDominant==='Unsure'){ h+=`<div class="trait-group"><div class="tg-k">${IC.yinyang} Temperament — Unsure ${tempEdit}</div></div>`; } else { const t=TEMPERAMENT_TYPES[u.temperamentDominant]; h+=`<div class="trait-group"><div class="tg-k">${IC.yinyang} Temperament — ${esc(temperamentLabel(u))} ${tempEdit}</div><div class="prof-bio" style="padding:0">${esc(t.name)} — ${esc(t.desc)}</div></div>`; } }
-    else if(editable) h+=`<div class="trait-group"><div class="tg-k">${IC.yinyang} Temperament — Not set ${tempEdit}</div></div>`;
+    if(u.mbti){ if(u.mbti==='Unsure'){ h+=personalityRow('mbti',IC.compass,'MBTI','Unsure',null,mbtiEdit); } else if(MBTI_TYPES[u.mbti]){ const t=MBTI_TYPES[u.mbti]; h+=personalityRow('mbti',IC.compass,'MBTI',esc(u.mbti),`${esc(t.name)} — ${esc(t.desc)}<br>Functions: ${t.fn.join(' · ')}`,mbtiEdit); } }
+    else if(editable) h+=personalityRow('mbti',IC.compass,'MBTI','Not set',null,mbtiEdit);
+    if(u.enneagramCore){ if(u.enneagramCore==='Unsure'){ h+=personalityRow('ennea',IC.target,'Enneagram','Unsure',null,enneaEdit); } else { const t=ENNEAGRAM_TYPES[u.enneagramCore]; h+=personalityRow('ennea',IC.target,'Enneagram',esc(enneagramLabel(u)),`${esc(t.name)} — ${esc(t.desc)}${u.enneagramTritype?'<br>Tritype: '+esc(u.enneagramTritype):''}`,enneaEdit); } }
+    else if(editable) h+=personalityRow('ennea',IC.target,'Enneagram','Not set',null,enneaEdit);
+    if(u.temperamentDominant){ if(u.temperamentDominant==='Unsure'){ h+=personalityRow('temp',IC.yinyang,'Temperament','Unsure',null,tempEdit); } else { const t=TEMPERAMENT_TYPES[u.temperamentDominant]; h+=personalityRow('temp',IC.yinyang,'Temperament',esc(temperamentLabel(u)),`${esc(t.name)} — ${esc(t.desc)}`,tempEdit); } }
+    else if(editable) h+=personalityRow('temp',IC.yinyang,'Temperament','Not set',null,tempEdit);
     return h;
+  }
+  function wirePersonalityToggles(){
+    document.querySelectorAll('.pt-toggle').forEach(row=>row.onclick=e=>{ if(e.target.closest('.tg-edit'))return; row.classList.toggle('open'); const d=document.getElementById('ptd-'+row.dataset.pt); if(d)d.classList.toggle('open'); });
   }
   function wirePersonalityEdit(){
     const m=$('peMbti'); if(m)m.onclick=e=>{ e.stopPropagation(); openMbtiPicker('profile'); };
     const en=$('peEnnea'); if(en)en.onclick=e=>{ e.stopPropagation(); openEnneagramFlow('profile'); };
     const t=$('peTemp'); if(t)t.onclick=e=>{ e.stopPropagation(); openTemperamentFlow('profile'); };
+    wirePersonalityToggles();
   }
   async function savePersonalityFields(fields){
     Object.assign(me(),fields); save();
