@@ -759,7 +759,7 @@
   const online = () => !!(SUPA.url && SUPA.anonKey);
   let sb = null;
   async function initSB(){ if(sb) return sb; const m = await import('https://esm.sh/@supabase/supabase-js@2.45.4'); sb = m.createClient(SUPA.url, SUPA.anonKey, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); return sb; }
-  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, bannerStyle:r.banner_style||'diagonal', dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
+  function rowToProfile(r){ return { id:r.id, name:r.name, handle:r.handle, goals:r.goals||[], fears:r.fears||[], mbti:r.mbti||null, enneagramCore:r.enneagram_core||null, enneagramWing:r.enneagram_wing||null, enneagramTritype:r.enneagram_tritype||null, temperamentDominant:r.temperament_dominant||null, temperamentSecondary:r.temperament_secondary||null, bio:r.bio||'Becoming.', statusLine:r.status_line||'', color:r.color||'#ed2e44', likeIcon:r.like_icon||'heart', avatarPath:r.avatar_path||null, bannerPath:r.banner_path||null, bannerStyle:r.banner_style||'diagonal', dmPrivacy:r.dm_privacy||'everyone', locVisibility:r.loc_visibility||'exact', notifPrefs:r.notif_prefs||{}, tier:r.tier||'lite', isAdmin:!!r.is_admin, banned:!!r.banned, elo:r.elo==null?1000:r.elo, debateWins:r.debate_wins||0, debateLosses:r.debate_losses||0, debateTies:r.debate_ties||0, live:false, baseLikes:300, loc:{country:r.country||'—',region:r.region||''}, since:new Date(r.created_at||Date.now()).toLocaleDateString('en-US') }; }
   const DEBATE_RANKS = [
     {min:0,name:'Novice',color:'#8a8a8a',t:1},
     {min:1000,name:'Contender',color:'#4a9eff',t:2},
@@ -1032,7 +1032,7 @@
     const del=$('smDel'); if(del)del.onclick=()=>confirmType('This deletes “'+(name||'this server')+'” for everyone. This cannot be undone.', name||'', async ()=>{ await db.servers.remove(id); closeSheet(); $('app').classList.remove('thread-open'); state.screen='connect'; state.connectTab='servers'; render(); toast('Server deleted'); });
   }
   /* ── notifications (Phase 5) ── */
-  const NOTIF_TEXT = { tag:'tagged you', reply:'replied to your message', post_like:'liked your post', like:'liked you', comment:'commented on your post', friend_request:'sent you a friend request', friend:'accepted your friend request' };
+  const NOTIF_TEXT = { tag:'tagged you', reply:'replied to your message', post_like:'liked your post', like:'liked you', comment:'commented on your post', friend_request:'sent you a friend request', friend:'accepted your friend request', debate_join:'joined your debate', debate_end:'— debate ended', badge:'earned a badge', server_join:'joined your server' };
   function relTime(iso){ try{ const s=Math.floor((Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }catch(e){ return ''; } }
   function rowToNotif(r){ return { id:r.id, type:r.type, who:r.actor_id, t:NOTIF_TEXT[r.type]||'', time:relTime(r.created_at), read:r.read, entity:r.entity }; }
   db.notifs = {
@@ -1040,6 +1040,53 @@
     async markAllRead(){ await initSB(); await sb.from('notifications').update({ read:true }).eq('user_id', me().id).eq('read', false); },
     subscribe(on){ if(!sb) return null; return sb.channel('notif:'+me().id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+me().id}, p=>on(p.new)).subscribe(); }
   };
+  db.push = {
+    async save(sub){ await initSB(); const j=sub.toJSON(); const { error } = await sb.from('push_subscriptions').upsert({ user_id:me().id, endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth, user_agent:navigator.userAgent.slice(0,200), last_seen:new Date().toISOString() },{ onConflict:'endpoint' }); if(error) throw error; },
+    async remove(endpoint){ await initSB(); await sb.from('push_subscriptions').delete().eq('endpoint', endpoint); },
+    async count(){ await initSB(); const { count } = await sb.from('push_subscriptions').select('id',{count:'exact',head:true}).eq('user_id', me().id); return count||0; }
+  };
+  /* ═══ Web Push (iOS 16.4+ needs Home Screen install; Android/desktop Chrome work in-tab) ═══ */
+  const VAPID_PUBLIC='BPOhHFBJR06dsjFZNNB_XclPldaMGH-0Ib__cL3ylcQuEhhehsRNN74fE9PB8YevJJxF0TV2sKUv7Ccye2w6XvI';
+  const PushMgr = (()=>{
+    const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+    const supported=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+    const b64ToU8=s=>{ const p='='.repeat((4-s.length%4)%4); const b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/')); return Uint8Array.from(b,c=>c.charCodeAt(0)); };
+    const reg=async()=>{ const r=await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready; return r; };
+    // 'unsupported' | 'needs-install' (iOS Safari tab) | 'blocked' | 'on' | 'off'
+    async function status(){
+      if(!supported()) return isIOS()&&!standalone()?'needs-install':'unsupported';
+      if(isIOS()&&!standalone()) return 'needs-install';
+      if(Notification.permission==='denied') return 'blocked';
+      if(Notification.permission!=='granted') return 'off';
+      try{ const r=await navigator.serviceWorker.getRegistration('sw.js')||await navigator.serviceWorker.getRegistration(); const s=r&&await r.pushManager.getSubscription(); return s?'on':'off'; }catch(e){ return 'off'; }
+    }
+    async function enable(){
+      const st=await status();
+      if(st==='needs-install') throw new Error('Add Maintrix to your Home Screen first (Share → Add to Home Screen), then turn this on from the installed app.');
+      if(st==='unsupported') throw new Error('This browser can’t receive push notifications.');
+      if(st==='blocked') throw new Error('Notifications are blocked for Maintrix in your browser settings.');
+      const perm=await Notification.requestPermission();
+      if(perm!=='granted') throw new Error('Permission not granted.');
+      const r=await reg();
+      let sub=await r.pushManager.getSubscription();
+      if(!sub) sub=await r.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:b64ToU8(VAPID_PUBLIC) });
+      await db.push.save(sub);
+      return sub;
+    }
+    async function disable(){
+      try{ const r=await navigator.serviceWorker.getRegistration(); const s=r&&await r.pushManager.getSubscription(); if(s){ await db.push.remove(s.endpoint).catch(()=>{}); await s.unsubscribe(); } }catch(e){}
+    }
+    // on every boot: if permission is already granted, make sure this device's
+    // current endpoint is in the DB (browsers rotate endpoints; iOS drops them
+    // after a while) — silent, never prompts.
+    async function sync(){
+      if(!online()||!supported()) return;
+      if(Notification.permission!=='granted') return;
+      try{ const r=await reg(); const s=await r.pushManager.getSubscription(); if(s) await db.push.save(s); }catch(e){}
+    }
+    return { status, enable, disable, sync, isIOS, standalone, supported };
+  })();
   let notifChannel=null;
   async function loadNotifs(){ if(!online()||!me()||!me().id) return; try{ const list=await db.notifs.list(); state.notifications=list; await ensureProfiles(list.map(n=>n.who).filter(Boolean)); save(); paintBell(); if(notifChannel)db.messages.unsubscribe(notifChannel); notifChannel=db.notifs.subscribe(async row=>{ const n=rowToNotif(row); if((state.notifications||[]).some(x=>x.id===n.id))return; await ensureProfiles([n.who]); state.notifications.unshift(n); if(state.notifications.length>60)state.notifications.length=60; save(); paintBell(); }); }catch(e){} }
   /* ── presence (Phase 5): who's online ── */
@@ -1337,7 +1384,7 @@
     {id:mid(),type:'tag',who:'kestrel',t:'tagged you in The Nexus',time:'5h',read:false},
     {id:mid(),type:'reply',who:'dax',t:'replied to your message',time:'1d',read:true}
   ]; }
-  const NOTIF_IC={like:'♥',post_like:'♥',tag:'@',reply:'↩',comment:'@',dm:'@',friend:'＋',friend_request:'＋'};
+  const NOTIF_IC={like:'♥',post_like:'♥',tag:'@',reply:'↩',comment:'@',dm:'@',friend:'＋',friend_request:'＋',debate_join:'⚔',debate_end:'⚔',badge:'★',server_join:'＋'};
   function pushNotif(type,who,t){ (state.notifications=state.notifications||[]).unshift({id:mid(),type,who,t,time:'now',read:false}); if(state.notifications.length>40)state.notifications.length=40; save(); paintBell(); SFX.play('notify'); }
   function unreadNotifs(){ return (state.notifications||[]).filter(n=>!n.read).length; }
   function paintBell(){ const b=$('notifBtn'); if(b)b.innerHTML=IC.bell+(unreadNotifs()?'<span class="nd"></span>':''); }
@@ -2415,6 +2462,7 @@
       h+=`<div class="settings-row" id="setSaved"><span class="sr-ic">${IC.grid}</span> Saved posts <span class="sr-r">${IC.chev}</span></div>`;
       h+=`<div class="sec-title">Display</div>`;
       h+=`<div class="settings-row" id="setTheme"><span class="sr-ic">${IC.palette}</span> Theme & display <span class="sr-r">${esc((APP_THEMES[state.appTheme||'crimson']||APP_THEMES.crimson).name)} ${IC.chev}</span></div>`;
+      if(online()) h+=`<div class="settings-row" id="setNotifs"><span class="sr-ic">${IC.bell}</span> Notifications <span class="sr-r" id="setNotifsState">… ${IC.chev}</span></div>`;
       h+=`<div class="sec-title">Privacy &amp; security</div>`;
       if(online()){ h+=`<div class="settings-row" id="setPrivacy"><span class="sr-ic">${IC.lock}</span> Privacy <span class="sr-r">DMs: ${esc(u.dmPrivacy||'everyone')} ${IC.chev}</span></div>`;
         h+=`<div class="settings-row" id="setBlocked"><span class="sr-ic">${IC.shield}</span> Blocked users <span class="sr-r">${IC.chev}</span></div>`; }
@@ -2444,6 +2492,7 @@
       const st2=$('setTheme'); if(st2)st2.onclick=openThemeSettings;
       $('setSaved').onclick=openSavedPosts;
       { const spv=$('setPrivacy'); if(spv)spv.onclick=openPrivacySettings; const sbl=$('setBlocked'); if(sbl)sbl.onclick=openBlockedList; }
+      { const sn=$('setNotifs'); if(sn){ sn.onclick=openNotifSettings; PushMgr.status().then(st=>{ const el2=$('setNotifsState'); if(el2)el2.innerHTML=`${({on:'On',off:'Off',blocked:'Blocked','needs-install':'Install first',unsupported:'Unavailable'})[st]||''} ${IC.chev}`; }); } }
       { const sa2=$('setAdmin'); if(sa2)sa2.onclick=()=>{ u.isAdmin=!u.isAdmin; save(); toast(u.isAdmin?'Admin mode on — Overwatch added':'Admin mode off'); if(!u.isAdmin&&state.screen==='overwatch')state.screen='nexus'; openProfile(); render(); }; }
       const sp=$('setPass'); if(sp)sp.onclick=openSetPassword;
       { const sso=$('setSignoutAll'); if(sso)sso.onclick=()=>confirmDialog('Sign out of all devices? You\'ll need to sign in again everywhere, including here.',async ()=>{ try{ await sb.auth.signOut({scope:'global'}); }catch(e){} localStorage.removeItem(LS); location.reload(); }); }
@@ -2810,6 +2859,47 @@
     showSheet(h);
     $('spSave').onclick=async ()=>{ const pw=$('spPass').value||''; if(pw.length<6){ toast('Password must be 6+ characters'); return; } const b=$('spSave'); b.disabled=true; b.textContent='Saving…'; try{ const { error }=await db.auth.setPassword(pw); if(error)throw error; toast('Password set'); closeSheet(); }catch(e){ b.disabled=false; b.textContent='Save password'; toast('Could not set — '+(e.message||'try again')); } };
   }
+  const NOTIF_PREF_ROWS=[
+    ['dms','Direct messages','Someone DMs you'],
+    ['mentions','Mentions','Someone @tags you in a room'],
+    ['replies','Replies','Someone replies to your message'],
+    ['likes','Likes','Likes on you or your posts'],
+    ['comments','Comments','Comments on your posts'],
+    ['friends','Friends','Friend requests and accepts'],
+    ['debates','Debates','Someone joins your debate, results when one ends'],
+    ['badges','Badges','A new badge lands on your profile'],
+    ['servers','Servers','Someone joins a server you own']
+  ];
+  function openNotifSettings(){
+    const draw=async()=>{
+      const prefs=Object.assign({},me().notifPrefs||{});
+      const on=k=>prefs[k]!==false;
+      const st=await PushMgr.status();
+      const master={
+        on:['On','Push is live on this device'],
+        off:['Off','Tap to enable on this device'],
+        blocked:['Blocked','Allow notifications for Maintrix in your browser or iOS settings, then come back'],
+        'needs-install':['Install first','iOS only sends push to installed apps: Share → Add to Home Screen, open Maintrix from there, then turn this on'],
+        unsupported:['Unavailable','This browser can’t receive push']
+      }[st]||['…',''];
+      let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:4px">Notifications</div><div class="th-sub" style="margin-bottom:14px">Push arrives even when Maintrix is closed. You choose what’s worth a buzz.</div>`;
+      h+=`<div class="settings-row" id="npMaster" style="border-top:none;padding-left:0;padding-right:0;${st==='unsupported'?'opacity:.5':''}"><span class="sr-ic">${IC.bell}</span><div style="flex:1;min-width:0"><div>Push notifications</div><div class="th-sub" style="white-space:normal">${esc(master[1])}</div></div><span class="sr-r">${esc(master[0])}</span></div>`;
+      if(PushMgr.isIOS()&&!PushMgr.standalone()) h+=`<div class="note" style="text-align:left;padding:10px 12px;margin:6px 0 4px;background:var(--accent-soft);border-radius:10px;color:var(--text);font-size:13px;line-height:1.45">${IC.sparkle} <b>iPhone:</b> Safari can’t push from a tab. Tap <b>Share</b> → <b>Add to Home Screen</b>, open Maintrix from your home screen, and this switch will work.</div>`;
+      h+=`<div class="sec-title" style="margin:18px 0 6px">What gets through</div>`;
+      NOTIF_PREF_ROWS.forEach(([k,label,sub])=>{ h+=`<div class="settings-row" data-np="${k}" style="padding-left:0;padding-right:0;${on('push')?'':'opacity:.55'}"><div style="flex:1;min-width:0"><div>${esc(label)}</div><div class="th-sub" style="white-space:normal">${esc(sub)}</div></div><span class="sr-r" style="color:${on(k)?'var(--accent-hi)':'var(--dim)'}">${on(k)?'On':'Off'}</span></div>`; });
+      h+=`<div class="th-sub" style="margin-top:14px">In-app sounds are separate — Theme &amp; display → Sound effects.</div><div style="height:16px"></div></div>`;
+      $('sheet').className='sheet'; showSheet(h);
+      const savePrefs=async(patch)=>{ Object.assign(prefs,patch); state.profile.notifPrefs=prefs; cacheProfile(me()); save(); try{ await db.profiles.update({ notif_prefs:prefs }); }catch(e){ toast('Could not save'); } };
+      $('npMaster').onclick=async()=>{
+        if(st==='on'){ await PushMgr.disable(); await savePrefs({push:false}); toast('Push off on this device'); draw(); return; }
+        try{ await PushMgr.enable(); await savePrefs({push:true}); toast('Push notifications on',IC.bell); SFX.play('success'); }
+        catch(e){ toast((e&&e.message)||'Could not enable'); }
+        draw();
+      };
+      $('sheet').querySelectorAll('[data-np]').forEach(r=>r.onclick=async()=>{ const k=r.dataset.np; await savePrefs({[k]:!on(k)}); draw(); });
+    };
+    draw();
+  }
   function openThemeSettings(){
     const draw=()=>{
       const curTheme=state.appTheme||'crimson', curSize=state.textSize||'medium';
@@ -3154,7 +3244,13 @@
     const groups=groupNotifs(ns);
     let h=`<div class="sheet-grab"></div><div class="pad" style="padding-bottom:6px"><div class="tb-title" style="font-size:20px">Notifications</div><div class="th-sub">DMs · tags · replies · likes on your posts · new likes</div></div>`;
     if(!ns.length)h+=`<div class="empty">Nothing yet. When people message, tag, reply, or like you, it lands here.</div>`;
-    groups.forEach((n,i)=>{ const nm=person(n.who).name; const nav=(n.type==='friend'||n.type==='friend_request')?'': ' data-notif="'+i+'"'; const label=n.type==='dm'?dmNotifText(n,n.count):esc(n.t); h+=`<div class="notif ${n.read?'':'unread'}"${nav}><div class="n-ic" data-user="${attr(n.who)}">${NOTIF_IC[n.type]||'•'}</div><div class="n-body"><div class="n-t"><b data-user="${attr(n.who)}">@${esc(nm)}</b> ${label}</div><div class="n-time">${esc(n.time)}</div></div></div>`; });
+    groups.forEach((n,i)=>{ const nm=person(n.who).name; const nav=(n.type==='friend'||n.type==='friend_request')?'': ' data-notif="'+i+'"'; const e=n.entity||{};
+      let lead=`<b data-user="${attr(n.who)}">@${esc(nm)}</b>`, label=n.type==='dm'?dmNotifText(n,n.count):esc(n.t);
+      if(n.type==='badge'){ lead='<b>You</b>'; label=`earned the <b>${esc(e.label||'')}</b> badge`; }
+      else if(n.type==='debate_end'&&e.summary){ lead=''; label=esc(e.summary); }
+      else if(n.type==='debate_join'&&e.title){ label=`joined your debate <b>${esc(e.title)}</b>`; }
+      else if(n.type==='server_join'&&e.title){ label=`joined <b>${esc(e.title)}</b>`; }
+      h+=`<div class="notif ${n.read?'':'unread'}"${nav}><div class="n-ic" data-user="${attr(n.who)}">${NOTIF_IC[n.type]||'•'}</div><div class="n-body"><div class="n-t">${lead} ${label}</div><div class="n-time">${esc(n.time)}</div></div></div>`; });
     h+=`<div style="height:24px"></div>`;
     $('sheet').className='sheet'; showSheet(h);
     $('sheet').querySelectorAll('[data-notif]').forEach(el2=>el2.onclick=e=>{ if(e.target.closest('[data-user]'))return; openNotifTarget(ns[groups[+el2.dataset.notif].srcIdx]); });
@@ -3270,6 +3366,16 @@
   })();
 
   /* ═══ BOOT (EXPANSION intro) ═══ */
+  // deep links: ?post=<id> ?room=<id> ?notifs=1 — used by push taps and shares
+  function routeFromUrl(search){
+    const q=new URLSearchParams(search||'');
+    const pid=q.get('post'), rid=q.get('room'), nf=q.get('notifs');
+    if(!pid&&!rid&&!nf) return;
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    setTimeout(()=>{ if(pid)openPostById(pid); else if(rid)openRoomById(rid); else if(nf)openNotifications(); },500);
+  }
+  // a push tap landing on an already-open window comes through the SW as a message
+  if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',e=>{ const d=e.data||{}; if(d.type==='push-open'&&d.url){ try{ routeFromUrl(new URL(d.url).search); }catch(err){} } });
   function cleanOnlineState(){ if(state._onlineClean)return; ['friends','dmAccepted','dmRequests','friendRequests','sentDm','likesGiven','postLikes','notifications','servers','joined','topicRooms'].forEach(k=>state[k]=[]); state.msgs={}; state._onlineClean=true; save(); }
   async function boot(){
     if(!online()){ if(me()&&me().name)enter(); return; }   // local mode — unchanged
@@ -3278,7 +3384,7 @@
       const sess=await db.auth.session();
       if(!sess){ showSupaAuth(); return; }
       const prof=await db.profiles.mine();
-      if(prof){ state.profile=prof; cacheProfile(prof); save(); await loadSocial(); enter(); loadNotifs(); initPresence(); const pid=new URLSearchParams(location.search).get('post'); if(pid)setTimeout(()=>openPostById(pid),500); }
+      if(prof){ state.profile=prof; cacheProfile(prof); save(); await loadSocial(); enter(); loadNotifs(); initPresence(); PushMgr.sync(); routeFromUrl(location.search); }
       else startOnboarding();
     }catch(e){ toast('Connection issue — try again'); showSupaAuth(); }
   }
