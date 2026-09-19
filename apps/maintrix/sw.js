@@ -1,4 +1,4 @@
-const CACHE = 'maintrix-v51';
+const CACHE = 'maintrix-v52';
 const ASSETS = ['index.html', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -10,8 +10,13 @@ self.addEventListener('activate', e => {
     Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
 });
+// cache:'no-store' matters here — without it, "network first" can still be silently satisfied
+// by the *browser's own* HTTP cache (not this service worker's cache) if the static host didn't
+// send strict no-cache headers, so a real deploy could sit invisible behind a stale HTTP-cached
+// copy even though this code always calls fetch(). Forcing no-store means every fetch this SW
+// makes genuinely hits the network.
 self.addEventListener('fetch', e => {
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request)));
 });
 
 // ── Web Push ──
