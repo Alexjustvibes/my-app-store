@@ -200,6 +200,98 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.25 — the actual install-prompt fix, DM list overhaul, notifications-off banner, DM chat streaks)
+
+- **Install-to-Home-Screen, diagnosed properly this time.** This had been
+  reported three rounds running, and both earlier "fixes" only ever touched
+  the *condition* for showing the guide — never the actual reason it kept
+  failing to appear. The real bug: `postSignupFlow()`/`finishOb()` only ever
+  run once, at the literal instant a brand-new account is created. No amount
+  of fixing what's inside that function could make the guide "always show"
+  for a returning user or an existing local profile reopening the app, since
+  that code path can never fire again for them — it isn't a gate that was
+  wrong, it's a trigger that was structurally too narrow. Fixed by pulling
+  the actual "offer the install guide" logic out into its own
+  `maybeShowInstallPrompt()`, gated by a one-shot persisted
+  `state.installPromptShown` flag, and calling it from **every** normal
+  successful-boot path in `boot()` — both the offline/local-demo branch and
+  the online returning-user branch — in addition to keeping the original
+  signup-time call. Also dropped the old desktop-exclusion check entirely, so
+  the guide can now show on any non-standalone device, not just ones
+  `isMobileDevice()` recognized. **Verified in-browser end to end this
+  time**, in exactly the scenario the previous two rounds never actually
+  tested: reopening the app on an *existing* local profile (not a fresh
+  signup) — the guide now appears once, and does not reappear on a second
+  reload of the same device, confirming the one-shot flag persists correctly.
+- **DMs are ordered, closeable, and previewable now** (all three explicitly
+  requested): `db.dm.list()` now pulls each room's most recent message in one
+  batched query (last 500 messages across all of a person's DMs, grouped
+  client-side by room — not N+1 per room) and sorts the whole list by that
+  message's timestamp, so whoever you've been talking to most recently sits
+  at the top, same as every other real chat app. Each row now shows a real
+  preview (`dmPreviewText()` — "You: " prefix when it was your message,
+  truncated at ~46 characters) instead of the old "tap to open" placeholder.
+  A Discord-style **✕ close button** (`.dm-close`, revealed on hover/focus,
+  always faintly visible on touch devices since there's no hover state to
+  reveal it there) hides a DM from your own list via a local `state.closedDms`
+  array — the room and its history are completely untouched server-side,
+  and it's <u>not</u> a permanent block: the moment that person messages you
+  again, it's spliced back out of `closedDms` automatically (wired into both
+  the online realtime notification handler and the offline demo's
+  `simReply()`), so a closed DM always comes back the instant it's relevant
+  again instead of silently eating a message forever. The offline demo path
+  got the exact same treatment (recency sort + preview + close-X) so it's
+  not just an online-only feature — added a new `close` icon to the shared
+  `IC` map for the X glyph, matching the existing inline-SVG icon system
+  rather than reaching for an emoji.
+- **A "your notifications are off" banner in every chat**, exactly as asked:
+  `refreshNotifBanner()` checks `PushMgr.status()` on entering any thread —
+  Nexus, a DM, a server, anywhere — and shows a dismissible banner
+  (dismissal is per-thread, per-session; it comes back next time you open
+  that room since missing notifications stays relevant) with a one-tap
+  **Turn on** button that calls the existing `PushMgr.enable()` path
+  directly from the banner. Also handles the two other real states
+  distinctly instead of just hiding: `blocked` (browser-level block — no
+  button can fix that, so it explains where to go instead) and
+  `needs-install` (iOS Safari tab — the button routes into the existing
+  install guide instead of a broken permission prompt). Scoped to online
+  rooms only — push requires the real backend, which local/offline demo mode
+  has no equivalent of, so it correctly never shows there rather than
+  offering a button that can't do anything.
+- **DM chat streaks — the actual Snapchat-style per-conversation-pair
+  version**, distinct from the existing global per-user daily streak
+  (`profiles.streak_count`, shipped in v0.11 and explicitly deferred at the
+  time: "say the word if per-DM-pair streaks are actually wanted" — this is
+  that word). New migration `0023_dm_streaks.sql`: a `dm_streaks` table
+  (canonical `user_a`/`user_b` via `least()`/`greatest()` so each pair has
+  exactly one row regardless of who's "a"), incremented by
+  `on_dm_message_streak()`, an `after insert on messages` trigger that only
+  advances the count once per calendar day and only once **both** sides have
+  sent a message that day — resets to 1 if a day was skipped, no RLS write
+  policy at all (only the security-definer trigger touches it, so it can't
+  be spoofed client-side same as the rate-limit table from 0022). A new
+  flame button top-right of every DM thread header (`IC.flame`, next to the
+  existing voice-call icon) opens `openDmStreaks()`: a hero card with the
+  live count + current tier + a status line ("today's streak is locked in" /
+  "at risk — reply today" / "ended at N"), then a full milestone list — seven
+  tiers (`STREAK_TIERS`: Spark 3d → Kindling 7d → Ember 14d → Flame 30d →
+  Wildfire 60d → Inferno 100d → Eternal Flame 365d), each with its own color
+  and a distinct one-line flavor string (`STREAK_FLAVOR`) so every milestone
+  reads as its own moment instead of a repeated template — same "reuse one
+  icon family, differentiate by color/name" convention already established
+  by `DEBATE_RANKS` after the emoji-removal pass, rather than inventing a
+  new icon per tier. Works in the offline demo too, not just online:
+  `touchLocalStreak()` mirrors the exact same both-sides-same-day logic
+  client-side (`state.dmStreaks`), wired into the local send path and the
+  simulated auto-reply, so the whole feature is fully testable and usable
+  without the backend. **Verified in-browser**: sent a message, got the
+  simulated reply, streak correctly went from 0→1 with "today's streak is
+  locked in"; the milestone list renders all seven tiers with the correct
+  locked/reached styling. The live server-side trigger path (real two-account
+  round trip) hasn't been verified against production — same category of gap
+  as other admin/db-trigger features this session, called out rather than
+  claimed.
+
 ## Build state (as of v0.24 — real fix for the install-prompt gate, ambient sound, richer effects, more colors)
 
 - **The most important item this round: the post-signup "Add to Home
