@@ -134,14 +134,14 @@
   .maint-banner .mb-ic { flex:0 0 auto; } .maint-banner .mb-ic svg { width:16px; height:16px; }
   .maint-banner .mb-t { flex:1; min-width:0; font-weight:700; }
   .maint-banner button { flex:0 0 auto; font-size:11px; font-weight:700; text-decoration:underline; }
-  .msgbar { flex:0 0 auto; padding:8px 12px; background:var(--glass); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); }
+  .msgbar { flex:0 0 auto; padding:8px 12px; background:var(--glass); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent); position:relative; z-index:5; }
   .msgbar button { width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 0; border-radius:12px; background:linear-gradient(160deg,var(--surface-2),var(--surface)); border:1px solid var(--line); color:var(--text-hi); font-weight:700; font-size:13px; box-shadow:var(--sh-1),inset 0 1px 0 #ffffff0c; transition:transform .16s var(--ease-spring),border-color .2s,box-shadow .2s; }
   .msgbar button:active { transform:scale(.97); } .msgbar button:hover { border-color:color-mix(in srgb,var(--accent) 50%,var(--line)); box-shadow:var(--sh-1),0 0 18px -8px var(--accent); }
   .msgbar button .ni { width:18px; height:18px; }
   #app.thread-open .msgbar { display:none; }
   .pad { padding:16px; }
   .sec-title { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); margin:22px 16px 10px; } .sec-title.first { margin-top:8px; }
-  .botnav { flex:0 0 auto; display:flex; background:var(--glass); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); padding-bottom:env(safe-area-inset-bottom); position:relative; }
+  .botnav { flex:0 0 auto; display:flex; background:var(--glass); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); padding-bottom:env(safe-area-inset-bottom); position:relative; z-index:5; }
   .botnav::before { content:''; position:absolute; left:0; right:0; top:0; height:1px; background:linear-gradient(90deg,transparent,var(--line) 18%,color-mix(in srgb,var(--accent) 40%,transparent) 50%,var(--line) 82%,transparent); }
   .botnav button { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0 7px; color:var(--dim); font-size:10px; font-weight:600; position:relative; transition:transform .16s var(--ease-spring),color .2s; overflow:hidden; } .botnav button:active { transform:scale(.9); }
   /* sliding/scaling active pill behind the icon */
@@ -611,6 +611,12 @@
   .pc-preview-wrap canvas { display:block; width:100%; height:auto; background:#150e10; }
   .pc-loading { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:#000a; opacity:0; pointer-events:none; transition:opacity .15s; }
   .pc-loading.on { opacity:1; }
+  .pc-picks { display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .pc-picks::-webkit-scrollbar { display:none; }
+  .pc-picks .chip { flex:0 0 auto; white-space:nowrap; }
+  .pc-slider { width:100%; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; background:var(--surface-2); outline:none; margin:6px 0 4px; }
+  .pc-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--accent); box-shadow:0 2px 8px -1px var(--accent),0 0 0 3px var(--ground); cursor:pointer; }
+  .pc-slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; border:none; background:var(--accent); box-shadow:0 2px 8px -1px var(--accent),0 0 0 3px var(--ground); cursor:pointer; }
 
   /* ═══════════ AVATAR CROPPER — Discord-style pan/zoom/filter picker ═══════════ */
   .cropper-scrim { position:fixed; inset:0; z-index:97; background:#000c; backdrop-filter:blur(4px); display:flex; align-items:flex-end; justify-content:center; animation:fade .2s ease; }
@@ -906,6 +912,25 @@
   body.reduce-motion .icebreaker::after, body.reduce-motion .send.sent,
   body.reduce-motion .spinner, body.reduce-motion .toast-ic { animation:none; }
   body.reduce-motion .debate-bar-fill, body.reduce-motion .poll-bar-fill { transition:none; }
+
+  /* ═══════════ AMBIENCE — opt-in cozy overlays, purely decorative ═══════════
+     Personal and client-side only, like app themes — never on by default, never seen by
+     anyone else. Sits above screen content but below chrome (topbar/msgbar/botnav, all
+     explicit z-index:5) so it never covers a tap target, and pointer-events:none throughout
+     so it never intercepts one either. Killed outright under reduce-motion. */
+  .ambience-layer { position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden; }
+  body.reduce-motion .ambience-layer { display:none; }
+  .amb-drop { position:absolute; top:-80px; width:1.5px; background:linear-gradient(180deg,transparent,#bcd4ff99); animation-name:ambRainFall; animation-timing-function:linear; animation-iteration-count:infinite; }
+  @keyframes ambRainFall { to{ transform:translateY(calc(100dvh + 120px)); } }
+  .amb-flake { position:absolute; top:-12px; border-radius:50%; background:#fff; box-shadow:0 0 4px #fff8; animation-name:ambSnowFall; animation-timing-function:linear; animation-iteration-count:infinite; }
+  @keyframes ambSnowFall { 0%{ transform:translate(0,0); } 50%{ transform:translate(16px,50dvh); } 100%{ transform:translate(-8px,calc(100dvh + 20px)); } }
+  .amb-fireglow { position:absolute; left:50%; bottom:-50px; width:70%; height:220px; transform:translateX(-50%); background:radial-gradient(ellipse at 50% 100%,#ff8a3d55,transparent 70%); filter:blur(6px); animation:ambFireFlicker 2.6s ease-in-out infinite; }
+  .amb-fireglow2 { width:45%; height:160px; background:radial-gradient(ellipse at 50% 100%,#ffb54d4d,transparent 70%); animation-duration:1.9s; animation-direction:reverse; }
+  @keyframes ambFireFlicker { 0%,100%{ opacity:.75; transform:translateX(-50%) scaleY(1); } 50%{ opacity:1; transform:translateX(-50%) scaleY(1.08); } }
+  .amb-firefly { position:absolute; width:4px; height:4px; border-radius:50%; background:#ffe58a; box-shadow:0 0 8px 2px #ffe58a99; animation-name:ambFireflyDrift; animation-timing-function:ease-in-out; animation-iteration-count:infinite; }
+  @keyframes ambFireflyDrift { 0%,100%{ transform:translate(0,0); opacity:.15; } 25%{ opacity:.85; } 50%{ transform:translate(26px,-20px); opacity:.25; } 75%{ opacity:.75; } }
+  .amb-star { position:absolute; border-radius:50%; background:#fff; animation-name:ambTwinkle; animation-timing-function:ease-in-out; animation-iteration-count:infinite; }
+  @keyframes ambTwinkle { 0%,100%{ opacity:.2; } 50%{ opacity:1; } }
 </style>
 </head>
 <body>
@@ -1007,7 +1032,7 @@
   const LS = 'maintrix.v4';
   // Bumped by hand alongside sw.js's CACHE constant on every ship — shown at the bottom of
   // Settings so "is my update actually live" is a glance instead of a guess or a dev-tools trip.
-  const BUILD_VERSION = 'v52';
+  const BUILD_VERSION = 'v53';
   const DAY = 86400000;
 
   /* ═══ SFX — every sound is synthesized live via Web Audio, so there are no
@@ -1789,7 +1814,31 @@
     window.addEventListener('focus',resync);
     syncFrame();
   })();
-  function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); }
+  function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); applyAmbience(); }
+  const AMBIENCE_OPTIONS = { none:'None', rain:'Rain', snow:'Snow', fireplace:'Fireplace', fireflies:'Fireflies', starlight:'Starlight' };
+  // Opt-in only — state.ambience defaults to unset/'none' and nothing here ever turns itself
+  // on. Rebuilds the whole overlay from scratch on every call rather than trying to diff it;
+  // it's a handful of cheap absolutely-positioned spans, not worth the complexity of patching.
+  function applyAmbience(){
+    document.querySelectorAll('.ambience-layer').forEach(n=>n.remove());
+    const kind=state.ambience||'none';
+    if(kind==='none'||document.body.classList.contains('reduce-motion'))return;
+    const frame=document.querySelector('.frame'); if(!frame)return;
+    const layer=el('div','ambience-layer amb-'+kind);
+    const rnd=(a,b)=>a+Math.random()*(b-a);
+    if(kind==='rain'){
+      for(let i=0;i<36;i++){ const d=el('span','amb-drop'); d.style.cssText=`left:${rnd(0,100)}%;height:${rnd(40,80)}px;animation-duration:${rnd(.6,1.2).toFixed(2)}s;animation-delay:-${rnd(0,2).toFixed(2)}s;opacity:${rnd(.15,.5).toFixed(2)}`; layer.appendChild(d); }
+    } else if(kind==='snow'){
+      for(let i=0;i<28;i++){ const d=el('span','amb-flake'); const size=rnd(2,5).toFixed(1); d.style.cssText=`left:${rnd(0,100)}%;width:${size}px;height:${size}px;animation-duration:${rnd(4,9).toFixed(2)}s;animation-delay:-${rnd(0,6).toFixed(2)}s;opacity:${rnd(.3,.8).toFixed(2)}`; layer.appendChild(d); }
+    } else if(kind==='fireplace'){
+      layer.innerHTML='<div class="amb-fireglow"></div><div class="amb-fireglow amb-fireglow2"></div>';
+    } else if(kind==='fireflies'){
+      for(let i=0;i<16;i++){ const d=el('span','amb-firefly'); d.style.cssText=`left:${rnd(0,100)}%;top:${rnd(40,95)}%;animation-duration:${rnd(5,10).toFixed(2)}s;animation-delay:-${rnd(0,5).toFixed(2)}s`; layer.appendChild(d); }
+    } else if(kind==='starlight'){
+      for(let i=0;i<50;i++){ const d=el('span','amb-star'); const size=rnd(1,2.6).toFixed(1); d.style.cssText=`left:${rnd(0,100)}%;top:${rnd(0,60)}%;width:${size}px;height:${size}px;animation-duration:${rnd(2,5).toFixed(2)}s;animation-delay:-${rnd(0,4).toFixed(2)}s`; layer.appendChild(d); }
+    }
+    frame.appendChild(layer);
+  }
   const LIKE_ICONS = { heart:'♥', fire:'🔥', star:'★', bolt:'⚡', bloom:'✦', diamond:'◆', moon:'☾', ring:'○', cross:'✚', spark:'✧', infinity:'∞', wave:'〜' };
   const BANNER_STYLES = { diagonal:(c)=>`linear-gradient(140deg,${c}40,transparent)`, radial:(c)=>`radial-gradient(ellipse at 30% 20%,${c}55,transparent 70%)`, vertical:(c)=>`linear-gradient(180deg,${c}45,transparent)`, sunburst:(c)=>`conic-gradient(from 180deg at 50% 0%,${c}55,transparent 40%,transparent 60%,${c}55)` };
   const RANKS = ['Initiate','Operator','Architect','Owner'];
@@ -3068,30 +3117,60 @@
   function hexToRgb(hex){ const h=hex.replace('#',''); const n=h.length===3?h.split('').map(c=>c+c).join(''):h; const v=parseInt(n,16); return [ (v>>16)&255,(v>>8)&255,v&255 ]; }
   function rgba(hex,a){ const [r,g,b]=hexToRgb(hex); return `rgba(${r},${g},${b},${a})`; }
   function loadImg(url){ return new Promise(res=>{ if(!url){ res(null); return; } const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>res(img); img.onerror=()=>res(null); img.src=url; }); }
-  // Rebuilt from a plain three-line text dump into an actual designed card: a real avatar
-  // (async-loaded, falls back to the same two-tone initial the app uses everywhere else),
-  // a Chasing/Escaping chip row, badges, and a customizable accent color + toggleable
-  // sections instead of one fixed, un-skippable layout. opts: { accent, showAvatar,
-  // showStatus, showTraits, showBadges, badges (pre-fetched, since this fn stays
-  // online-agnostic on purpose) }.
+  const CARD_FONTS = {
+    serif:{ name:'"Fraunces",serif', label:'"JetBrains Mono",monospace', body:'"Hanken Grotesk",sans-serif' },
+    mono:{ name:'"JetBrains Mono",monospace', label:'"JetBrains Mono",monospace', body:'"JetBrains Mono",monospace' },
+    sans:{ name:'"Hanken Grotesk",sans-serif', label:'"Hanken Grotesk",sans-serif', body:'"Hanken Grotesk",sans-serif' }
+  };
+  const CARD_RATIOS = { portrait:[800,1150], square:[800,800], story:[800,1420] };
+  // Rebuilt twice over now: first from a plain three-line text dump into an actual designed
+  // card, then again into a fully customizable one — background style, texture, font pairing,
+  // border treatment, aspect ratio, a glow/darkness slider, and a real toggle per data point
+  // instead of four fixed sections. opts: { accent, bg, texture, font, border, ratio, glow,
+  // dark, showAvatar/showHandle/showTier/showStatus/showTraits/showBadges/showJoinDate/
+  // showBio/showRank, badges (pre-fetched — this fn stays online-agnostic on purpose) }.
   async function buildPersonalityCard(u,opts){
     opts=opts||{};
     const accent=opts.accent||u.color||'#ed2e44';
-    const W=800,H=1150;
+    const F=CARD_FONTS[opts.font]||CARD_FONTS.serif;
+    const [W,H]=CARD_RATIOS[opts.ratio]||CARD_RATIOS.portrait;
+    const glow=(opts.glow==null?60:opts.glow)/100, dark=(opts.dark==null?50:opts.dark)/100;
     const canvas=document.createElement('canvas'); canvas.width=W; canvas.height=H;
     const ctx=canvas.getContext('2d');
-    // base + aurora blooms in the chosen accent
-    const grad=ctx.createLinearGradient(0,0,0,H); grad.addColorStop(0,'#201417'); grad.addColorStop(1,'#120c0d');
+    const light='#f5efe9', muted='#9c8c86';
+
+    // ── background ──
+    const baseTop=`hsl(0,0%,${Math.round(13-dark*7)}%)`, baseBot=`hsl(0,0%,${Math.round(7-dark*4)}%)`;
+    const grad=ctx.createLinearGradient(0,0,0,H); grad.addColorStop(0,baseTop); grad.addColorStop(1,baseBot);
     ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
-    [[240,220,340,.32],[600,160,260,.22],[500,520,300,.14]].forEach(([cx,cy,r,a])=>{
-      const rg=ctx.createRadialGradient(cx,cy,4,cx,cy,r); rg.addColorStop(0,rgba(accent,a)); rg.addColorStop(1,rgba(accent,0));
-      ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
-    });
-    // faint dot-grid texture, matching the app's Connect-screen motif
-    ctx.fillStyle=rgba(accent,.16);
-    for(let gx=30;gx<W;gx+=34) for(let gy=30;gy<340;gy+=34) { ctx.beginPath(); ctx.arc(gx,gy,1.4,0,7); ctx.fill(); }
-    ctx.textAlign='center';
-    ctx.fillStyle=rgba('#ffffff',.55); ctx.font='600 18px "JetBrains Mono",monospace'; ctx.textBaseline='alphabetic';
+    const bg=opts.bg||'aurora';
+    if(bg==='aurora'){
+      [[W*.3,H*.19,340,.5],[W*.75,H*.14,260,.35],[W*.62,H*.45,300,.22]].forEach(([cx,cy,r,a])=>{
+        const rg=ctx.createRadialGradient(cx,cy,4,cx,cy,r); rg.addColorStop(0,rgba(accent,a*glow)); rg.addColorStop(1,rgba(accent,0));
+        ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+      });
+    } else if(bg==='mesh'){
+      const spots=[[.18,.12,220],[.82,.1,180],[.5,.3,260],[.12,.55,200],[.88,.6,220],[.5,.85,240]];
+      spots.forEach(([fx,fy,r],i)=>{ const rg=ctx.createRadialGradient(W*fx,H*fy,4,W*fx,H*fy,r); rg.addColorStop(0,rgba(accent,(i%2?.28:.4)*glow)); rg.addColorStop(1,rgba(accent,0)); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); });
+    } else if(bg==='starfield'){
+      const rg=ctx.createRadialGradient(W/2,H*.2,4,W/2,H*.2,300); rg.addColorStop(0,rgba(accent,.18*glow)); rg.addColorStop(1,rgba(accent,0)); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+      for(let i=0;i<140;i++){ const sx=Math.random()*W, sy=Math.random()*H*.8, sr=Math.random()*1.6+.3; ctx.globalAlpha=Math.random()*.7+.2; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(sx,sy,sr,0,7); ctx.fill(); }
+      ctx.globalAlpha=1;
+    } // 'minimal' → just the base gradient, no blooms
+
+    // ── texture ──
+    const tex=opts.texture||'dots';
+    if(tex==='dots'){ ctx.fillStyle=rgba(accent,.16); for(let gx=30;gx<W;gx+=34) for(let gy=30;gy<Math.min(H,340);gy+=34){ ctx.beginPath(); ctx.arc(gx,gy,1.4,0,7); ctx.fill(); } }
+    else if(tex==='lines'){ ctx.strokeStyle=rgba(accent,.09); ctx.lineWidth=1; for(let d=-H;d<W;d+=26){ ctx.beginPath(); ctx.moveTo(d,0); ctx.lineTo(d+H,H); ctx.stroke(); } }
+    else if(tex==='noise'){ ctx.fillStyle=rgba('#fff',.5); for(let i=0;i<500;i++){ ctx.globalAlpha=Math.random()*.05; ctx.fillRect(Math.random()*W,Math.random()*H,1,1); } ctx.globalAlpha=1; }
+
+    // ── border ──
+    if(opts.border==='thin'){ ctxRoundRect(ctx,14,14,W-28,H-28,20); ctx.strokeStyle=rgba(accent,.55); ctx.lineWidth=3; ctx.stroke(); }
+    else if(opts.border==='corners'){ const L=46,m=22; ctx.strokeStyle=accent; ctx.lineWidth=4;
+      [[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]].forEach(([x,y,sx,sy])=>{ ctx.beginPath(); ctx.moveTo(x,y+L*sy); ctx.lineTo(x,y); ctx.lineTo(x+L*sx,y); ctx.stroke(); }); }
+
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillStyle=rgba('#ffffff',.55); ctx.font=`600 18px ${F.label}`;
     ctx.save(); ctx.letterSpacing='4px'; ctx.fillText('MAINTRIX IDENTITY',W/2,72); ctx.restore();
 
     let y=130;
@@ -3101,7 +3180,7 @@
       ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.closePath();
       if(img){ ctx.clip(); ctx.drawImage(img,cx-R,cy-R,R*2,R*2); }
       else { const ag=ctx.createLinearGradient(cx-R,cy-R,cx+R,cy+R); ag.addColorStop(0,accent); ag.addColorStop(1,rgba('#000',.55)); ctx.fillStyle=ag; ctx.fill(); ctx.clip();
-        ctx.fillStyle='#fff'; ctx.font='700 64px "Hanken Grotesk",sans-serif'; ctx.textBaseline='middle'; ctx.fillText((u.name[0]||'?').toUpperCase(),cx,cy+4); }
+        ctx.fillStyle='#fff'; ctx.font=`700 64px ${F.body}`; ctx.textBaseline='middle'; ctx.fillText((u.name[0]||'?').toUpperCase(),cx,cy+4); }
       ctx.restore();
       ctx.beginPath(); ctx.arc(cx,cy,R+3,0,Math.PI*2); ctx.strokeStyle=accent; ctx.lineWidth=4; ctx.stroke();
       ctx.beginPath(); ctx.arc(cx,cy,R+9,0,Math.PI*2); ctx.strokeStyle=rgba(accent,.35); ctx.lineWidth=2; ctx.stroke();
@@ -3109,22 +3188,33 @@
     } else y+=6;
 
     ctx.textBaseline='alphabetic';
-    ctx.fillStyle='#f5efe9'; ctx.font='700 50px "Fraunces",serif'; ctx.fillText(u.name,W/2,y);
+    ctx.fillStyle=light; ctx.font=`700 50px ${F.name}`; ctx.fillText(u.name,W/2,y);
     y+=38;
-    ctx.fillStyle=rgba('#fff',.5); ctx.font='500 20px "Hanken Grotesk",sans-serif';
-    ctx.fillText('@'+(u.handle||'')+(u.tier==='main'?'  ·  MAIN':'  ·  LITE'),W/2,y);
-    y+=30;
-    if(opts.showStatus!==false && u.statusLine){ ctx.fillStyle='#c9bdb7'; ctx.font='24px "Hanken Grotesk",sans-serif'; ctx.fillText(u.statusLine,W/2,y+16); y+=48; }
-    y+=20;
+    if(opts.showHandle!==false || opts.showTier!==false){
+      const parts=[]; if(opts.showHandle!==false)parts.push('@'+(u.handle||'')); if(opts.showTier!==false)parts.push(u.tier==='main'?'MAIN':'LITE');
+      ctx.fillStyle=rgba('#fff',.5); ctx.font=`500 20px ${F.body}`; ctx.fillText(parts.join('  ·  '),W/2,y); y+=30;
+    }
+    if(opts.showStatus!==false && u.statusLine){ ctx.fillStyle='#c9bdb7'; ctx.font=`24px ${F.body}`; ctx.fillText(u.statusLine,W/2,y+16); y+=48; }
+    if(opts.showJoinDate && u.since){ ctx.fillStyle=muted; ctx.font=`16px ${F.label}`; ctx.fillText('MEMBER SINCE '+String(u.since).toUpperCase(),W/2,y+18); y+=36; }
+    if(opts.showBio && u.bio){ ctx.fillStyle='#c9bdb7'; ctx.font=`italic 20px ${F.body}`; const bio=u.bio.length>70?u.bio.slice(0,68)+'…':u.bio; ctx.fillText('"'+bio+'"',W/2,y+18); y+=44; }
+    y+=16;
+
+    if(opts.showRank && (u.debateWins||u.debateLosses||u.debateTies)){
+      const r=debateRankFor(u.elo||1000);
+      const t='RANK · '+r.name.toUpperCase()+' · '+(u.elo||1000)+' ELO';
+      ctx.font=`700 18px ${F.label}`; const w=ctx.measureText(t).width+44;
+      ctxRoundRect(ctx,W/2-w/2,y,w,40,20); ctx.fillStyle=rgba(r.color,.16); ctx.fill(); ctx.strokeStyle=rgba(r.color,.6); ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle=r.color; ctx.fillText(t,W/2,y+27); y+=64;
+    }
 
     if(opts.showTraits!==false && ((u.goals&&u.goals.length)||(u.fears&&u.fears.length))){
       const pills=[]; (u.goals||[]).slice(0,1).forEach(g=>pills.push(['Chasing '+g,accent])); (u.fears||[]).slice(0,2).forEach(f=>pills.push(['Escaping '+f,'#8a8a8a']));
-      ctx.font='600 20px "Hanken Grotesk",sans-serif';
+      ctx.font=`600 20px ${F.body}`;
       const widths=pills.map(([t])=>ctx.measureText(t).width+40);
       const gap=14, total=widths.reduce((a,b)=>a+b,0)+gap*(pills.length-1);
       let px=W/2-total/2;
       pills.forEach(([t,c],i)=>{ const w=widths[i]; ctxRoundRect(ctx,px,y,w,42,21); ctx.fillStyle=rgba(c,.16); ctx.fill(); ctx.strokeStyle=rgba(c,.55); ctx.lineWidth=1.5; ctx.stroke();
-        ctx.fillStyle='#f5efe9'; ctx.textAlign='center'; ctx.fillText(t,px+w/2,y+28); px+=w+gap; });
+        ctx.fillStyle=light; ctx.textAlign='center'; ctx.fillText(t,px+w/2,y+28); px+=w+gap; });
       y+=80;
     }
     y+=10;
@@ -3137,9 +3227,9 @@
       const h=sub?128:96;
       ctxRoundRect(ctx,70,y,W-140,h,18); ctx.fillStyle='rgba(255,255,255,.035)'; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1; ctx.stroke();
       ctx.textAlign='left';
-      ctx.fillStyle=accent; ctx.font='700 16px "JetBrains Mono",monospace'; ctx.fillText(label,100,y+34);
-      ctx.fillStyle='#f5efe9'; ctx.font='700 36px "Fraunces",serif'; ctx.fillText(val,100,y+72);
-      if(sub){ ctx.fillStyle='#9c8c86'; ctx.font='19px "Hanken Grotesk",sans-serif'; ctx.fillText(sub,100,y+104); }
+      ctx.fillStyle=accent; ctx.font=`700 16px ${F.label}`; ctx.fillText(label,100,y+34);
+      ctx.fillStyle=light; ctx.font=`700 36px ${F.name}`; ctx.fillText(val,100,y+72);
+      if(sub){ ctx.fillStyle=muted; ctx.font=`19px ${F.body}`; ctx.fillText(sub,100,y+104); }
       ctx.textAlign='center'; y+=h+16;
     });
 
@@ -3147,13 +3237,13 @@
       y+=8; const shown=opts.badges.slice(0,6); const bs=64, bg2=14; const totalW=shown.length*bs+(shown.length-1)*bg2;
       let bx=W/2-totalW/2;
       shown.forEach(b=>{ ctx.beginPath(); ctx.arc(bx+bs/2,y+bs/2,bs/2,0,Math.PI*2); ctx.fillStyle=rgba(b.color||accent,.22); ctx.fill(); ctx.strokeStyle=rgba(b.color||accent,.6); ctx.lineWidth=2; ctx.stroke();
-        ctx.fillStyle='#f5efe9'; ctx.font='600 12px "Hanken Grotesk",sans-serif'; ctx.textAlign='center'; ctx.fillText((b.label||'').slice(0,8),bx+bs/2,y+bs+20);
+        ctx.fillStyle=light; ctx.font=`600 12px ${F.body}`; ctx.textAlign='center'; ctx.fillText((b.label||'').slice(0,8),bx+bs/2,y+bs+20);
         bx+=bs+bg2; });
       y+=bs+40;
     }
 
     ctx.fillStyle=rgba('#fff',.08); ctx.fillRect(W/2-40,H-90,80,2);
-    ctx.fillStyle='#5a4a4a'; ctx.font='600 16px "JetBrains Mono",monospace'; ctx.fillText('MAINTRIX · ONE IDENTITY, ONE WORLD',W/2,H-60);
+    ctx.fillStyle='#5a4a4a'; ctx.font=`600 16px ${F.label}`; ctx.fillText('MAINTRIX · ONE IDENTITY, ONE WORLD',W/2,H-60);
     return canvas;
   }
   async function sharePersonalityCard(canvasOverride){
@@ -3170,24 +3260,42 @@
       toast('Card downloaded');
     },'image/png');
   }
-  // The card used to be one fixed, un-skippable layout with no say in how it looked — this is
-  // a real editor: a live canvas preview, an accent color independent of your actual profile
-  // color (so the card can look however you want without recoloring your whole identity), and
-  // per-section toggles. Badges are fetched once, best-effort, up front (online only) rather
-  // than on every redraw.
+  // The card used to be one fixed, un-skippable layout with no say in how it looked, then got
+  // one round of toggles + an accent color. This is the "so many options" pass: background
+  // style, texture, font pairing, border treatment, aspect ratio, two sliders, and nine
+  // independent toggles — all live in one canvas preview. Badges are fetched once, best-effort,
+  // up front (online only) rather than on every redraw.
+  const PC_PICKS = {
+    bg: [['aurora','Aurora'],['mesh','Mesh'],['starfield','Starfield'],['solid','Solid'],['minimal','Minimal']],
+    texture: [['dots','Dots'],['lines','Lines'],['noise','Grain'],['none','None']],
+    font: [['serif','Serif'],['mono','Mono'],['sans','Sans']],
+    border: [['none','None'],['thin','Frame'],['corners','Corners']],
+    ratio: [['portrait','Portrait'],['square','Square'],['story','Story']]
+  };
+  const PC_TOGGLES=[['showAvatar','Avatar'],['showHandle','Handle'],['showTier','Tier'],['showStatus','Status line'],['showBio','Bio'],['showJoinDate','Join date'],['showRank','Debate rank'],['showTraits','Traits'],['showBadges','Badges']];
+  function pcPickRow(key,label,current){ return `<div class="th-sub" style="margin:16px 0 8px">${label}</div><div class="pc-picks" data-pcpick="${key}">${PC_PICKS[key].map(([v,lbl])=>`<button class="chip${v===current?' on':''}" data-v="${v}">${lbl}</button>`).join('')}</div>`; }
   async function openPersonalityCardCustomizer(){
     const u=me();
-    const opt={ accent:u.color||'#ed2e44', showAvatar:true, showStatus:true, showTraits:true, showBadges:true, badges:[] };
+    const opt={ accent:u.color||'#ed2e44', bg:'aurora', texture:'dots', font:'serif', border:'none', ratio:'portrait', glow:60, dark:50,
+      showAvatar:true, showHandle:true, showTier:true, showStatus:true, showBio:false, showJoinDate:false, showRank:false, showTraits:true, showBadges:true, badges:[] };
     if(online()){ try{ opt.badges=await db.badges.list(u.id); }catch(e){} }
-    const TOGGLES=[['showAvatar','Avatar'],['showStatus','Status line'],['showTraits','Traits'],['showBadges','Badges']];
     let h=`<div class="sheet-grab"></div><div class="pad">
       <div class="tb-title" style="font-size:20px;margin-bottom:4px">Customize your card</div>
-      <div class="th-sub" style="margin-bottom:14px">Pick a look, then share or download.</div>
+      <div class="th-sub" style="margin-bottom:14px">So many ways to make this yours — pick a look, then share or download.</div>
       <div class="pc-preview-wrap"><canvas id="pcCanvas" width="800" height="1150"></canvas><div class="pc-loading" id="pcLoading"><span class="spinner"></span></div></div>
       <div class="th-sub" style="margin:16px 0 8px">Accent color</div>
       <div class="swatches" id="pcSwatches">${SWATCH.map(c=>`<div class="sw ${c===opt.accent?'on':''}" data-c="${attr(c)}" style="background:${c}"></div>`).join('')}</div>
+      ${pcPickRow('bg','Background',opt.bg)}
+      ${pcPickRow('texture','Texture',opt.texture)}
+      ${pcPickRow('font','Font',opt.font)}
+      ${pcPickRow('border','Border',opt.border)}
+      ${pcPickRow('ratio','Shape',opt.ratio)}
+      <div class="th-sub" style="margin:16px 0 4px">Glow intensity</div>
+      <input type="range" class="pc-slider" id="pcGlow" min="0" max="100" value="${opt.glow}">
+      <div class="th-sub" style="margin:14px 0 4px">Background darkness</div>
+      <input type="range" class="pc-slider" id="pcDark" min="0" max="100" value="${opt.dark}">
       <div class="th-sub" style="margin:18px 0 8px">Include</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">${TOGGLES.map(([k,label])=>`<button class="chip on" data-pctog="${k}">${label}</button>`).join('')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">${PC_TOGGLES.map(([k,label])=>`<button class="chip${opt[k]?' on':''}" data-pctog="${k}">${label}</button>`).join('')}</div>
       <button class="btn block" id="pcShare">${IC.share} Share card</button>
       <div style="height:18px"></div>
     </div>`;
@@ -3199,13 +3307,17 @@
       redrawing=true; loading.classList.add('on');
       try{
         const c=await buildPersonalityCard(u,opt);
-        const ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.drawImage(c,0,0);
+        canvas.width=c.width; canvas.height=c.height;
+        canvas.getContext('2d').drawImage(c,0,0);
       }catch(e){}
       loading.classList.remove('on'); redrawing=false;
       if(pending){ pending=false; redraw(); }
     };
     redraw();
     $('pcSwatches').querySelectorAll('.sw').forEach(sw=>sw.onclick=()=>{ $('pcSwatches').querySelectorAll('.sw').forEach(s=>s.classList.remove('on')); sw.classList.add('on'); opt.accent=sw.dataset.c; redraw(); });
+    $('sheet').querySelectorAll('[data-pcpick]').forEach(row=>{ const key=row.dataset.pcpick; row.querySelectorAll('button').forEach(b=>b.onclick=()=>{ row.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); opt[key]=b.dataset.v; redraw(); }); });
+    $('pcGlow').oninput=e=>{ opt.glow=+e.target.value; redraw(); };
+    $('pcDark').oninput=e=>{ opt.dark=+e.target.value; redraw(); };
     $('sheet').querySelectorAll('[data-pctog]').forEach(b=>b.onclick=()=>{ const k=b.dataset.pctog; opt[k]=!opt[k]; b.classList.toggle('on',opt[k]); redraw(); });
     $('pcShare').onclick=()=>sharePersonalityCard(canvas);
   }
@@ -3534,6 +3646,8 @@
       let h=`<div class="sheet-grab"></div><div class="pad"><div class="tb-title" style="font-size:20px;margin-bottom:14px">Theme & display</div>`;
       h+=`<div class="field"><label>App theme</label><div class="theme-grid" id="thmGrid">`+Object.keys(APP_THEMES).map(k=>`<div class="thm-sw ${curTheme===k?'on':''}" data-thm="${k}" style="background:${APP_THEMES[k].accent}" title="${esc(APP_THEMES[k].name)}"></div>`).join('')+`<div class="thm-sw thm-custom ${curTheme==='custom'?'on':''}" id="thmCustomSw" style="background:${customBg}" title="Custom color">${IC.palette}</div><input type="color" id="thmCustomInput" value="${state.customThemeColor||'#ed2e44'}" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"></div><div class="th-sub" style="margin-top:8px">${esc(curName)} — recolors Maintrix for you only, nobody else sees it.</div></div>`;
       h+=`<div class="field"><label>Text size</label><div class="segmented" style="margin:0" id="thmSize"><button data-v="small" class="${curSize==='small'?'on':''}">Small</button><button data-v="medium" class="${curSize==='medium'?'on':''}">Medium</button><button data-v="large" class="${curSize==='large'?'on':''}">Large</button></div></div>`;
+      const curAmb=state.ambience||'none';
+      h+=`<div class="field"><label>Ambience — cozy visual effects, just for you</label><div class="pc-picks" style="overflow-x:visible;flex-wrap:wrap" id="ambPicks">${Object.entries(AMBIENCE_OPTIONS).map(([k,label])=>`<button class="chip ${curAmb===k?'on':''}" data-amb="${k}">${label}</button>`).join('')}</div><div class="th-sub" style="margin-top:8px">Purely decorative — nobody else ever sees it. Off by default.</div></div>`;
       h+=`<div class="settings-row" id="thmMotion" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">${IC.motion}</span> Reduce motion <span class="sr-r">${state.reduceMotion?'On':'Off'}</span></div>`;
       h+=`<div class="settings-row" id="thmSound" style="padding-left:0;padding-right:0"><span class="sr-ic">${IC.sound}</span> Sound effects <span class="sr-r">${state.sound===false?'Off':'On'}</span></div>`;
       h+=`<div style="height:16px"></div></div>`;
@@ -3543,6 +3657,7 @@
       $('thmCustomInput').oninput=e=>{ state.customThemeColor=e.target.value; state.appTheme='custom'; save(); applyAppTheme(); };
       $('thmCustomInput').onchange=()=>draw();
       $('thmSize').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ state.textSize=b.dataset.v; save(); applyTextSize(); draw(); });
+      $('ambPicks').querySelectorAll('[data-amb]').forEach(b=>b.onclick=()=>{ state.ambience=b.dataset.amb; save(); applyAmbience(); draw(); });
       $('thmMotion').onclick=()=>{ state.reduceMotion=!state.reduceMotion; save(); applyReduceMotion(); draw(); };
       $('thmSound').onclick=()=>{ state.sound=state.sound===false; save(); if(state.sound)SFX.play('success'); draw(); };
     };
