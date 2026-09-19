@@ -433,6 +433,8 @@
   .install-guide { text-align:center; padding-top:6px; }
   .install-guide .ig-icon { width:56px; height:56px; margin:0 auto 14px; border-radius:18px; background:var(--accent-soft); color:var(--accent-hi); display:flex; align-items:center; justify-content:center; }
   .install-guide .ig-icon svg { width:26px; height:26px; }
+  .ig-suggested { display:inline-flex; align-items:center; gap:5px; margin:0 auto 10px; padding:5px 12px; border-radius:20px; background:var(--accent-soft); color:var(--accent-hi); font-size:12px; font-weight:700; letter-spacing:.02em; }
+  .ig-suggested svg { width:13px; height:13px; }
   .install-guide h3 { font-family:var(--display); font-size:19px; margin-bottom:6px; }
   .install-guide .sub { color:var(--muted); font-size:13.5px; line-height:1.5; margin-bottom:18px; }
   .ig-steps { display:flex; flex-direction:column; gap:12px; text-align:left; margin-bottom:6px; }
@@ -914,23 +916,51 @@
   body.reduce-motion .debate-bar-fill, body.reduce-motion .poll-bar-fill { transition:none; }
 
   /* ═══════════ AMBIENCE — opt-in cozy overlays, purely decorative ═══════════
-     Personal and client-side only, like app themes — never on by default, never seen by
-     anyone else. Sits above screen content but below chrome (topbar/msgbar/botnav, all
-     explicit z-index:5) so it never covers a tap target, and pointer-events:none throughout
-     so it never intercepts one either. Killed outright under reduce-motion. */
+     Personal and client-side only, like app themes. Sits above screen content but below
+     chrome (topbar/msgbar/botnav, all explicit z-index:5) so it never covers a tap target,
+     and pointer-events:none throughout so it never intercepts one either. Killed outright
+     under reduce-motion. Round two on the visuals: rain now falls at a slight angle with
+     real near/far depth instead of uniform vertical threads, snow wanders a real multi-point
+     path instead of one back-and-forth, fireplace throws actual rising embers on top of the
+     glow, fireflies wander a organic multi-point path instead of ping-ponging, and starlight
+     gets an occasional shooting star. */
   .ambience-layer { position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden; }
   body.reduce-motion .ambience-layer { display:none; }
-  .amb-drop { position:absolute; top:-80px; width:1.5px; background:linear-gradient(180deg,transparent,#bcd4ff99); animation-name:ambRainFall; animation-timing-function:linear; animation-iteration-count:infinite; }
-  @keyframes ambRainFall { to{ transform:translateY(calc(100dvh + 120px)); } }
-  .amb-flake { position:absolute; top:-12px; border-radius:50%; background:#fff; box-shadow:0 0 4px #fff8; animation-name:ambSnowFall; animation-timing-function:linear; animation-iteration-count:infinite; }
-  @keyframes ambSnowFall { 0%{ transform:translate(0,0); } 50%{ transform:translate(16px,50dvh); } 100%{ transform:translate(-8px,calc(100dvh + 20px)); } }
+
+  .amb-drop { position:absolute; top:-100px; width:1.5px; background:linear-gradient(180deg,transparent,#bcd4ffb0); animation-name:ambRainFall; animation-timing-function:linear; animation-iteration-count:infinite; }
+  @keyframes ambRainFall { to{ transform:translate(-38px,calc(100dvh + 140px)); } }
+  .amb-mist { position:absolute; left:0; right:0; bottom:0; height:22%; background:linear-gradient(180deg,transparent,#0a1a2a55); }
+
+  .amb-flake { position:absolute; top:-14px; border-radius:50%; background:#fff; box-shadow:0 0 4px #fff8; animation-name:ambSnowDrift; animation-timing-function:ease-in-out; animation-iteration-count:infinite; }
+  @keyframes ambSnowDrift {
+    0%{ transform:translate(0,0) rotate(0deg); }
+    25%{ transform:translate(18px,25dvh) rotate(90deg); }
+    50%{ transform:translate(-14px,50dvh) rotate(180deg); }
+    75%{ transform:translate(20px,75dvh) rotate(270deg); }
+    100%{ transform:translate(-6px,calc(100dvh + 20px)) rotate(360deg); }
+  }
+
   .amb-fireglow { position:absolute; left:50%; bottom:-50px; width:70%; height:220px; transform:translateX(-50%); background:radial-gradient(ellipse at 50% 100%,#ff8a3d55,transparent 70%); filter:blur(6px); animation:ambFireFlicker 2.6s ease-in-out infinite; }
   .amb-fireglow2 { width:45%; height:160px; background:radial-gradient(ellipse at 50% 100%,#ffb54d4d,transparent 70%); animation-duration:1.9s; animation-direction:reverse; }
+  .amb-fireglow3 { width:30%; height:120px; background:radial-gradient(ellipse at 50% 100%,#ff5f3d40,transparent 70%); animation-duration:3.4s; }
   @keyframes ambFireFlicker { 0%,100%{ opacity:.75; transform:translateX(-50%) scaleY(1); } 50%{ opacity:1; transform:translateX(-50%) scaleY(1.08); } }
-  .amb-firefly { position:absolute; width:4px; height:4px; border-radius:50%; background:#ffe58a; box-shadow:0 0 8px 2px #ffe58a99; animation-name:ambFireflyDrift; animation-timing-function:ease-in-out; animation-iteration-count:infinite; }
-  @keyframes ambFireflyDrift { 0%,100%{ transform:translate(0,0); opacity:.15; } 25%{ opacity:.85; } 50%{ transform:translate(26px,-20px); opacity:.25; } 75%{ opacity:.75; } }
+  .amb-ember { position:absolute; bottom:0; width:3px; height:3px; border-radius:50%; background:#ffb454; box-shadow:0 0 6px 1px #ff8a3dcc; animation-name:ambEmberRise; animation-timing-function:ease-out; animation-iteration-count:infinite; }
+  @keyframes ambEmberRise { 0%{ transform:translate(0,0); opacity:0; } 15%{ opacity:1; } 100%{ transform:translate(var(--ex,14px),-70vh); opacity:0; } }
+
+  .amb-firefly { position:absolute; width:4px; height:4px; border-radius:50%; background:#ffe58a; box-shadow:0 0 9px 2px #ffe58a99; animation-name:ambFireflyDrift; animation-timing-function:ease-in-out; animation-iteration-count:infinite; }
+  @keyframes ambFireflyDrift {
+    0%{ transform:translate(0,0); opacity:.15; }
+    20%{ opacity:.9; }
+    40%{ transform:translate(30px,-22px); opacity:.25; }
+    60%{ transform:translate(10px,-40px); opacity:.85; }
+    80%{ transform:translate(-24px,-18px); opacity:.3; }
+    100%{ transform:translate(0,0); opacity:.15; }
+  }
+
   .amb-star { position:absolute; border-radius:50%; background:#fff; animation-name:ambTwinkle; animation-timing-function:ease-in-out; animation-iteration-count:infinite; }
   @keyframes ambTwinkle { 0%,100%{ opacity:.2; } 50%{ opacity:1; } }
+  .amb-shootingstar { position:absolute; width:90px; height:2px; background:linear-gradient(90deg,#fff,transparent); border-radius:2px; animation:ambShoot 1.1s linear forwards; }
+  @keyframes ambShoot { from{ transform:translate(0,0) rotate(-32deg); opacity:1; } to{ transform:translate(-320px,220px) rotate(-32deg); opacity:0; } }
 </style>
 </head>
 <body>
@@ -1032,7 +1062,7 @@
   const LS = 'maintrix.v4';
   // Bumped by hand alongside sw.js's CACHE constant on every ship — shown at the bottom of
   // Settings so "is my update actually live" is a glance instead of a guess or a dev-tools trip.
-  const BUILD_VERSION = 'v53';
+  const BUILD_VERSION = 'v54';
   const DAY = 86400000;
 
   /* ═══ SFX — every sound is synthesized live via Web Audio, so there are no
@@ -1098,12 +1128,67 @@
     // was permanently dead for the rest of the session even though the user kept tapping things
     // that were perfectly good gestures. Now it just keeps trying on every pointerdown until the
     // context genuinely reports 'running', which is cheap once it already is.
-    let unlocking = false;
+    let unlocking = false, pendingAmbient = undefined;
     function unlock() {
       const c = ac(); if (!c || c.state === 'running') return;
       if (unlocking) return; unlocking = true;
       try { const b = c.createBuffer(1, 1, 22050); const s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch (e) {}
-      c.resume().catch(() => {}).finally(() => { unlocking = false; });
+      c.resume().catch(() => {}).finally(() => {
+        unlocking = false;
+        if (c.state === 'running' && pendingAmbient !== undefined) { const k = pendingAmbient; pendingAmbient = undefined; startAmbientNow(k); }
+      });
+    }
+    // ── Ambience loops — continuous background texture for Rain/Fireplace/Snow, tied to
+    // state.ambience (Fireflies/Starlight stay silent — nothing about drifting lights or a
+    // static night sky asks for a sound). All routed to their own gain node straight to
+    // destination (not through the tap/blip `master`, which is tuned for short percussive
+    // sounds at a very different perceived loudness) and faded in over ~1.5s rather than
+    // snapping on, so switching ambience never pops.
+    let ambientNodes = null, ambientTimer = null;
+    function stopAmbient() {
+      if (ambientTimer) { clearTimeout(ambientTimer); ambientTimer = null; }
+      if (ambientNodes) { ambientNodes.forEach(n => { try { n.stop && n.stop(); } catch (e) {} try { n.disconnect && n.disconnect(); } catch (e) {} }); ambientNodes = null; }
+    }
+    function noiseBuffer(c, dur) { const n = Math.max(1, Math.floor(c.sampleRate * dur)); const buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; return buf; }
+    function startRainAmbient(c) {
+      const src = c.createBufferSource(); src.buffer = noiseBuffer(c, 2); src.loop = true;
+      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = .6;
+      const g = c.createGain(); g.gain.value = .0001;
+      src.connect(bp); bp.connect(g); g.connect(c.destination); src.start(0);
+      g.gain.exponentialRampToValueAtTime(.05, c.currentTime + 1.5);
+      ambientNodes = [src, g];
+    }
+    function startSnowAmbient(c) {
+      // snow itself is silent — this is just the faintest hint of cold wind, easy to miss on purpose
+      const src = c.createBufferSource(); src.buffer = noiseBuffer(c, 3); src.loop = true;
+      const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2800;
+      const g = c.createGain(); g.gain.value = .0001;
+      src.connect(hp); hp.connect(g); g.connect(c.destination); src.start(0);
+      g.gain.exponentialRampToValueAtTime(.016, c.currentTime + 2);
+      ambientNodes = [src, g];
+    }
+    function startFireplaceAmbient(c) {
+      const src = c.createBufferSource(); src.buffer = noiseBuffer(c, 2); src.loop = true;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
+      const g = c.createGain(); g.gain.value = .0001;
+      src.connect(lp); lp.connect(g); g.connect(c.destination); src.start(0);
+      g.gain.exponentialRampToValueAtTime(.045, c.currentTime + 1.5);
+      ambientNodes = [src, g];
+      const crackle = () => {
+        if (!ambientNodes) return; // stopped since this was scheduled
+        const csrc = c.createBufferSource(); csrc.buffer = noiseBuffer(c, .04 + Math.random() * .03);
+        const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1800;
+        const cg = c.createGain(); cg.gain.value = .07 + Math.random() * .06;
+        csrc.connect(hp); hp.connect(cg); cg.connect(c.destination); csrc.start(0);
+        ambientTimer = setTimeout(crackle, 350 + Math.random() * 1500);
+      };
+      ambientTimer = setTimeout(crackle, 400);
+    }
+    function startAmbientNow(kind) {
+      const c = ac(); if (!c) return;
+      if (kind === 'rain') startRainAmbient(c);
+      else if (kind === 'fireplace') startFireplaceAmbient(c);
+      else if (kind === 'snow') startSnowAmbient(c);
     }
     return {
       arm() { unlock(); },
@@ -1122,6 +1207,13 @@
           unlock();
           setTimeout(() => { try { f(); } catch (e) {} }, 60);
         } catch (e) {}
+      },
+      ambient(kind) {
+        stopAmbient(); pendingAmbient = undefined;
+        if (typeof state === 'undefined' || state.sound === false) return;
+        const c = ac(); if (!c) return;
+        if (c.state !== 'running') { pendingAmbient = kind; unlock(); return; }
+        startAmbientNow(kind);
       }
     };
   })();
@@ -1570,6 +1662,7 @@
     const isIOS=PushMgr.isIOS();
     let h=`<div class="sheet-grab"></div><div class="pad install-guide">`;
     h+=`<div class="ig-icon">${IC.download}</div>`;
+    if(opt.suggested && !installed) h+=`<div class="ig-suggested">${IC.sparkle} Highly suggested</div>`;
     if(installed){
       h+=`<h3>Already on your Home Screen</h3><p class="sub">Maintrix is installed on this device — you're using it right now.</p>`;
     } else if(canPrompt){
@@ -1717,7 +1810,13 @@
   };
   const PERSONALITY_DB_COLS = { mbti:'mbti', enneagramCore:'enneagram_core', enneagramWing:'enneagram_wing', enneagramTritype:'enneagram_tritype', temperamentDominant:'temperament_dominant', temperamentSecondary:'temperament_secondary' };
 
-  const SWATCH = ['#ed2e44','#f0663b','#f0b232','#eab308','#84cc16','#3ba55d','#14b8a6','#0ea5e9','#4a9eff','#6366f1','#a855f7','#d946ef','#eb459e','#f43f5e','#8a8a8a','#ffffff'];
+  const SWATCH = [
+    '#ed2e44','#f0663b','#f0b232','#eab308','#84cc16','#3ba55d','#14b8a6','#0ea5e9','#4a9eff','#6366f1','#a855f7','#d946ef','#eb459e','#f43f5e','#8a8a8a','#ffffff',
+    // deep/rich shades — same hues, darker, for a moodier pick than the bright originals
+    '#7f1d2e','#9a3412','#a16207','#4d7c0f','#166534','#065f46','#155e75','#1e40af','#3730a3','#6b21a8','#86198f','#9f1239',
+    // soft/pastel shades — same hues again, much lighter, for the opposite mood
+    '#fca5a5','#fdba74','#fde047','#bef264','#86efac','#5eead4','#7dd3fc','#93c5fd','#c4b5fd','#f0abfc','#fda4af','#57534e'
+  ];
   /* ── app-wide themes (personal — recolors the whole app for you only) ── */
   const APP_THEMES = {
     crimson:{name:'Crimson',accent:'#ed2e44',hi:'#ff4257',press:'#c11d31'},
@@ -1816,26 +1915,35 @@
   })();
   function applyReduceMotion(){ document.body.classList.toggle('reduce-motion',!!state.reduceMotion); applyAmbience(); }
   const AMBIENCE_OPTIONS = { none:'None', rain:'Rain', snow:'Snow', fireplace:'Fireplace', fireflies:'Fireflies', starlight:'Starlight' };
+  let ambienceInterval=null;
   // Opt-in only — state.ambience defaults to unset/'none' and nothing here ever turns itself
   // on. Rebuilds the whole overlay from scratch on every call rather than trying to diff it;
   // it's a handful of cheap absolutely-positioned spans, not worth the complexity of patching.
   function applyAmbience(){
     document.querySelectorAll('.ambience-layer').forEach(n=>n.remove());
+    if(ambienceInterval){ clearTimeout(ambienceInterval); ambienceInterval=null; }
     const kind=state.ambience||'none';
+    SFX.ambient(kind);
     if(kind==='none'||document.body.classList.contains('reduce-motion'))return;
     const frame=document.querySelector('.frame'); if(!frame)return;
     const layer=el('div','ambience-layer amb-'+kind);
     const rnd=(a,b)=>a+Math.random()*(b-a);
     if(kind==='rain'){
-      for(let i=0;i<36;i++){ const d=el('span','amb-drop'); d.style.cssText=`left:${rnd(0,100)}%;height:${rnd(40,80)}px;animation-duration:${rnd(.6,1.2).toFixed(2)}s;animation-delay:-${rnd(0,2).toFixed(2)}s;opacity:${rnd(.15,.5).toFixed(2)}`; layer.appendChild(d); }
+      // near/far depth: brighter+thicker "close" drops fall faster, dimmer+thinner "far" ones slower
+      for(let i=0;i<40;i++){ const d=el('span','amb-drop'); const near=Math.random()<.4;
+        d.style.cssText=`left:${rnd(0,100)}%;width:${near?2:1}px;height:${rnd(near?70:40,near?110:70)}px;animation-duration:${(near?rnd(.45,.7):rnd(.8,1.3)).toFixed(2)}s;animation-delay:-${rnd(0,2).toFixed(2)}s;opacity:${(near?rnd(.35,.6):rnd(.12,.3)).toFixed(2)}`; layer.appendChild(d); }
+      layer.appendChild(el('div','amb-mist'));
     } else if(kind==='snow'){
-      for(let i=0;i<28;i++){ const d=el('span','amb-flake'); const size=rnd(2,5).toFixed(1); d.style.cssText=`left:${rnd(0,100)}%;width:${size}px;height:${size}px;animation-duration:${rnd(4,9).toFixed(2)}s;animation-delay:-${rnd(0,6).toFixed(2)}s;opacity:${rnd(.3,.8).toFixed(2)}`; layer.appendChild(d); }
+      for(let i=0;i<30;i++){ const d=el('span','amb-flake'); const size=rnd(2,5.5).toFixed(1); d.style.cssText=`left:${rnd(0,100)}%;width:${size}px;height:${size}px;filter:blur(${size>4?.5:0}px);animation-duration:${rnd(5,11).toFixed(2)}s;animation-delay:-${rnd(0,8).toFixed(2)}s;opacity:${rnd(.3,.8).toFixed(2)}`; layer.appendChild(d); }
     } else if(kind==='fireplace'){
-      layer.innerHTML='<div class="amb-fireglow"></div><div class="amb-fireglow amb-fireglow2"></div>';
+      layer.innerHTML='<div class="amb-fireglow"></div><div class="amb-fireglow amb-fireglow2"></div><div class="amb-fireglow amb-fireglow3"></div>';
+      for(let i=0;i<14;i++){ const d=el('span','amb-ember'); d.style.cssText=`left:${rnd(38,62)}%;--ex:${rnd(-30,30).toFixed(0)}px;animation-duration:${rnd(3.5,6.5).toFixed(2)}s;animation-delay:-${rnd(0,6).toFixed(2)}s`; layer.appendChild(d); }
     } else if(kind==='fireflies'){
-      for(let i=0;i<16;i++){ const d=el('span','amb-firefly'); d.style.cssText=`left:${rnd(0,100)}%;top:${rnd(40,95)}%;animation-duration:${rnd(5,10).toFixed(2)}s;animation-delay:-${rnd(0,5).toFixed(2)}s`; layer.appendChild(d); }
+      for(let i=0;i<16;i++){ const d=el('span','amb-firefly'); const warm=Math.random()<.7; d.style.cssText=`left:${rnd(0,100)}%;top:${rnd(40,95)}%;background:${warm?'#ffe58a':'#a8ffb0'};box-shadow:0 0 9px 2px ${warm?'#ffe58a99':'#a8ffb099'};animation-duration:${rnd(6,12).toFixed(2)}s;animation-delay:-${rnd(0,6).toFixed(2)}s`; layer.appendChild(d); }
     } else if(kind==='starlight'){
-      for(let i=0;i<50;i++){ const d=el('span','amb-star'); const size=rnd(1,2.6).toFixed(1); d.style.cssText=`left:${rnd(0,100)}%;top:${rnd(0,60)}%;width:${size}px;height:${size}px;animation-duration:${rnd(2,5).toFixed(2)}s;animation-delay:-${rnd(0,4).toFixed(2)}s`; layer.appendChild(d); }
+      for(let i=0;i<55;i++){ const d=el('span','amb-star'); const size=rnd(1,2.6).toFixed(1); d.style.cssText=`left:${rnd(0,100)}%;top:${rnd(0,60)}%;width:${size}px;height:${size}px;animation-duration:${rnd(2,5).toFixed(2)}s;animation-delay:-${rnd(0,4).toFixed(2)}s`; layer.appendChild(d); }
+      const spawnShootingStar=()=>{ if(!layer.isConnected)return; const s=el('div','amb-shootingstar'); s.style.cssText=`left:${rnd(20,80)}%;top:${rnd(0,20)}%`; layer.appendChild(s); setTimeout(()=>s.remove(),1200); ambienceInterval=setTimeout(spawnShootingStar,rnd(7000,14000)); };
+      ambienceInterval=setTimeout(spawnShootingStar,rnd(1500,4000));
     }
     frame.appendChild(layer);
   }
@@ -3647,7 +3755,7 @@
       h+=`<div class="field"><label>App theme</label><div class="theme-grid" id="thmGrid">`+Object.keys(APP_THEMES).map(k=>`<div class="thm-sw ${curTheme===k?'on':''}" data-thm="${k}" style="background:${APP_THEMES[k].accent}" title="${esc(APP_THEMES[k].name)}"></div>`).join('')+`<div class="thm-sw thm-custom ${curTheme==='custom'?'on':''}" id="thmCustomSw" style="background:${customBg}" title="Custom color">${IC.palette}</div><input type="color" id="thmCustomInput" value="${state.customThemeColor||'#ed2e44'}" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"></div><div class="th-sub" style="margin-top:8px">${esc(curName)} — recolors Maintrix for you only, nobody else sees it.</div></div>`;
       h+=`<div class="field"><label>Text size</label><div class="segmented" style="margin:0" id="thmSize"><button data-v="small" class="${curSize==='small'?'on':''}">Small</button><button data-v="medium" class="${curSize==='medium'?'on':''}">Medium</button><button data-v="large" class="${curSize==='large'?'on':''}">Large</button></div></div>`;
       const curAmb=state.ambience||'none';
-      h+=`<div class="field"><label>Ambience — cozy visual effects, just for you</label><div class="pc-picks" style="overflow-x:visible;flex-wrap:wrap" id="ambPicks">${Object.entries(AMBIENCE_OPTIONS).map(([k,label])=>`<button class="chip ${curAmb===k?'on':''}" data-amb="${k}">${label}</button>`).join('')}</div><div class="th-sub" style="margin-top:8px">Purely decorative — nobody else ever sees it. Off by default.</div></div>`;
+      h+=`<div class="field"><label>Ambience — cozy visual effects, just for you</label><div class="pc-picks" style="overflow-x:visible;flex-wrap:wrap" id="ambPicks">${Object.entries(AMBIENCE_OPTIONS).map(([k,label])=>`<button class="chip ${curAmb===k?'on':''}" data-amb="${k}">${label}</button>`).join('')}</div></div>`;
       h+=`<div class="settings-row" id="thmMotion" style="border-top:none;padding-left:0;padding-right:0"><span class="sr-ic">${IC.motion}</span> Reduce motion <span class="sr-r">${state.reduceMotion?'On':'Off'}</span></div>`;
       h+=`<div class="settings-row" id="thmSound" style="padding-left:0;padding-right:0"><span class="sr-ic">${IC.sound}</span> Sound effects <span class="sr-r">${state.sound===false?'Off':'On'}</span></div>`;
       h+=`<div style="height:16px"></div></div>`;
@@ -3659,7 +3767,7 @@
       $('thmSize').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ state.textSize=b.dataset.v; save(); applyTextSize(); draw(); });
       $('ambPicks').querySelectorAll('[data-amb]').forEach(b=>b.onclick=()=>{ state.ambience=b.dataset.amb; save(); applyAmbience(); draw(); });
       $('thmMotion').onclick=()=>{ state.reduceMotion=!state.reduceMotion; save(); applyReduceMotion(); draw(); };
-      $('thmSound').onclick=()=>{ state.sound=state.sound===false; save(); if(state.sound)SFX.play('success'); draw(); };
+      $('thmSound').onclick=()=>{ state.sound=state.sound===false; save(); if(state.sound)SFX.play('success'); applyAmbience(); draw(); };
     };
     draw();
   }
@@ -4233,12 +4341,20 @@
   // One-time beat right after signup: offer notifications, then (skippable) offer installing
   // to the Home Screen — the two prompts iOS treats as separate device capabilities, so they're
   // asked one at a time instead of bundled into one confusing dialog.
+  // Was gated on "isIOS OR we already captured a real beforeinstallprompt event" — on Android/
+  // Chrome without a captured prompt (Chrome's own install-eligibility heuristics don't always
+  // fire it in time, or at all, on a brand-new visit), that condition is false and the whole
+  // guide silently never showed. This is the one screen in the whole app explicitly called out
+  // as critical, so it's no longer conditional on having a native prompt in hand: any phone
+  // (iOS or Android — desktop is skipped, since "Add to Home Screen" isn't a real desktop
+  // browser affordance and would just be confusing there) always sees *something* — a real
+  // one-tap install button when a native prompt exists, manual steps otherwise.
+  function isMobileDevice(){ return PushMgr.isIOS() || /Android/i.test(navigator.userAgent); }
   function postSignupFlow(done){
     const askInstall=()=>{
       const already=PushMgr.standalone();
-      const canOffer=!already && (PushMgr.isIOS() || installPromptEvent);
-      if(!canOffer){ done(); return; }
-      openInstallGuide({ skippable:true, onDone:done });
+      if(already || !isMobileDevice()){ done(); return; }
+      openInstallGuide({ skippable:true, onDone:done, suggested:true });
     };
     if(!PushMgr.supported()){ askInstall(); return; }
     let h=`<div class="sheet-grab"></div><div class="pad install-guide"><div class="ig-icon">${IC.bell}</div><h3>Turn on notifications?</h3><p class="sub">Get pinged for DMs, replies, mentions and more — fine-tune exactly what later in Settings.</p><button class="btn block" id="psEnable">Enable notifications</button><button class="btn ghost block" id="psSkip" style="margin-top:8px">Not now</button></div>`;
