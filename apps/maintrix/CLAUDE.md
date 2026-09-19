@@ -200,6 +200,55 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.24 — real fix for the install-prompt gate, ambient sound, richer effects, more colors)
+
+- **The most important item this round: the post-signup "Add to Home
+  Screen" prompt was gated on having a captured native
+  `beforeinstallprompt` event — on Android/Chrome without one already in
+  hand (Chrome's own install-eligibility heuristics don't always fire it
+  on a brand-new visit, or at all), that condition was false and the
+  whole guide silently never showed, on top of the iOS platform wall
+  already documented. Confirmed this exact scenario in-browser (Android
+  UA, no captured prompt event) before the fix — the flow skipped
+  straight past the guide with nothing shown — and confirmed after: the
+  guide now always shows on any phone (iOS or Android; desktop is
+  skipped on purpose, since "Add to Home Screen" isn't a real desktop
+  affordance and would just be confusing there) as long as the app
+  isn't already installed, showing a real one-tap install button when a
+  native prompt exists and clear manual steps otherwise. Also added a
+  "✦ Highly suggested" badge to the guide when it's reached from the
+  post-signup flow specifically.
+- **Ambience effects now come with real ambient sound**, not just
+  visuals — Rain, Fireplace, and Snow each get a continuous synthesized
+  loop (`SFX.ambient(kind)`): filtered noise for rain's "shhh" and
+  snow's near-silent cold-wind hint, a low-passed rumble plus randomly-
+  timed crackle pops for fireplace. Fireflies and Starlight stay silent
+  on purpose — nothing about drifting lights or a static night sky asks
+  for a sound. Properly integrated with the existing audio-unlock
+  system rather than bolted on: if the shared AudioContext isn't
+  running yet when an ambience is chosen, the request is remembered and
+  the loop starts the moment the context actually unlocks, instead of
+  silently failing. Toggling the master sound switch off now also stops
+  a running ambient loop (previously it kept going).
+- **Richer visuals for every ambience effect**: rain now falls at a
+  slight angle with real near/far depth (brighter/thicker/faster
+  "close" drops vs. dimmer/thinner/slower "far" ones) plus a ground-
+  mist gradient; snow drifts a real multi-point wander path instead of
+  one back-and-forth; fireplace throws actual rising, fading embers on
+  top of the glow (now three flicker layers instead of two); fireflies
+  wander an organic multi-point path instead of ping-ponging, in a mix
+  of warm and cool colors; starlight gets an occasional shooting star
+  (self-rescheduling, randomized 7–14s gaps, cleaned up correctly when
+  ambience changes so it can't leak a stray timer).
+- **Removed the "Purely decorative / off by default" line** from the
+  Ambience section in Settings — the picker itself already makes both
+  of those obvious.
+- **`SWATCH` (used for your profile color, app-custom themes, and the
+  personality card's accent picker) grew from 16 to 40 colors** — the
+  original 16 plus a deep/rich variant and a soft/pastel variant of
+  each, so there's real range in both direction, not just more of the
+  same brightness band.
+
 ## Build state (as of v0.23 — cozy ambience effects, personality card customization goes deep)
 
 - **New "Ambience" setting** (Profile → Settings → Theme & display):
