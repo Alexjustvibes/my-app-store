@@ -200,6 +200,56 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.28 — SECURITY HOTFIX: attribute-breakout XSS in the composer placeholder)
+
+- **Real, live, exploitable XSS — reported via a genuine `alert()` firing
+  on the production origin, not a theoretical finding.** The composer's
+  `<input placeholder="Message ${...}">` built that attribute with `esc()`
+  instead of `attr()`. `esc()` only escapes `&`/`<`/`>` — it does **not**
+  escape `"`, which is the one character that matters inside a double-
+  quoted HTML attribute. `th.title` there comes straight from a DM
+  contact's display name, or a server/debate/topic-room title — all
+  user-set at signup/creation with only a length cap (`profiles_name_len`
+  etc., from `0022`), no character restriction. A name/title containing a
+  `"` closes the attribute early and lets anything after it be parsed as
+  new attributes on that `<input>` — e.g. an `onfocus="…"` or `autofocus`
+  handler — which then executes the instant that DM/server/debate thread
+  is opened by *anyone*, not just the attacker. This is exactly the shape
+  of payload that would produce a same-origin `alert()` popup like the one
+  reported. Fixed: `attr()` (which also escapes `"`) instead of `esc()` on
+  that one line.
+- **Audited the rest of the file for the same anti-pattern** (`esc(...)`
+  used to build a quoted HTML attribute instead of `attr(...)`) with a
+  small throwaway script scanning every `name="${...}"`-shaped
+  interpolation in the file: found exactly one other `esc()`-in-attribute
+  case (an app-theme's display name in a `title=`), which isn't
+  exploitable since that string is a hardcoded developer constant, never
+  user input. Also separately checked every attribute built from the
+  classic free-text fields (`name`/`bio`/`title`/`description`/
+  `status_line`/`caption`/`handle`/`body`) for the *worse* case — zero
+  escaping at all — and found none; every other instance already
+  correctly uses `attr()`. This was the one real gap.
+- **What this does *not* claim**: "completely unseeable" isn't something
+  a client-side single-file web app can ever honestly promise — anyone can
+  view the page source of anything their browser downloads and renders;
+  no amount of minification or obfuscation changes that, it only raises
+  the effort to read it. What *is* achievable, and was the actual point
+  of this pass, is patching real injection/escaping bugs like this one —
+  that's what got done here. Also checked the full commit history for any
+  literal committed secret (service-role key, VAPID private key, push
+  secret) — none found; every secret in this codebase is read from an
+  environment variable or Supabase Vault at runtime, never committed, per
+  the pattern already established since `v0.15`/`v0.18`.
+- **Separately flagged, not fixed here**: a handful of commits already
+  merged to `main` from earlier in this collaboration (before an
+  anonymous git identity was adopted) carry a real GitHub username in
+  their author/committer fields. Left untouched pending the user's
+  explicit direction — rewriting already-shared `main` history is a
+  destructive, force-push operation that (a) breaks anyone who's already
+  pulled `main`, and (b) per the existing note elsewhere in this file,
+  wouldn't fully scrub it anyway since GitHub caches merged PR pages
+  independently of what `main`'s history looks like afterward.
+
 ## Build state (as of v0.27 — a real flame icon, a decluttered composer everywhere, debates on fire, spectator chat, self-delete)
 
 - **The streak flame was "just a boring flame thing" — replaced the icon

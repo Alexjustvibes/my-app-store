@@ -1136,7 +1136,7 @@
   const LS = 'maintrix.v4';
   // Bumped by hand alongside sw.js's CACHE constant on every ship — shown at the bottom of
   // Settings so "is my update actually live" is a glance instead of a guess or a dev-tools trip.
-  const BUILD_VERSION = 'v57';
+  const BUILD_VERSION = 'v58';
   const DAY = 86400000;
 
   /* ═══ SFX — every sound is synthesized live via Web Audio, so there are no
@@ -2385,7 +2385,7 @@
       if(allowFiles) menu+=`<button class="pm-item" id="pmPhoto">${IC.clip}<span>Photo or video</span></button>`;
       if(allowMic) menu+=`<button class="pm-item" id="pmMic">${IC.mic}<span>Voice message</span></button>`;
       if(allowPoll) menu+=`<button class="pm-item" id="pmPoll">${IC.grid}<span>Poll</span></button>`;
-      h+=`<div class="box">${hasPlus?`<div class="plus-wrap"><button class="attach" id="thPlus" title="Add">${IC.plus}</button><div class="plus-menu" id="thPlusMenu">${menu}</div></div>`:''}<input id="thInput" placeholder="Message ${esc(th.dmKey?'@'+th.title:th.title)}" autocomplete="off"><button class="send" id="thSend">${IC.send}</button>${allowFiles?'<input type="file" id="thFile" accept="image/*,video/*" style="display:none">':''}</div>`; }
+      h+=`<div class="box">${hasPlus?`<div class="plus-wrap"><button class="attach" id="thPlus" title="Add">${IC.plus}</button><div class="plus-menu" id="thPlusMenu">${menu}</div></div>`:''}<input id="thInput" placeholder="Message ${attr(th.dmKey?'@'+th.title:th.title)}" autocomplete="off"><button class="send" id="thSend">${IC.send}</button>${allowFiles?'<input type="file" id="thFile" accept="image/*,video/*" style="display:none">':''}</div>`; }
     h+=`</div></div>`;
     host.innerHTML=h;
     if(!isEmbed)$('app').classList.add('thread-open');
