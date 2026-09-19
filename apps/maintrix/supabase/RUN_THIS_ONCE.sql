@@ -1,14 +1,953 @@
--- Maintrix — ONE-TIME CATCH-UP SCRIPT
--- ═══════════════════════════════════════════════════════════════
--- Migrations 0009 through 0021, concatenated in order. 0009-0020 have
--- already been run against production as of this writing; 0021 (admin
--- moderation) is also already run. This file is idempotent, so running
--- the whole thing again is always safe.
--- ═══════════════════════════════════════════════════════════════
+-- Maintrix backend — RUN_THIS_ONCE.sql
+-- Auto-regenerated concatenation of every migration in order. Paste this whole file
+-- into the Supabase SQL editor once to bring a fresh project up to date, instead of
+-- running each migration file individually.
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0009_post_caption.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0001_phase1_identity.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — Phase 1: Identity & auth
+-- Run this in the Supabase SQL editor (or `supabase db push`).
+-- Covers: traits lookup + seed, profiles table, immutability of traits/handle,
+-- auto-create stub profile on signup, and Row-Level Security.
+-- See apps/maintrix/BACKEND.md for the full plan.
+
+-- ───────────────────────── extensions ─────────────────────────
+create extension if not exists citext;
+
+-- ───────────────────────── traits lookup ──────────────────────
+-- Fixed set the signup test chooses from. `kind` = goal | fear.
+create table if not exists public.traits (
+  value text primary key,
+  kind  text not null check (kind in ('goal','fear'))
+);
+
+insert into public.traits (value, kind) values
+  ('Discipline','goal'),('Wealth','goal'),('Mastery','goal'),('Courage','goal'),
+  ('Focus','goal'),('Health','goal'),('Creativity','goal'),('Leadership','goal'),
+  ('Purpose','goal'),('Freedom','goal'),
+  ('Wasted potential','fear'),('Irrelevance','fear'),('Failure','fear'),
+  ('Rejection','fear'),('Mediocrity','fear'),('Being forgotten','fear'),
+  ('Running out of time','fear'),('Loneliness','fear')
+on conflict (value) do nothing;
+
+-- ───────────────────────── profiles ───────────────────────────
+-- One row per auth user. handle + traits are LOCKED after signup.
+-- Nullable until the identity test fills them in (a stub row is created on signup).
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users (id) on delete cascade,
+  handle     citext unique,                               -- immutable @handle
+  name       text,                                        -- changeable display name
+  goals      text[] not null default '{}',
+  fears      text[] not null default '{}',
+  bio        text,
+  color      text default '#ed2e44',
+  like_icon  text default 'heart',
+  country    text,
+  region     text,
+  tier       text not null default 'lite' check (tier in ('lite','main')),
+  is_admin   boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+-- handle format: 3–20 chars, lowercase letters/digits/underscore
+alter table public.profiles
+  drop constraint if exists profiles_handle_format;
+alter table public.profiles
+  add constraint profiles_handle_format
+  check (handle is null or handle ~ '^[a-z0-9_]{3,20}$');
+
+-- match people by shared traits (Your World / trait nexuses)
+create index if not exists profiles_goals_gin on public.profiles using gin (goals);
+create index if not exists profiles_fears_gin on public.profiles using gin (fears);
+
+-- ─────────────────── immutability of traits + handle ──────────
+-- Once set (non-null / non-empty), handle and traits can never change.
+create or replace function public.lock_identity()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.handle is not null and new.handle is distinct from old.handle then
+    raise exception 'handle is immutable';
+  end if;
+  if array_length(old.goals,1) is not null and new.goals is distinct from old.goals then
+    raise exception 'goals are locked after signup';
+  end if;
+  if array_length(old.fears,1) is not null and new.fears is distinct from old.fears then
+    raise exception 'fears are locked after signup';
+  end if;
+  -- tier and is_admin are never set by the user directly (server/webhook only)
+  new.tier := old.tier;
+  new.is_admin := old.is_admin;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_lock_identity on public.profiles;
+create trigger trg_lock_identity
+  before update on public.profiles
+  for each row execute function public.lock_identity();
+
+-- ─────────────── auto-create a stub profile on signup ─────────
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id) values (new.id)
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- ───────────────────────── validate traits ───────────────────
+-- Reject goals/fears that aren't in the fixed list, and wrong-kind values.
+create or replace function public.validate_traits()
+returns trigger
+language plpgsql
+as $$
+begin
+  if exists (select 1 from unnest(new.goals) g
+             where g not in (select value from public.traits where kind='goal')) then
+    raise exception 'invalid goal value';
+  end if;
+  if exists (select 1 from unnest(new.fears) f
+             where f not in (select value from public.traits where kind='fear')) then
+    raise exception 'invalid fear value';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_validate_traits on public.profiles;
+create trigger trg_validate_traits
+  before insert or update on public.profiles
+  for each row execute function public.validate_traits();
+
+-- ───────────────────────── Row-Level Security ────────────────
+alter table public.profiles enable row level security;
+alter table public.traits   enable row level security;
+
+-- traits: readable by anyone signed in
+drop policy if exists traits_read on public.traits;
+create policy traits_read on public.traits
+  for select to authenticated using (true);
+
+-- profiles: all identities are public to signed-in users
+drop policy if exists profiles_read on public.profiles;
+create policy profiles_read on public.profiles
+  for select to authenticated using (true);
+
+-- profiles: you may only insert/update your own row
+drop policy if exists profiles_insert_self on public.profiles;
+create policy profiles_insert_self on public.profiles
+  for insert to authenticated with check (auth.uid() = id);
+
+drop policy if exists profiles_update_self on public.profiles;
+create policy profiles_update_self on public.profiles
+  for update to authenticated
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+-- (no delete policy — profiles are removed via auth.users cascade only)
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0002_phase2_rooms.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — Phase 2: Rooms & live messaging
+-- Run in the Supabase SQL editor after 0001. Adds rooms, room_members, messages,
+-- RLS, seeded singleton rooms (World / Commons / Acolyte Hub / trait nexuses /
+-- training), a get-or-create DM function, and Realtime on messages.
+-- See apps/maintrix/BACKEND.md.
+
+create extension if not exists pgcrypto;
+
+-- ───────────────────────── rooms ──────────────────────────────
+create table if not exists public.rooms (
+  id         uuid primary key default gen_random_uuid(),
+  kind       text not null check (kind in
+             ('world','trait','topic','server','dm','live','training','acolyte','commons','admin')),
+  slug       text unique,                    -- stable id for singletons/DMs (e.g. 'world', 'trait:Discipline', 'dm:a:b')
+  title      text,
+  category   text,
+  trait      text,
+  scope      text not null default 'global', -- 'global' | 'location'
+  owner_id   uuid references public.profiles (id) on delete set null,
+  is_public  boolean not null default true,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz,                     -- topic rooms: +24h
+  meta       jsonb not null default '{}'
+);
+create index if not exists rooms_kind_idx on public.rooms (kind);
+
+-- ───────────────────────── room_members ───────────────────────
+create table if not exists public.room_members (
+  room_id   uuid references public.rooms (id) on delete cascade,
+  user_id   uuid references public.profiles (id) on delete cascade,
+  rank      text not null default 'Initiate' check (rank in ('Initiate','Operator','Architect','Owner')),
+  roles     text[] not null default '{}',
+  joined_at timestamptz not null default now(),
+  muted     boolean not null default false,
+  primary key (room_id, user_id)
+);
+
+-- ───────────────────────── messages ───────────────────────────
+create table if not exists public.messages (
+  id         uuid primary key default gen_random_uuid(),
+  room_id    uuid not null references public.rooms (id) on delete cascade,
+  author_id  uuid references public.profiles (id) on delete set null,
+  body       text not null,
+  reply_to   uuid references public.messages (id) on delete set null,
+  edited     boolean not null default false,
+  pinned     boolean not null default false,
+  is_system  boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists messages_room_time_idx on public.messages (room_id, created_at);
+
+-- ───────────────────────── helpers ────────────────────────────
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
+$$;
+
+create or replace function public.is_member(room uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.room_members m
+                 where m.room_id = room and m.user_id = auth.uid());
+$$;
+
+-- A room is readable if it's an open shared space, a public server, or you're a member.
+create or replace function public.room_readable(room uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.rooms r
+    where r.id = room and (
+      r.kind in ('world','trait','topic','training','acolyte','commons')
+      or (r.kind = 'server' and r.is_public)
+      or public.is_member(room)
+      or public.is_admin()
+    )
+  );
+$$;
+
+-- Get (or create) the 1:1 DM room between the caller and `other`.
+create or replace function public.get_or_create_dm(other uuid)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare meid uuid := auth.uid(); rid uuid; s text;
+begin
+  if other = meid or other is null then raise exception 'invalid dm target'; end if;
+  s := 'dm:' || least(meid, other)::text || ':' || greatest(meid, other)::text;
+  select id into rid from public.rooms where slug = s;
+  if rid is null then
+    insert into public.rooms (kind, slug, is_public, title) values ('dm', s, false, 'Direct message')
+      returning id into rid;
+    insert into public.room_members (room_id, user_id) values (rid, meid), (rid, other)
+      on conflict do nothing;
+  end if;
+  return rid;
+end; $$;
+
+-- ───────────────────────── RLS ────────────────────────────────
+alter table public.rooms        enable row level security;
+alter table public.room_members enable row level security;
+alter table public.messages     enable row level security;
+
+-- rooms
+drop policy if exists rooms_read on public.rooms;
+create policy rooms_read on public.rooms for select to authenticated
+  using (kind in ('world','trait','topic','training','acolyte','commons')
+         or (kind='server' and is_public)
+         or public.is_member(id)
+         or public.is_admin());
+drop policy if exists rooms_insert on public.rooms;
+create policy rooms_insert on public.rooms for insert to authenticated
+  with check (owner_id = auth.uid());
+drop policy if exists rooms_update on public.rooms;
+create policy rooms_update on public.rooms for update to authenticated
+  using (owner_id = auth.uid() or public.is_admin())
+  with check (owner_id = auth.uid() or public.is_admin());
+drop policy if exists rooms_delete on public.rooms;
+create policy rooms_delete on public.rooms for delete to authenticated
+  using (owner_id = auth.uid() or public.is_admin());
+
+-- room_members
+drop policy if exists rm_read on public.room_members;
+create policy rm_read on public.room_members for select to authenticated
+  using (public.room_readable(room_id));
+drop policy if exists rm_join on public.room_members;
+create policy rm_join on public.room_members for insert to authenticated
+  with check (user_id = auth.uid() or public.is_admin());
+drop policy if exists rm_leave on public.room_members;
+create policy rm_leave on public.room_members for delete to authenticated
+  using (user_id = auth.uid() or public.is_admin());
+
+-- messages
+drop policy if exists msg_read on public.messages;
+create policy msg_read on public.messages for select to authenticated
+  using (public.room_readable(room_id));
+drop policy if exists msg_insert on public.messages;
+create policy msg_insert on public.messages for insert to authenticated
+  with check (author_id = auth.uid() and public.room_readable(room_id));
+drop policy if exists msg_update on public.messages;
+create policy msg_update on public.messages for update to authenticated
+  using (author_id = auth.uid())
+  with check (author_id = auth.uid());
+drop policy if exists msg_delete on public.messages;
+create policy msg_delete on public.messages for delete to authenticated
+  using (author_id = auth.uid() or public.is_admin());
+
+grant execute on function public.get_or_create_dm(uuid) to authenticated;
+
+-- ───────────────────────── Realtime ───────────────────────────
+do $$
+begin
+  begin execute 'alter publication supabase_realtime add table public.messages'; exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table public.rooms';    exception when duplicate_object then null; end;
+end $$;
+
+-- ───────────────────────── seed singleton rooms ───────────────
+insert into public.rooms (kind, slug, title, scope) values
+  ('world',   'world',       'The World',    'global'),
+  ('commons', 'commons',     'The Commons',  'global'),
+  ('acolyte', 'acolyte-hub', 'Acolyte Hub',  'global'),
+  ('training','training:paradigm',  'Paradigm-Broadening', 'global'),
+  ('training','training:awareness', 'Self-Awareness',      'global')
+on conflict (slug) do nothing;
+
+-- one global room per trait (Your World / trait nexuses)
+insert into public.rooms (kind, slug, title, trait, scope)
+  select 'trait', 'trait:' || value, value, value, 'global' from public.traits
+on conflict (slug) do nothing;
+
+-- optional: seed a welcome line in the World
+insert into public.messages (room_id, body, is_system)
+  select id, 'Welcome to the World — the one room every Maintrix member shares. Say who you are.', true
+  from public.rooms where slug = 'world'
+    and not exists (select 1 from public.messages m2 join public.rooms r2 on r2.id=m2.room_id where r2.slug='world');
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0003_phase3_social.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — Phase 3: Social graph
+-- Run after 0002. Adds friendships, friend_requests, dm_requests (with the
+-- one-DM-until-accepted rule), user_likes, RLS, and helper RPCs.
+-- See apps/maintrix/BACKEND.md.
+
+-- ───────────────────────── tables ─────────────────────────────
+create table if not exists public.friendships (
+  user_a uuid references public.profiles(id) on delete cascade,
+  user_b uuid references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_a, user_b),
+  check (user_a < user_b)
+);
+
+create table if not exists public.friend_requests (
+  from_id uuid references public.profiles(id) on delete cascade,
+  to_id   uuid references public.profiles(id) on delete cascade,
+  status  text not null default 'pending' check (status in ('pending','accepted','denied')),
+  created_at timestamptz not null default now(),
+  primary key (from_id, to_id),
+  check (from_id <> to_id)
+);
+
+create table if not exists public.dm_requests (
+  from_id uuid references public.profiles(id) on delete cascade,
+  to_id   uuid references public.profiles(id) on delete cascade,
+  status  text not null default 'pending' check (status in ('pending','accepted','denied')),
+  created_at timestamptz not null default now(),
+  primary key (from_id, to_id),
+  check (from_id <> to_id)
+);
+
+create table if not exists public.user_likes (
+  liker_id uuid references public.profiles(id) on delete cascade,
+  liked_id uuid references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (liker_id, liked_id),
+  check (liker_id <> liked_id)
+);
+create index if not exists user_likes_liked_idx on public.user_likes (liked_id);
+
+-- ───────────────────────── helpers ────────────────────────────
+create or replace function public.are_friends(a uuid, b uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.friendships
+                 where user_a = least(a,b) and user_b = greatest(a,b));
+$$;
+
+create or replace function public.friend_ids(uid uuid)
+returns setof uuid language sql stable security definer set search_path = public as $$
+  select case when user_a = uid then user_b else user_a end
+  from public.friendships where user_a = uid or user_b = uid;
+$$;
+
+-- Can the caller post into this DM room right now? (one message until accepted)
+create or replace function public.can_post_dm(room uuid)
+returns boolean language plpgsql stable security definer set search_path = public as $$
+declare meid uuid := auth.uid(); other uuid;
+begin
+  select user_id into other from public.room_members where room_id = room and user_id <> meid limit 1;
+  if other is null then return true; end if;
+  if public.are_friends(meid, other) then return true; end if;
+  if exists (select 1 from public.dm_requests where status='accepted'
+             and ((from_id=meid and to_id=other) or (from_id=other and to_id=meid))) then return true; end if;
+  if exists (select 1 from public.dm_requests where status='denied'
+             and ((from_id=meid and to_id=other) or (from_id=other and to_id=meid))) then return false; end if;
+  -- pending / none: allow only if the caller has not posted in this room yet
+  return (select count(*) from public.messages where room_id = room and author_id = meid) = 0;
+end; $$;
+
+-- On first DM message to a non-friend, open a pending dm_request.
+create or replace function public.on_dm_message()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare k text; other uuid;
+begin
+  select kind into k from public.rooms where id = new.room_id;
+  if k <> 'dm' then return new; end if;
+  select user_id into other from public.room_members where room_id = new.room_id and user_id <> new.author_id limit 1;
+  if other is null or public.are_friends(new.author_id, other) then return new; end if;
+  if not exists (select 1 from public.dm_requests
+                 where (from_id=new.author_id and to_id=other) or (from_id=other and to_id=new.author_id)) then
+    insert into public.dm_requests(from_id, to_id) values (new.author_id, other) on conflict do nothing;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists trg_dm_message on public.messages;
+create trigger trg_dm_message after insert on public.messages
+  for each row execute function public.on_dm_message();
+
+-- Re-scope the message insert policy so DM rooms honor the one-message rule.
+drop policy if exists msg_insert on public.messages;
+create policy msg_insert on public.messages for insert to authenticated
+  with check (
+    author_id = auth.uid()
+    and public.room_readable(room_id)
+    and ( (select kind from public.rooms r where r.id = room_id) is distinct from 'dm'
+          or public.can_post_dm(room_id) )
+  );
+
+-- ───────────────────────── RPCs ───────────────────────────────
+create or replace function public.accept_friend_request(from_user uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare meid uuid := auth.uid();
+begin
+  if not exists (select 1 from public.friend_requests where from_id=from_user and to_id=meid and status='pending') then
+    raise exception 'no pending request'; end if;
+  insert into public.friendships(user_a,user_b)
+    values (least(from_user,meid), greatest(from_user,meid)) on conflict do nothing;
+  update public.friend_requests set status='accepted' where from_id=from_user and to_id=meid;
+end; $$;
+
+create or replace function public.mutual_friends(other uuid)
+returns setof public.profiles language sql stable security definer set search_path = public as $$
+  select p.* from public.profiles p
+  where p.id in (select public.friend_ids(auth.uid()) intersect select public.friend_ids(other));
+$$;
+
+grant execute on function public.accept_friend_request(uuid) to authenticated;
+grant execute on function public.mutual_friends(uuid) to authenticated;
+
+-- ───────────────────────── RLS ────────────────────────────────
+alter table public.friendships     enable row level security;
+alter table public.friend_requests enable row level security;
+alter table public.dm_requests     enable row level security;
+alter table public.user_likes      enable row level security;
+
+-- friendships: only rows involving me are visible (keeps friend lists private;
+-- mutual friends are exposed only through the mutual_friends() RPC)
+drop policy if exists fr_read on public.friendships;
+create policy fr_read on public.friendships for select to authenticated
+  using (user_a = auth.uid() or user_b = auth.uid());
+drop policy if exists fr_del on public.friendships;
+create policy fr_del on public.friendships for delete to authenticated
+  using (user_a = auth.uid() or user_b = auth.uid());
+
+-- friend_requests
+drop policy if exists freq_read on public.friend_requests;
+create policy freq_read on public.friend_requests for select to authenticated
+  using (from_id = auth.uid() or to_id = auth.uid());
+drop policy if exists freq_insert on public.friend_requests;
+create policy freq_insert on public.friend_requests for insert to authenticated
+  with check (from_id = auth.uid());
+drop policy if exists freq_update on public.friend_requests;
+create policy freq_update on public.friend_requests for update to authenticated
+  using (to_id = auth.uid());
+
+-- dm_requests
+drop policy if exists dreq_read on public.dm_requests;
+create policy dreq_read on public.dm_requests for select to authenticated
+  using (from_id = auth.uid() or to_id = auth.uid());
+drop policy if exists dreq_insert on public.dm_requests;
+create policy dreq_insert on public.dm_requests for insert to authenticated
+  with check (from_id = auth.uid());
+drop policy if exists dreq_update on public.dm_requests;
+create policy dreq_update on public.dm_requests for update to authenticated
+  using (to_id = auth.uid());
+
+-- user_likes: counts are public; you only write your own likes
+drop policy if exists likes_read on public.user_likes;
+create policy likes_read on public.user_likes for select to authenticated using (true);
+drop policy if exists likes_insert on public.user_likes;
+create policy likes_insert on public.user_likes for insert to authenticated
+  with check (liker_id = auth.uid());
+drop policy if exists likes_delete on public.user_likes;
+create policy likes_delete on public.user_likes for delete to authenticated
+  using (liker_id = auth.uid());
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0004_phase4_posts.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — Phase 4: Posts, media, comments, post-likes
+-- Run after 0003. Adds posts / post_comments / post_likes, a public "media"
+-- Storage bucket, RLS (posts are Main-gated), and helper is_main().
+-- See apps/maintrix/BACKEND.md.
+
+-- ───────────────────────── membership helper ──────────────────
+create or replace function public.is_main()
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select tier = 'main' from public.profiles where id = auth.uid()), false);
+$$;
+
+-- ───────────────────────── posts ──────────────────────────────
+create table if not exists public.posts (
+  id         uuid primary key default gen_random_uuid(),
+  author_id  uuid references public.profiles(id) on delete cascade,
+  body       text not null default '',
+  media_kind text not null default 'text' check (media_kind in ('text','image','video')),
+  media_path text,
+  color      text,
+  created_at timestamptz not null default now()
+);
+create index if not exists posts_created_idx on public.posts (created_at desc);
+create index if not exists posts_author_idx  on public.posts (author_id);
+
+-- ───────────────────────── comments ───────────────────────────
+create table if not exists public.post_comments (
+  id         uuid primary key default gen_random_uuid(),
+  post_id    uuid references public.posts(id) on delete cascade,
+  author_id  uuid references public.profiles(id) on delete cascade,
+  body       text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists post_comments_post_idx on public.post_comments (post_id, created_at);
+
+-- ───────────────────────── post likes ─────────────────────────
+create table if not exists public.post_likes (
+  post_id    uuid references public.posts(id) on delete cascade,
+  user_id    uuid references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+create index if not exists post_likes_post_idx on public.post_likes (post_id);
+
+-- ───────────────────────── RLS ────────────────────────────────
+alter table public.posts         enable row level security;
+alter table public.post_comments enable row level security;
+alter table public.post_likes    enable row level security;
+
+-- posts: Main can read & create; author or admin can delete
+drop policy if exists posts_read on public.posts;
+create policy posts_read on public.posts for select to authenticated using (public.is_main());
+drop policy if exists posts_insert on public.posts;
+create policy posts_insert on public.posts for insert to authenticated
+  with check (author_id = auth.uid() and public.is_main());
+drop policy if exists posts_delete on public.posts;
+create policy posts_delete on public.posts for delete to authenticated
+  using (author_id = auth.uid() or public.is_admin());
+
+-- comments: Main can read & create; author or admin can delete
+drop policy if exists pc_read on public.post_comments;
+create policy pc_read on public.post_comments for select to authenticated using (public.is_main());
+drop policy if exists pc_insert on public.post_comments;
+create policy pc_insert on public.post_comments for insert to authenticated
+  with check (author_id = auth.uid() and public.is_main());
+drop policy if exists pc_delete on public.post_comments;
+create policy pc_delete on public.post_comments for delete to authenticated
+  using (author_id = auth.uid() or public.is_admin());
+
+-- post_likes: counts are public; you write only your own
+drop policy if exists pl_read on public.post_likes;
+create policy pl_read on public.post_likes for select to authenticated using (true);
+drop policy if exists pl_insert on public.post_likes;
+create policy pl_insert on public.post_likes for insert to authenticated
+  with check (user_id = auth.uid());
+drop policy if exists pl_delete on public.post_likes;
+create policy pl_delete on public.post_likes for delete to authenticated
+  using (user_id = auth.uid());
+
+-- realtime for comments (nice-to-have live comments)
+do $$
+begin
+  begin execute 'alter publication supabase_realtime add table public.post_comments'; exception when duplicate_object then null; end;
+end $$;
+
+-- ───────────────────────── Storage (media bucket) ─────────────
+insert into storage.buckets (id, name, public)
+  values ('media', 'media', true)
+on conflict (id) do nothing;
+
+-- Public read; authenticated users may write/delete only inside their own
+-- uid-named folder (path like "<uid>/<file>"). NOTE: files in a public bucket
+-- are readable by URL — post *discovery* is still Main-gated by posts RLS.
+drop policy if exists media_read on storage.objects;
+create policy media_read on storage.objects for select
+  using (bucket_id = 'media');
+drop policy if exists media_insert on storage.objects;
+create policy media_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'media' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists media_delete on storage.objects;
+create policy media_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'media' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0005_tier_selfset.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — 0005: let members set their own tier (instant unlock)
+-- Payments are deferred, so membership is still "instant unlock" in-app. The
+-- 0001 identity trigger froze `tier`, which made is_main() always false and
+-- blocked posting. Redefine the trigger to keep handle/traits/is_admin locked
+-- but allow `tier` to change. Run after 0004.
+
+create or replace function public.lock_identity()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.handle is not null and new.handle is distinct from old.handle then
+    raise exception 'handle is immutable';
+  end if;
+  if array_length(old.goals,1) is not null and new.goals is distinct from old.goals then
+    raise exception 'goals are locked after signup';
+  end if;
+  if array_length(old.fears,1) is not null and new.fears is distinct from old.fears then
+    raise exception 'fears are locked after signup';
+  end if;
+  -- is_admin is still server-controlled; tier is user-settable for now (no payments yet)
+  new.is_admin := old.is_admin;
+  return new;
+end;
+$$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0006_phase5_notifications.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — Phase 5: Notifications & moderation
+-- Run after 0005. Adds a notifications table fed by triggers (mentions, replies,
+-- post-likes, user-likes, comments, friend accepts), realtime on it, and a
+-- moderation_actions audit table. Presence is client-only (Realtime Presence).
+-- See apps/maintrix/BACKEND.md.
+
+-- ───────────────────────── notifications ──────────────────────
+create table if not exists public.notifications (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references public.profiles(id) on delete cascade, -- recipient
+  type       text not null check (type in ('tag','reply','post_like','like','comment','friend_request','friend')),
+  actor_id   uuid references public.profiles(id) on delete cascade,
+  entity     jsonb not null default '{}',
+  read       boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists notifications_user_idx on public.notifications (user_id, created_at desc);
+
+alter table public.notifications enable row level security;
+drop policy if exists notif_read on public.notifications;
+create policy notif_read on public.notifications for select to authenticated
+  using (user_id = auth.uid());
+drop policy if exists notif_update on public.notifications;
+create policy notif_update on public.notifications for update to authenticated
+  using (user_id = auth.uid());
+-- inserts happen only through security-definer triggers below (no client insert policy)
+
+-- ───────────────────────── helper: fan out @mentions ──────────
+create or replace function public.notify_mentions(actor uuid, ntype text, body text, entity jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+declare h text; uid uuid;
+begin
+  for h in select distinct lower((regexp_matches(body, '@([a-zA-Z0-9_]+)', 'g'))[1]) loop
+    select id into uid from public.profiles where handle = h;
+    if uid is not null and uid <> actor then
+      insert into public.notifications(user_id, type, actor_id, entity) values (uid, ntype, actor, entity);
+    end if;
+  end loop;
+end; $$;
+
+-- ───────────────────────── message triggers ───────────────────
+create or replace function public.on_message_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare orig uuid;
+begin
+  if new.is_system then return new; end if;
+  perform public.notify_mentions(new.author_id, 'tag', new.body,
+    jsonb_build_object('room_id', new.room_id, 'message_id', new.id));
+  if new.reply_to is not null then
+    select author_id into orig from public.messages where id = new.reply_to;
+    if orig is not null and orig <> new.author_id then
+      insert into public.notifications(user_id, type, actor_id, entity)
+        values (orig, 'reply', new.author_id, jsonb_build_object('room_id', new.room_id, 'message_id', new.id));
+    end if;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists trg_message_notify on public.messages;
+create trigger trg_message_notify after insert on public.messages
+  for each row execute function public.on_message_notify();
+
+-- ───────────────────────── post-like trigger ──────────────────
+create or replace function public.on_post_like_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare author uuid;
+begin
+  select author_id into author from public.posts where id = new.post_id;
+  if author is not null and author <> new.user_id then
+    insert into public.notifications(user_id, type, actor_id, entity)
+      values (author, 'post_like', new.user_id, jsonb_build_object('post_id', new.post_id));
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists trg_post_like_notify on public.post_likes;
+create trigger trg_post_like_notify after insert on public.post_likes
+  for each row execute function public.on_post_like_notify();
+
+-- ───────────────────────── user-like trigger ──────────────────
+create or replace function public.on_user_like_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.notifications(user_id, type, actor_id)
+    values (new.liked_id, 'like', new.liker_id);
+  return new;
+end; $$;
+
+drop trigger if exists trg_user_like_notify on public.user_likes;
+create trigger trg_user_like_notify after insert on public.user_likes
+  for each row execute function public.on_user_like_notify();
+
+-- ───────────────────────── comment trigger ────────────────────
+create or replace function public.on_comment_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare author uuid;
+begin
+  select author_id into author from public.posts where id = new.post_id;
+  if author is not null and author <> new.author_id then
+    insert into public.notifications(user_id, type, actor_id, entity)
+      values (author, 'comment', new.author_id, jsonb_build_object('post_id', new.post_id));
+  end if;
+  perform public.notify_mentions(new.author_id, 'tag', new.body,
+    jsonb_build_object('post_id', new.post_id));
+  return new;
+end; $$;
+
+drop trigger if exists trg_comment_notify on public.post_comments;
+create trigger trg_comment_notify after insert on public.post_comments
+  for each row execute function public.on_comment_notify();
+
+-- ───────────────────────── friend triggers ────────────────────
+create or replace function public.on_friend_request_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' and new.status = 'pending' then
+    insert into public.notifications(user_id, type, actor_id)
+      values (new.to_id, 'friend_request', new.from_id);
+  elsif tg_op = 'UPDATE' and new.status = 'accepted' and old.status <> 'accepted' then
+    insert into public.notifications(user_id, type, actor_id)
+      values (new.from_id, 'friend', new.to_id);
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists trg_friend_req_notify on public.friend_requests;
+create trigger trg_friend_req_notify after insert or update on public.friend_requests
+  for each row execute function public.on_friend_request_notify();
+
+-- ───────────────────────── moderation audit ───────────────────
+create table if not exists public.moderation_actions (
+  id         uuid primary key default gen_random_uuid(),
+  admin_id   uuid references public.profiles(id) on delete set null,
+  action     text not null,
+  target_type text,
+  target_id  text,
+  created_at timestamptz not null default now()
+);
+alter table public.moderation_actions enable row level security;
+drop policy if exists mod_read on public.moderation_actions;
+create policy mod_read on public.moderation_actions for select to authenticated
+  using (public.is_admin());
+drop policy if exists mod_insert on public.moderation_actions;
+create policy mod_insert on public.moderation_actions for insert to authenticated
+  with check (public.is_admin() and admin_id = auth.uid());
+
+-- ───────────────────────── Realtime ───────────────────────────
+do $$
+begin
+  begin execute 'alter publication supabase_realtime add table public.notifications'; exception when duplicate_object then null; end;
+end $$;
+
+-- ───────────────────────── grant founder admin ────────────────
+-- is_admin is server-controlled (locked by the identity trigger). Grant it by
+-- temporarily disabling that trigger. Edit the handle to your own account.
+alter table public.profiles disable trigger trg_lock_identity;
+update public.profiles set is_admin = true where handle = 'alex76';
+alter table public.profiles enable trigger trg_lock_identity;
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0007_feature_batch.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — 0007: feature batch
+-- Everyone is Main for now; servers require membership to post (view still open
+-- for public); messages can carry media; posts get hashtags; badges. Run after 0006.
+
+-- ── 18: everyone Main (membership hidden for now) ──────────────
+alter table public.profiles alter column tier set default 'main';
+update public.profiles set tier = 'main' where tier <> 'main';
+
+-- ── 14/15: media on messages (image / video / audio) ──────────
+alter table public.messages add column if not exists media_path text;
+alter table public.messages add column if not exists media_kind text;
+
+-- 15: allow audio posts too
+alter table public.posts drop constraint if exists posts_media_kind_check;
+alter table public.posts add constraint posts_media_kind_check
+  check (media_kind in ('text','image','video','audio'));
+
+-- ── 12: servers require membership to post (viewing stays open) ─
+create or replace function public.room_kind(room uuid)
+returns text language sql stable security definer set search_path = public as $$
+  select kind from public.rooms where id = room;
+$$;
+
+drop policy if exists msg_insert on public.messages;
+create policy msg_insert on public.messages for insert to authenticated
+  with check (
+    author_id = auth.uid()
+    and public.room_readable(room_id)
+    and (public.room_kind(room_id) is distinct from 'dm' or public.can_post_dm(room_id))
+    and (public.room_kind(room_id) is distinct from 'server' or public.is_member(room_id) or public.is_admin())
+  );
+
+-- ── 2/7: hashtags on posts ─────────────────────────────────────
+create table if not exists public.post_hashtags (
+  post_id uuid references public.posts(id) on delete cascade,
+  tag     text,
+  primary key (post_id, tag)
+);
+create index if not exists post_hashtags_tag_idx on public.post_hashtags (tag);
+
+create or replace function public.extract_hashtags()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.post_hashtags where post_id = new.id;
+  insert into public.post_hashtags (post_id, tag)
+    select distinct new.id, lower((regexp_matches(new.body, '#([a-zA-Z0-9_]+)', 'g'))[1])
+  on conflict do nothing;
+  return new;
+end; $$;
+
+drop trigger if exists trg_extract_hashtags on public.posts;
+create trigger trg_extract_hashtags after insert or update of body on public.posts
+  for each row execute function public.extract_hashtags();
+
+alter table public.post_hashtags enable row level security;
+drop policy if exists ph_read on public.post_hashtags;
+create policy ph_read on public.post_hashtags for select to authenticated using (true);
+
+-- ── 19: badges ─────────────────────────────────────────────────
+create table if not exists public.badges (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid references public.profiles(id) on delete cascade,
+  label      text not null,
+  icon       text,
+  color      text,
+  awarded_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists badges_user_idx on public.badges (user_id);
+
+alter table public.badges enable row level security;
+drop policy if exists badges_read on public.badges;
+create policy badges_read on public.badges for select to authenticated using (true);
+drop policy if exists badges_insert on public.badges;
+create policy badges_insert on public.badges for insert to authenticated
+  with check (public.is_admin() and awarded_by = auth.uid());
+drop policy if exists badges_delete on public.badges;
+create policy badges_delete on public.badges for delete to authenticated
+  using (public.is_admin());
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0008_traits_reactions.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — 0008: new traits, avatars, comment threads+hearts, reactions
+-- Run after 0007.
+
+-- ── new archetypal traits (old ones kept so existing rows stay valid) ──
+insert into public.traits (value, kind) values
+  ('Value','goal'),('Stability','goal'),
+  ('Chaos','fear'),('Boredom','fear'),('Incompetence','fear')
+on conflict (value) do nothing;
+-- (Freedom already a goal; Mediocrity, Rejection already fears)
+
+-- seed a global nexus room for every goal trait (Your World / trait nexuses)
+insert into public.rooms (kind, slug, title, trait, scope)
+  select 'trait', 'trait:'||value, value, value, 'global' from public.traits where kind='goal'
+on conflict (slug) do nothing;
+
+-- ── profile picture ──
+alter table public.profiles add column if not exists avatar_path text;
+
+-- ── comment threading + hearts ──
+alter table public.post_comments add column if not exists parent_id uuid
+  references public.post_comments(id) on delete cascade;
+
+create table if not exists public.comment_likes (
+  comment_id uuid references public.post_comments(id) on delete cascade,
+  user_id    uuid references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (comment_id, user_id)
+);
+create index if not exists comment_likes_c_idx on public.comment_likes (comment_id);
+alter table public.comment_likes enable row level security;
+drop policy if exists cl_read on public.comment_likes;
+create policy cl_read on public.comment_likes for select to authenticated using (true);
+drop policy if exists cl_insert on public.comment_likes;
+create policy cl_insert on public.comment_likes for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists cl_delete on public.comment_likes;
+create policy cl_delete on public.comment_likes for delete to authenticated using (user_id = auth.uid());
+
+-- ── message emoji reactions ──
+create table if not exists public.message_reactions (
+  message_id uuid references public.messages(id) on delete cascade,
+  user_id    uuid references public.profiles(id) on delete cascade,
+  emoji      text not null,
+  created_at timestamptz not null default now(),
+  primary key (message_id, user_id, emoji)
+);
+create index if not exists message_reactions_m_idx on public.message_reactions (message_id);
+alter table public.message_reactions enable row level security;
+drop policy if exists mr_read on public.message_reactions;
+create policy mr_read on public.message_reactions for select to authenticated using (true);
+drop policy if exists mr_insert on public.message_reactions;
+create policy mr_insert on public.message_reactions for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists mr_delete on public.message_reactions;
+create policy mr_delete on public.message_reactions for delete to authenticated using (user_id = auth.uid());
+
+do $$
+begin
+  begin execute 'alter publication supabase_realtime add table public.message_reactions'; exception when duplicate_object then null; end;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0009_post_caption.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0009: post captions
 -- Run after 0008. Adds a `caption` column used as the picture-card text for
 -- text-only posts, decoupled from the freeform body. Previously the feed just
@@ -19,9 +958,9 @@
 
 alter table public.posts add column if not exists caption text;
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0010_mbti.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0010_mbti.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0010: MBTI type
 -- Run after 0009. Unlike goals/fears, mbti is NOT locked by trg_lock_identity —
 -- members can change it anytime from their profile (pick directly or via the
@@ -34,9 +973,9 @@ alter table public.profiles
   add constraint profiles_mbti_valid
   check (mbti is null or mbti ~ '^[EI][SN][TF][JP]$');
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0011_enneagram_temperament.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0011_enneagram_temperament.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0011: Enneagram (Core+Wing, Tritype) + Four Temperaments
 -- Run after 0010. All fields editable anytime (not in trg_lock_identity), and
 -- "Unsure" is now a valid value for mbti too, since signup offers it directly.
@@ -71,9 +1010,9 @@ alter table public.profiles drop constraint if exists profiles_temperament_secon
 alter table public.profiles add constraint profiles_temperament_secondary_valid
   check (temperament_secondary is null or temperament_secondary in ('Sanguine','Choleric','Melancholic','Phlegmatic'));
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0012_qol_batch.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0012_qol_batch.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0012: QOL / customization / settings / features batch
 -- Run after 0011. Adds: profile status line + banner, DM privacy, location
 -- visibility, blocks, per-room notification mutes, polls, saved posts, and
@@ -275,9 +1214,9 @@ create policy evr_insert on public.event_rsvps for insert to authenticated with 
 drop policy if exists evr_delete on public.event_rsvps;
 create policy evr_delete on public.event_rsvps for delete to authenticated using (user_id = auth.uid());
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0013_debates_admin_awake.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0013_debates_admin_awake.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0013: Debates tab, expanded admin powers, official servers
 -- Run after 0012.
 
@@ -521,9 +1460,9 @@ insert into public.rooms (kind, title, category, is_public, is_official, theme, 
 select 'server', 'Awake', 'Philosophy', true, true, 'mono', jsonb_build_object('bio','Stay awake. No noise, no color — just the words.','icon','A')
 where not exists (select 1 from public.rooms where kind='server' and title='Awake');
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0014_debate_elo.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0014_debate_elo.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0014: Debate ELO / ranks
 -- Run after 0013. Winning a debate raises your ELO (K=64, tuned high so ranks
 -- move fast — this is a fun gamification layer, not a competitive ladder);
@@ -579,9 +1518,9 @@ begin
     where id = d_id;
 end; $$;
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0015_voice_streaks_badges_maintenance.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0015_voice_streaks_badges_maintenance.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0015: voice channels, DM notifications, streaks, badge
 -- auto-awards, maintenance banner, admin debate deletion, admin grants.
 -- Run after 0014.
@@ -828,9 +1767,9 @@ grant execute on function public.admin_set_maintenance(boolean,text,text) to aut
 -- ═══════════════════════ Admin grants ═══════════════════════════════════
 update public.profiles set is_admin = true where handle in ('ret','5');
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0016_dm_conversations_auto_admin.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0016_dm_conversations_auto_admin.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0016: DM "message requests" only for strangers, and a
 -- standing (not one-time) admin auto-grant for specific handles.
 -- Run after 0015.
@@ -907,9 +1846,9 @@ $$;
 -- today, since production has no signups yet)
 update public.profiles set is_admin = true where handle in ('ret','5');
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0017_banner_style.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0017_banner_style.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0017: profile banner style
 -- Run after 0016. Backs the new "Profile banner style" picker in Appearance
 -- (diagonal/radial/vertical/sunburst gradient treatments built from the
@@ -921,9 +1860,9 @@ alter table public.profiles drop constraint if exists profiles_banner_style_vali
 alter table public.profiles add constraint profiles_banner_style_valid
   check (banner_style is null or banner_style in ('diagonal','radial','vertical','sunburst'));
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0018_read_receipts.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0018_read_receipts.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0018: read receipts (DMs)
 -- Backs the "seen" avatar shown under the last message a DM partner has
 -- actually read. Run after 0017.
@@ -950,9 +1889,9 @@ drop policy if exists rreads_update on public.room_reads;
 create policy rreads_update on public.room_reads for update to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0019_admin_reset_debate_leaderboard.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0019_admin_reset_debate_leaderboard.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0019: admin reset of the debate leaderboard
 -- Run after 0018. Backs the "Reset debate leaderboard" button in
 -- Overwatch → Tools. Wipes every member's ELO back to 1000 and zeroes
@@ -972,9 +1911,9 @@ begin
 end; $$;
 grant execute on function public.admin_reset_debate_leaderboard() to authenticated;
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0020_push_notifications.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0020_push_notifications.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0020: Web Push notifications
 -- Run after 0019.
 --
@@ -1269,9 +2208,9 @@ drop trigger if exists trg_server_join_notify on public.room_members;
 create trigger trg_server_join_notify after insert on public.room_members
   for each row execute function public.on_server_join_notify();
 
--- ═══════════════════════════════════════════════════════════════
--- migrations/0021_admin_moderation.sql
--- ═══════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0021_admin_moderation.sql
+-- ═══════════════════════════════════════════════════════════════════════
 -- Maintrix backend — 0021: more admin moderation powers
 -- Run after 0020. Backs the admin right-click / long-press user menu and the
 -- expanded "Manage a member" panel in Overwatch → Tools.
@@ -1356,4 +2295,118 @@ begin
   delete from public.room_members where room_id = room and user_id = target;
 end; $$;
 grant execute on function public.admin_kick(uuid, uuid) to authenticated;
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- 0022_security_hardening.sql
+-- ═══════════════════════════════════════════════════════════════════════
+-- Maintrix backend — 0022: security hardening batch
+-- Run after 0021.
+
+-- ═══════════════════════ storage: size + mime enforcement ══════════════════
+-- Bucket had no limits at all — any authenticated user could upload an
+-- arbitrarily large file of any content type into their own folder. Cap size
+-- and restrict to real media types (also blocks svg/html uploads into a
+-- PUBLIC bucket, which could otherwise be used to host attacker HTML/SVG on
+-- a supabase.co URL).
+update storage.buckets set
+  file_size_limit = 62914560, -- 60MB ceiling (video is the largest legit upload); client enforces tighter per-kind caps
+  allowed_mime_types = array[
+    'image/png','image/jpeg','image/webp','image/gif',
+    'video/mp4','video/webm','video/quicktime',
+    'audio/webm','audio/mpeg','audio/mp3','audio/wav','audio/ogg'
+  ]
+where id = 'media';
+
+-- ═══════════════════════ server-side content length caps ═══════════════════
+-- Client-side maxlength attributes are trivially bypassed by anyone calling
+-- the REST API directly — none of these had a real ceiling, so an attacker
+-- could insert megabyte-sized rows (storage bloat / rendering DoS). Mirrors
+-- the pattern already used for profiles.status_line (0012).
+alter table public.profiles drop constraint if exists profiles_name_len;
+alter table public.profiles add constraint profiles_name_len check (name is null or char_length(name) <= 40);
+alter table public.profiles drop constraint if exists profiles_bio_len;
+alter table public.profiles add constraint profiles_bio_len check (bio is null or char_length(bio) <= 500);
+
+alter table public.messages drop constraint if exists messages_body_len;
+alter table public.messages add constraint messages_body_len check (char_length(body) <= 4000);
+
+alter table public.posts drop constraint if exists posts_body_len;
+alter table public.posts add constraint posts_body_len check (body is null or char_length(body) <= 3000);
+alter table public.posts drop constraint if exists posts_caption_len;
+alter table public.posts add constraint posts_caption_len check (caption is null or char_length(caption) <= 80);
+
+alter table public.post_comments drop constraint if exists post_comments_body_len;
+alter table public.post_comments add constraint post_comments_body_len check (char_length(body) <= 1000);
+
+-- ═══════════════════════ rate limiting ══════════════════════════════════════
+-- Generic sliding-window limiter. No client access — only trigger functions
+-- (security definer) touch this table, so it can't be read or spoofed from
+-- the client to defeat its own limits.
+create table if not exists public.rate_limits (
+  id         bigserial primary key,
+  user_id    uuid not null,
+  action     text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists rate_limits_lookup_idx on public.rate_limits (user_id, action, created_at);
+alter table public.rate_limits enable row level security;
+-- deliberately no policies at all — RLS default-denies every client-side access;
+-- only security-definer functions (which bypass RLS) ever touch this table.
+
+create or replace function public.enforce_rate_limit(p_action text, p_max int, p_window interval)
+returns void language plpgsql security definer set search_path = public as $$
+declare cnt int;
+begin
+  if auth.uid() is null then return; end if;
+  delete from public.rate_limits where created_at < now() - interval '1 day';
+  select count(*) into cnt from public.rate_limits
+    where user_id = auth.uid() and action = p_action and created_at > now() - p_window;
+  if cnt >= p_max then
+    raise exception 'rate_limited: too many % — slow down', p_action;
+  end if;
+  insert into public.rate_limits (user_id, action) values (auth.uid(), p_action);
+end; $$;
+
+create or replace function public.trg_rate_limit()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  perform public.enforce_rate_limit(tg_argv[0], tg_argv[1]::int, tg_argv[2]::interval);
+  return new;
+end; $$;
+
+drop trigger if exists rl_messages on public.messages;
+create trigger rl_messages before insert on public.messages
+  for each row execute function public.trg_rate_limit('message', 20, '10 seconds');
+
+drop trigger if exists rl_posts on public.posts;
+create trigger rl_posts before insert on public.posts
+  for each row execute function public.trg_rate_limit('post', 5, '1 minute');
+
+drop trigger if exists rl_comments on public.post_comments;
+create trigger rl_comments before insert on public.post_comments
+  for each row execute function public.trg_rate_limit('comment', 20, '1 minute');
+
+drop trigger if exists rl_friend_requests on public.friend_requests;
+create trigger rl_friend_requests before insert on public.friend_requests
+  for each row execute function public.trg_rate_limit('friend_request', 20, '1 minute');
+
+drop trigger if exists rl_dm_requests on public.dm_requests;
+create trigger rl_dm_requests before insert on public.dm_requests
+  for each row execute function public.trg_rate_limit('dm_request', 20, '1 minute');
+
+-- ═══════════════════════ admin: delete an account outright ═════════════════
+-- profiles.id -> auth.users(id) on delete cascade (0001), and every table
+-- that references profiles was set up with its own on-delete behavior, so
+-- deleting the auth.users row is the one real "delete this account" op —
+-- everything downstream (profile, messages, posts, friendships, etc.)
+-- cascades or nulls out from there. Requires the function owner to have
+-- privileges on auth.users, same as every other security-definer function
+-- in this schema already relies on for its own writes.
+create or replace function public.admin_delete_account(target uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_admin() then raise exception 'not authorized'; end if;
+  delete from auth.users where id = target;
+end; $$;
+grant execute on function public.admin_delete_account(uuid) to authenticated;
 

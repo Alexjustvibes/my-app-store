@@ -200,6 +200,173 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.18 — security hardening, avatar fix, viewport jump fix, admin delete account, Nexus rebrand)
+
+- **Root-caused and fixed the sign-up/onboarding "completely unaligned" report**
+  from v0.17: `#auth, #supaAuth { position:relative; overflow:hidden; }`
+  (added to give `.auth-glow` a positioning context) silently overrode the
+  base rule's `position:absolute` — same selector, same specificity, later
+  in the cascade wins. That collapsed the screen from filling the frame to
+  content-height only, leaving a large dead gap below. Fixed by dropping
+  `position` from that rule entirely (`position:absolute` was already a
+  valid containing block for `.auth-glow` — didn't need touching). Also
+  found and fixed two related scroll bugs while re-verifying the whole
+  flow in-browser: `.frame.scrollTop`/`scrollLeft` could end up non-zero
+  after a screen or onboarding-step transition (seen on real taps, not
+  synthetic clicks — browser-triggered, not app-triggered), shifting
+  content up or sideways with a dead gap on the opposite edge. Fixed with
+  `resetFrameScroll()`, called on every auth/onboarding screen transition
+  and every onboarding step change — cheap enough to just always reset
+  rather than chase the exact trigger. Re-verified all 4 onboarding steps,
+  trait-card selection, and text-size small/medium/large end to end.
+- **Fixed profile-picture/server-icon stretching.** Avatars are displayed
+  everywhere in square (1:1) boxes with `object-fit:cover`, but the raw
+  uploaded photo — whatever aspect ratio the source image happened to be —
+  was uploaded unprocessed, so anywhere a container wasn't pixel-perfect
+  square the image rendered as a warped oval instead of a clean circular
+  crop. `cropToSquare(file, size)` now center-crops and downsizes to a real
+  512×512 square client-side (via canvas) before it ever reaches storage,
+  wired into the profile picture, server-create picture, and server-edit
+  picture uploads — every avatar/icon in the app is now guaranteed square
+  at the source, regardless of what was uploaded.
+- **Fixed the screen randomly jumping when switching tabs/apps.**
+  `syncFrame()` only ever re-ran on `visualViewport` resize/scroll — coming
+  back from the background (app switcher, alt-tab) doesn't fire either, so
+  the frame stayed pinned to whatever height was measured before switching
+  away, even if the browser's own chrome (address bar, etc.) had changed
+  in the meantime. Now also re-syncs on `visibilitychange` (tab/app
+  becoming visible again), `pageshow`, and `focus` — each re-runs
+  `syncFrame()` immediately, on the next frame, and again after 150ms,
+  plus snaps any stray page scroll back to origin.
+- **Admins can now delete an account outright**, not just wipe its
+  messages. `admin_delete_account(target)` (migration `0022`) deletes the
+  `auth.users` row directly — `profiles.id → auth.users(id) on delete
+  cascade` (from `0001`) takes care of everything downstream. Gated behind
+  the same type-to-confirm ("DELETE") pattern as the existing wipe-messages
+  action, in the same Danger section of Overwatch → Tools → Manage a
+  member.
+- **The Nexus room header is rebranded.** The embedded Nexus thread-head
+  used to show nothing but the phone/debates icons (decluttered in
+  v0.12.2). It now also shows **"CHAMBER OF THE AWARE"** (small caps,
+  gradient text) and, on its own line below, a pulsing live dot +
+  **"everyone, everywhere · live"** — stacked on two lines rather than
+  one row, since at phone width the two pieces of text don't fit
+  side-by-side without truncating one of them badly.
+- **Sent notifications about being installed a real Home Screen page, not
+  just a settings note.** `openInstallGuide()` is a proper page (a sheet):
+  a real one-tap **Install** button where the platform actually supports
+  it (`beforeinstallprompt`, captured globally and reused — Android/
+  Chrome/desktop), or three-step manual Share → Add to Home Screen
+  instructions in-app for iOS Safari (which never fires that event —
+  there's no programmatic install path there at all). Reachable anytime
+  from **Profile → Settings → Add to Home Screen**, and also offered
+  once, skippably, right after finishing sign-up — alongside a new
+  "Turn on notifications?" prompt (`postSignupFlow()`), asked one at a
+  time since iOS treats push and install as separate capabilities.
+- **Security hardening batch** (migration `0022`, run live on production):
+  - **Storage bucket now has real limits.** The `media` bucket had none —
+    any authenticated user could upload an arbitrarily large file of any
+    content type into their own folder. Now capped at 60MB with an
+    `allowed_mime_types` allowlist (real image/video/audio types only —
+    also closes off uploading SVG/HTML into a *public* bucket, which
+    could otherwise host attacker-controlled markup on a supabase.co
+    URL). Client-side `checkUploadSize()` gives a fast, friendly error
+    before even attempting the upload, with tighter per-kind caps
+    (8MB image / 60MB video / 15MB audio).
+  - **Server-side length caps on every piece of free-text content that
+    didn't already have one**: `profiles.name`/`bio`, `messages.body`,
+    `posts.body`/`caption`, `post_comments.body`. Client `maxlength`
+    attributes were the *only* limit before this — trivially bypassed by
+    calling the REST API directly, which could otherwise insert
+    arbitrarily large rows (storage bloat, rendering DoS). Same pattern
+    already used for `status_line` since `0012`.
+  - **Real rate limiting**, not just a client-side debounce: a generic
+    sliding-window limiter (`rate_limits` table + `enforce_rate_limit()`,
+    both server-only — no RLS policy grants the client any access at all,
+    so it can't be read or defeated from outside) wired via a `before
+    insert` trigger onto `messages` (20/10s), `posts` (5/min),
+    `post_comments` (20/min), `friend_requests` (20/min), and
+    `dm_requests` (20/min — this one only actually fires on a genuine new
+    DM-request row, which the existing `on_dm_message()` trigger already
+    only creates once per stranger pair, so it doesn't touch an ongoing
+    conversation's rate budget).
+  - **Sign-up now checks the email's domain** against a list of real,
+    well-known providers (Gmail, Outlook, iCloud, Yahoo, etc.) — a soft,
+    client-side deterrent against typing something like `fake@fake.com`,
+    not real verification (email confirmation already covers that) and
+    not enforced on sign-*in*, so nobody who already signed up with an
+    unlisted domain gets locked out later.
+  - **Added a `Content-Security-Policy` meta tag** — the only CSP
+    mechanism available to a static-hosted single-file app (no server to
+    set a real header). Restricts `connect-src` to this app's actual
+    backends (Supabase, ntfy, the esm.sh module host the Supabase client
+    itself loads from) and disables `object-src`, so even if an XSS bug
+    ever slipped through, exfiltrating data to an arbitrary attacker
+    domain or loading a plugin would still be blocked. `script-src`/
+    `style-src` need `'unsafe-inline'` since the whole app is one inline
+    `<script>`/`<style>` by design — that's the real remaining gap, and no
+    meta-tag CSP can close it without a build step. (Caught my own mistake
+    here before shipping: an earlier draft included `frame-ancestors`,
+    which browsers silently ignore entirely when set via `<meta>` — it
+    needs a real HTTP header. Removed rather than ship a no-op line that
+    just spams the console. Also caught: the first draft's `script-src`
+    didn't allow `esm.sh`, which would have broken the Supabase client's
+    own dynamic `import()` and silently killed all backend functionality
+    the moment this shipped — verified by loading the page with CSP
+    active before ship, not just by reading the directive back.)
+  - **Audited RLS coverage across every table** (all 30 have row-level
+    security enabled — verified by diffing every `create table` against
+    every `enable row level security` across all migrations, not just
+    spot-checked) and the `esc()`/`attr()`/`fmt()` templating helpers
+    (HTML-escape before any markdown-style tag injection, so stored XSS
+    via a message/bio/post isn't possible through the normal render path).
+  - **What this pass does *not* claim**: this is a real, scoped hardening
+    pass, not a guarantee of "zero vulnerabilities" — that's not a thing
+    any app can honestly claim. No dedicated pen-test was run. Say the
+    word if there's a specific vector to dig into further.
+
+## Build state (as of v0.17 — sign-up/onboarding visual overhaul)
+
+- **Auth + sign-in screens** (`#auth`, `#supaAuth`): added `.auth-glow` — a
+  slower, dimmer version of the app frame's aurora technique, scoped behind
+  the hero instead of the whole app. Logo mark now has a pulsing glow ring
+  (`logoPulse`). Added a three-pill feature row under the tagline (Talk /
+  Grow / Become, reusing existing IC glyphs). Email/password inputs
+  rebuilt as `.field-ic` — icon-prefixed, matching the app's real input
+  language instead of ad-hoc inline styles — plus a working show/hide
+  password toggle (`saPassToggle`, eye icon swaps `type="password"` ↔
+  `"text"`).
+- **Onboarding progress replaced entirely**: the old thin `.ob-bar` fill is
+  gone, replaced with `.ob-dots` — four numbered dots joined by connector
+  lines, each dot glowing when current, filling solid with a checkmark
+  (`IC.check`) once passed, connector lines filling left-to-right as you
+  advance. `obShow()` now drives this instead of a bar width percentage.
+  Each step's eyebrow label also got a small matching icon (people/target/
+  shield/sparkle).
+- **Trait cards (goals/fears) got real visual identity.** `.trait-opt` grew
+  an icon slot (`GOAL_ICONS`/`FEAR_ICONS` maps onto existing `IC` glyphs —
+  no new SVGs) in a rounded-square tile that goes solid gradient + glows
+  when selected, plus an explicit checkmark badge in the corner — clearer
+  than the old plain-background swap. Fear chips got the same icons inline.
+  Both play the `like` SFX on select for a bit of tactile feedback.
+- **"Continue"/"Enter Maintrix" pulses when the step is actually ready** —
+  `.ready` class (reuses the `obReadyPulse` glow keyframe pattern from
+  elsewhere) turns on once name+handle are valid on step 1, and always on
+  the final step, so the button visibly invites the tap instead of sitting
+  static the whole time.
+- **A completion beat on finishing sign-up**: `showSignupFx()` fires the
+  `rankup` SFX + a haptic buzz + three quick expanding rings
+  (`.signupfx-scrim`/`.signupfx-burst`, same ring technique as the debate
+  rank-up celebration) between "profile saved" and actually landing in the
+  app, instead of an instant, uneventful cut. Skipped entirely under
+  `body.reduce-motion` (goes straight to `enter()`).
+- Verified in-browser end to end: dots correctly show done/current/pending
+  state and connector fill as you step through all 4 pages; selecting a
+  goal/fear shows the icon-tile + glow + checkmark; the ready-pulse
+  toggles on/off correctly typing into name/handle; the password
+  show/hide toggle flips the input's type; the completion burst fires and
+  the app boots normally afterward.
+
 ## Build state (as of v0.16.1 — regression fixes: viewport jump, send-scroll, DM call button)
 
 - **Fixed a real regression from `v0.14.1`'s keyboard/text-size fix**: the
