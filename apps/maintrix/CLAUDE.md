@@ -200,6 +200,58 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.22 — a likely explanation for "no changes visible", a real personality-card rebuild)
+
+- **Found a real, concrete explanation for "I don't see any changes" and
+  possibly for the click-jump "still happening" report too: the service
+  worker's fetch handler could be silently satisfied by the *browser's
+  own* HTTP cache, not this app's cache.** `fetch(e.request)` with no
+  options still respects ordinary HTTP caching rules — if the static
+  host doesn't send strict no-cache headers (common on plain static
+  hosting), the very first "network" attempt after a deploy can return a
+  browser-HTTP-cached stale response without ever really reaching the
+  server, even though the service worker's own logic is genuinely
+  "network first" and `skipWaiting()`/`clients.claim()` were already in
+  place. Fixed by forcing `{ cache: 'no-store' }` on that fetch, so this
+  service worker's own network attempts can no longer be quietly
+  answered by a stale HTTP cache. **This means it's entirely possible
+  the v0.21 click-jump fix and the whole animation pass were never
+  actually experienced yet** — if either report resurfaces after this
+  specific deploy, that's meaningful signal for the first time; before
+  this fix, "no visible change" was ambiguous between "the fix doesn't
+  work" and "the fix was never loaded."
+- **Added a visible build stamp** (`BUILD_VERSION`, shown at the bottom
+  of Settings as "Maintrix · build vNN") — bumped by hand alongside
+  `sw.js`'s `CACHE` on every ship from now on, so confirming "is my
+  update actually live" is a glance in Settings instead of a dev-tools
+  trip or a guess.
+- **The share-personality-card feature was a wall of plain text on a
+  flat background — completely rebuilt, and made genuinely
+  customizable.** `buildPersonalityCard()` is now async and draws a
+  real designed card: an actual avatar (loaded from storage, falls back
+  to the same two-tone initial-letter circle used everywhere else in
+  the app if there isn't one), aurora-style accent blooms + a faint
+  dot-grid texture matching the app's own visual language, the display/
+  mono/body font stack the rest of the app uses (Fraunces/JetBrains
+  Mono/Hanken Grotesk — all already loaded, drawn straight into the
+  canvas), a Chasing/Escaping chip row, personality rows redrawn as
+  glass-panel cards instead of bare text, and up to 6 badges. New
+  `openPersonalityCardCustomizer()` sheet: a live canvas preview that
+  redraws as you go, an accent color picker **independent of your
+  actual profile color** (the card can look however you want without
+  recoloring your identity everywhere else), and on/off toggles for
+  avatar/status/traits/badges. Verified in-browser: every toggle and
+  every accent swap redraws correctly and reflows layout properly (e.g.
+  turning the avatar off correctly closes the gap instead of leaving
+  dead space); the resulting canvas produces a valid, non-tainted
+  ~750KB PNG blob. The one part that couldn't be verified here: loading
+  a *real* remote avatar image into the canvas via `crossOrigin`
+  depends on Supabase Storage's CORS headers, which this offline test
+  environment can't reach — Supabase's public buckets send permissive
+  CORS by default, and the fallback (initial-letter circle) is what
+  renders if that load fails for any reason, so this degrades safely
+  either way rather than breaking the card.
+
 ## Build state (as of v0.21 — the actual click-jump root cause, and a full micro-animation pass)
 
 - **The "screen goes up when you tap a button" report, round 3 — this time
