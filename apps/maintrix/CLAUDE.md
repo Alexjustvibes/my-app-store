@@ -200,6 +200,101 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.27 — a real flame icon, a decluttered composer everywhere, debates on fire, spectator chat, self-delete)
+
+- **The streak flame was "just a boring flame thing" — replaced the icon
+  itself, not just its container.** The old `IC.flame` was a plain single-
+  stroke teardrop; swapped for a proper two-tone flame silhouette (an
+  evenodd cutout path — the same technique used by most professional icon
+  sets for a fire glyph — so the flame reads with a distinct hot inner
+  core, not a flat blob) at every size it appears (streak hero, milestone
+  rows, the DM header button). The streak hero card also got real
+  presence to match: an animated radial glow bloom behind the flame, a
+  `drop-shadow` that flickers in sync with the existing sway animation,
+  and small embers that periodically flare up and rise past it — all
+  colored via the flame's own `currentColor` so it automatically follows
+  each streak tier's own color, and all killed cleanly under
+  `body.reduce-motion` (verified the static fallback still renders a
+  complete, correctly-colored flame rather than a frozen mid-animation
+  glitch). Verified visually against the real stylesheet at both icon-only
+  size (16–48px) and the full hero card.
+- **Every chat's composer was cluttered with up to three separate attach
+  icons — collapsed into one "+" that opens a menu**, exactly as asked, and
+  applied everywhere the composer appears (Nexus, DMs, servers, the
+  Commons — it's one shared code path, so there was nowhere else it needed
+  separately touching). Tapping **+** rotates it into an "×" and pops a
+  small glass-panel menu above the composer listing whichever of Photo/
+  video, Voice message, and Poll actually apply to that room (unchanged
+  logic — still `online()`-gated per room type, just relocated). Picking
+  **Voice message** starts recording immediately and closes the menu; the
+  **+** button itself becomes the visible red pulsing stop-control while
+  recording (reuses the existing `.attach.rec` treatment, just retargeted
+  at the one button that's now always present, instead of the recording-
+  only mic button that used to live outside the menu). The menu closes on
+  any outside tap via one delegated listener registered once at load
+  (`.plus-menu`/`#thPlus`, matched globally) rather than rewired per
+  render, since the composer's DOM is fully replaced on every
+  `renderThread()` call anyway. **Verified with a real click** (not
+  synthetic `.click()`) against the live stylesheet: tapping **+** opens
+  the menu, tapping outside — including a tap that lands on a completely
+  unrelated part of the page — correctly closes it.
+- **The Nexus DEBATE button visually catches fire while a debate is
+  active anywhere**, colored entirely from the theme's own `--accent`/
+  `--accent-hi`/`--accent-deep` tokens (never a hardcoded color), so it
+  reads correctly under every app theme, not just the default red one.
+  `startDebatesFireWatch()` polls `db.debates.list()` every 15s while
+  sitting on the Nexus tab (self-terminating the moment `state.screen`
+  isn't `'nexus'` anymore, rather than being threaded into every
+  navigation path — worst case is one harmless extra request up to 15s
+  after leaving) and toggles `.live-fire` on the button the instant any
+  debate is `active`. That class swaps the calm pulsing glow for a real
+  flame treatment: an animated gradient body, two blurred flame-shaped
+  layers rising from the base in `screen` blend mode for a genuine white-
+  hot core, and a subtle shake — verified visually at both normal and 3×
+  scale against the real stylesheet (reads as unmistakably "on fire," not
+  just "highlighted"), with a clean static fallback under
+  `body.reduce-motion`.
+- **A spectator chat for every debate** (migration `0025`): a second room
+  per debate, created alongside it, where anyone watching can discuss who's
+  winning — readable by everyone including the two debaters, but
+  `can_post_debate_chat()` blocks the creator and opponent from posting
+  into it specifically (mirrors the existing `is_debate_participant()`
+  check in spirit, just inverted). Reached via a new **"Spectator chat"**
+  button in the debate head, always visible regardless of status. Rather
+  than building a bespoke second thread type, this reuses the *entire*
+  existing generic room-thread pipeline (`renderThread`/`hydrateOnlineRoom`/
+  realtime) by passing a plain `roomId` like any other room — the one new
+  piece is a generic `th.readOnly`/`th.readOnlyNote` flag on `openThread()`
+  that swaps the composer for a plain note instead of an input, which a
+  debater viewing their own debate's spectator chat gets automatically.
+  This is a genuinely generic mechanism now, not debate-specific — any
+  future read-only room can reuse the same two fields.
+- **A debate's creator can delete it themselves before anyone's joined.**
+  The open-state composer note used to show a "Join as opponent" button to
+  *everyone* including the creator (who'd just get an RPC error tapping
+  it, a small pre-existing wart fixed in passing) — now the creator
+  specifically sees "Waiting for a challenger…" plus a **Delete** button
+  instead. New `delete_own_open_debate()` RPC, gated to the creator and to
+  `status = 'open'` only — once someone's joined it's no longer just theirs
+  to remove (that's what the existing admin delete, or ending it, are for).
+- **Caught and fixed a real mistake before it shipped**: an early draft of
+  migration `0025`'s rebuilt `msg_insert` policy called `is_muted()` with
+  no arguments — but the actual live function (added in `0021`) takes a
+  `uid` parameter (`is_muted(uid uuid)`). Running the draft as written
+  would have thrown `function is_muted() does not exist` on every single
+  message send app-wide the moment this migration ran, the exact same
+  class of self-inflicted outage documented repeatedly earlier in this
+  file for exactly this reason (a rebuilt policy silently dropping or
+  misquoting a piece of the previous one). Caught by re-reading `0021`'s
+  actual definition before finalizing, not by a failed run.
+- **Not verified against a live account**: the spectator-chat RLS split
+  (debaters blocked, everyone else allowed) and the crowd-vote/self-delete
+  RPCs from this and the previous round still need a real two-account
+  round trip against production — this environment only has one real
+  account's worth of access. Everything else (every CSS/markup change
+  listed above) was checked by rendering the actual updated classes
+  against the real stylesheet in-browser, not just by reading the code.
+
 ## Build state (as of v0.26 — debates made appealing: crowd-sourced ending, real rank icons, a launch button that announces itself)
 
 - **The debate launch button in the Nexus header was an unlabeled icon
