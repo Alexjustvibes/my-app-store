@@ -108,7 +108,7 @@
   .topbar { flex:0 0 auto; height:calc(54px + env(safe-area-inset-top)); padding:env(safe-area-inset-top) 16px 0; display:flex; align-items:center; gap:12px; background:var(--glass); backdrop-filter:var(--glass-blur); -webkit-backdrop-filter:var(--glass-blur); z-index:5; position:relative; }
   .topbar::after { content:''; position:absolute; left:0; right:0; bottom:0; height:1px; background:linear-gradient(90deg,transparent,var(--line) 18%,color-mix(in srgb,var(--accent) 40%,transparent) 50%,var(--line) 82%,transparent); }
   .topbar .tb-title { font-family:var(--display); font-weight:700; font-size:21px; color:var(--text-hi); flex:1; min-width:0; letter-spacing:-.01em; display:flex; align-items:baseline; gap:9px; white-space:nowrap; }
-  .topbar .tb-title > span:first-child { flex:0 0 auto; }
+  .topbar .tb-title > span:first-child { flex:0 1 auto; overflow:hidden; text-overflow:ellipsis; }
   .topbar .tb-sub { font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
   .tier-pill { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
   .tier-pill.main { background:var(--accent-soft); border-color:var(--accent); color:var(--accent-hi); }
@@ -594,10 +594,80 @@
   .signupfx-burst span { position:absolute; inset:0; margin:auto; width:10px; height:10px; border-radius:50%; border:2px solid var(--accent-hi); opacity:0; animation:rankfxRing 1.1s ease-out forwards; }
   .signupfx-burst span:nth-child(2) { animation-delay:.16s; } .signupfx-burst span:nth-child(3) { animation-delay:.32s; }
 
+  /* ═══════════ AVATAR CROPPER — Discord-style pan/zoom/filter picker ═══════════ */
+  .cropper-scrim { position:fixed; inset:0; z-index:97; background:#000c; backdrop-filter:blur(4px); display:flex; align-items:flex-end; justify-content:center; animation:fade .2s ease; }
+  .cropper-sheet { width:100%; max-width:480px; max-height:94%; overflow-y:auto; background:linear-gradient(180deg,color-mix(in srgb,var(--surface) 92%,transparent),var(--ground) 22%); border-radius:26px 26px 0 0; border-top:1px solid color-mix(in srgb,var(--accent) 22%,var(--line)); box-shadow:var(--sh-3); animation:slideup .38s cubic-bezier(.22,1.15,.36,1); padding:16px 18px calc(18px + env(safe-area-inset-bottom)); }
+  .cropper-title { font-family:var(--display); font-size:19px; font-weight:700; margin:2px 0 14px; text-align:center; }
+  .cropper-stage { position:relative; width:min(72vw,260px); height:min(72vw,260px); margin:0 auto 6px; border-radius:50%; overflow:hidden; background:#000; touch-action:none; cursor:grab; box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 30%,transparent),var(--sh-2); }
+  .cropper-stage.grabbing { cursor:grabbing; }
+  .cropper-stage img { position:absolute; left:50%; top:50%; max-width:none; user-select:none; -webkit-user-drag:none; pointer-events:none; }
+  .cropper-stage::after { content:''; position:absolute; inset:0; border-radius:50%; box-shadow:inset 0 0 0 100vw #0000, inset 0 2px 10px #0006; pointer-events:none; }
+  .cropper-hint { text-align:center; font-size:12px; color:var(--dim); margin:8px 0 18px; }
+  .cropper-row { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .cropper-row .cr-ic { color:var(--muted); flex:0 0 18px; display:flex; }
+  .cropper-row .cr-ic svg { width:18px; height:18px; }
+  .cropper-row input[type=range] { flex:1; -webkit-appearance:none; appearance:none; height:4px; border-radius:2px; background:var(--surface-2); outline:none; }
+  .cropper-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--accent); box-shadow:0 2px 8px -1px var(--accent),0 0 0 3px var(--ground); cursor:pointer; }
+  .cropper-row input[type=range]::-moz-range-thumb { width:18px; height:18px; border-radius:50%; border:none; background:var(--accent); box-shadow:0 2px 8px -1px var(--accent),0 0 0 3px var(--ground); cursor:pointer; }
+  .cropper-actions { display:flex; gap:10px; margin-top:4px; }
+  .cropper-actions .btn { flex:1; }
+
   /* ═══════════ VISUAL SYSTEM — depth, motion, polish ═══════════ */
   /* richer screen transition */
   @keyframes screenIn { from { opacity:0; transform:translateY(14px) scale(.986); } to { opacity:1; transform:translateY(0) scale(1); } }
   body.reduce-motion .frame::before { animation:none; }
+
+  /* ── per-screen ambient identity ──
+     Every screen used to share the exact same bare background — no visual cue you'd
+     actually switched contexts beyond the content itself. Each main section now gets its
+     own low-opacity backdrop motif (never competing with foreground content: -1 z-index,
+     no pointer-events, always sits behind the real screen content painted via innerHTML). */
+  #s-feed, #s-connect, #s-debates, #s-lobby, #s-live, #s-overwatch { position:relative; }
+  #s-feed::before, #s-connect::before, #s-debates::before, #s-lobby::before, #s-live::before, #s-overwatch::before {
+    content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  }
+  /* Feed — a photo/film feel: a soft light-leak diagonal + top vignette, like a gallery wall */
+  #s-feed::before {
+    background:
+      linear-gradient(128deg, transparent 38%, color-mix(in srgb,var(--accent) 9%,transparent) 54%, transparent 72%),
+      radial-gradient(ellipse 90% 38% at 50% -8%, color-mix(in srgb,var(--accent) 15%,transparent), transparent 72%);
+  }
+  /* Connect — a constellation of faint nodes, fading out toward the bottom of the list */
+  #s-connect::before {
+    background-image: radial-gradient(circle, color-mix(in srgb,var(--accent) 26%,transparent) 1.3px, transparent 1.6px);
+    background-size: 26px 26px;
+    -webkit-mask-image: radial-gradient(ellipse 85% 55% at 50% 14%, #000 0%, transparent 78%);
+            mask-image: radial-gradient(ellipse 85% 55% at 50% 14%, #000 0%, transparent 78%);
+  }
+  /* Debates — an arena: a spotlight from above, a shadowed floor below */
+  #s-debates::before {
+    background:
+      radial-gradient(ellipse 75% 46% at 50% 0%, color-mix(in srgb,var(--accent) 22%,transparent), transparent 62%),
+      radial-gradient(ellipse 120% 34% at 50% 100%, #00000066, transparent 70%);
+  }
+  /* Lobby — self-improvement: warm embers slowly rising, gold + accent, distinct from the app's red-only norm */
+  #s-lobby::before {
+    background:
+      radial-gradient(circle 190px at 22% 100%, color-mix(in srgb,var(--gold) 20%,transparent), transparent 70%),
+      radial-gradient(circle 230px at 82% 96%, color-mix(in srgb,var(--accent) 16%,transparent), transparent 70%);
+    animation: lobbyRise 11s ease-in-out infinite alternate;
+  }
+  @keyframes lobbyRise { 0%{ transform:translateY(0); opacity:.85; } 100%{ transform:translateY(-22px); opacity:1; } }
+  /* Watch/Live — broadcast: thin scanlines + an "on air" glow in the corner */
+  #s-live::before {
+    background:
+      repeating-linear-gradient(180deg, #ffffff06 0px, #ffffff06 1px, transparent 1px, transparent 3px),
+      radial-gradient(circle 150px at 94% 4%, color-mix(in srgb,var(--live) 24%,transparent), transparent 72%);
+  }
+  /* Overwatch — control room: a faint targeting grid, fading toward the bottom */
+  #s-overwatch::before {
+    background-image:
+      linear-gradient(color-mix(in srgb,var(--accent) 12%,transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb,var(--accent) 12%,transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+    -webkit-mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, #000, transparent 82%);
+            mask-image: radial-gradient(ellipse 90% 65% at 50% 0%, #000, transparent 82%);
+  }
 
   /* display headings get a subtle light gradient */
   #auth h1, .lock h2, .prof-hero h2, .ob-step h2 { background:linear-gradient(170deg,#fff 20%,color-mix(in srgb,var(--text) 82%,var(--accent)) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
@@ -852,14 +922,27 @@
       lose:    () => { tone({ freq: 392, type: 'triangle', dur: .28, vol: .16, slide: 262 }); tone({ freq: 294, type: 'triangle', dur: .34, vol: .13, delay: .14, slide: 196 }); },
       rankup:  () => { chord([523, 659, 784, 1047, 1319], { dur: .42, vol: .2 }); noise({ dur: .5, vol: .06, hz: 3200, delay: .1 }); tone({ freq: 1568, type: 'triangle', dur: .6, vol: .12, delay: .42 }); }
     };
-    let armed = false;
+    // iOS Safari specifically: resume() alone doesn't reliably unlock the hardware audio
+    // channel on every version — the well-established fix (same one Howler.js etc use) is to
+    // also start a truly silent buffer source from directly inside a real user gesture. A
+    // one-shot "armed" flag that never retries was the actual mobile bug: if the very first
+    // tap's resume() didn't fully take (timing, a gesture that doesn't count, whatever), sound
+    // was permanently dead for the rest of the session even though the user kept tapping things
+    // that were perfectly good gestures. Now it just keeps trying on every pointerdown until the
+    // context genuinely reports 'running', which is cheap once it already is.
+    let unlocking = false;
+    function unlock() {
+      const c = ac(); if (!c || c.state === 'running') return;
+      if (unlocking) return; unlocking = true;
+      try { const b = c.createBuffer(1, 1, 22050); const s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0); } catch (e) {}
+      c.resume().catch(() => {}).finally(() => { unlocking = false; });
+    }
     return {
-      // browsers only allow audio after a real gesture — arm on the first one
-      arm() { if (armed) return; armed = true; const c = ac(); if (c && c.state === 'suspended') c.resume().catch(() => {}); },
+      arm() { unlock(); },
       play(name) {
         if (typeof state === 'undefined' || state.sound === false) return;
         const f = BANK[name]; if (!f) return;
-        try { const c = ac(); if (!c) return; if (c.state === 'suspended') c.resume().catch(() => {}); f(); } catch (e) {}
+        try { const c = ac(); if (!c) return; if (c.state !== 'running') unlock(); f(); } catch (e) {}
       }
     };
   })();
@@ -994,6 +1077,67 @@
         },'image/jpeg',0.88);
       };
       img.onerror=()=>{ URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+      img.src=url;
+    });
+  }
+  // Discord-style interactive avatar picker: drag to reposition, slider to zoom, plus
+  // grayscale + blur sliders baked into the actual saved file (not just a CSS preview
+  // gimmick — Save composites everything onto the real 512x512 canvas). Resolves the final
+  // File, or null if the person cancels. Used for the profile picture specifically; server
+  // icons keep the plain auto-center-crop since nobody asked for this there.
+  function openAvatarCropper(file){
+    return new Promise((resolve)=>{
+      if(file.size>20*1024*1024){ toast('Image too large'); resolve(null); return; }
+      const url=URL.createObjectURL(file);
+      const img=new Image();
+      img.onload=()=>{
+        const scrim=el('div','cropper-scrim');
+        scrim.innerHTML=`<div class="cropper-sheet">
+          <div class="cropper-title">Adjust your photo</div>
+          <div class="cropper-stage" id="cropStage"><img id="cropImg" src="${url}" draggable="false"></div>
+          <div class="cropper-hint">Drag to reposition</div>
+          <div class="cropper-row"><span class="cr-ic">${IC.search}</span><input type="range" id="crZoom" min="0" max="100" value="0" aria-label="Zoom"></div>
+          <div class="cropper-row"><span class="cr-ic">${IC.palette}</span><input type="range" id="crGray" min="0" max="100" value="0" aria-label="Monochrome"></div>
+          <div class="cropper-row"><span class="cr-ic">${IC.blur}</span><input type="range" id="crBlur" min="0" max="100" value="0" aria-label="Blur"></div>
+          <div class="cropper-actions"><button class="btn ghost" id="crCancel">Cancel</button><button class="btn" id="crSave">Save</button></div>
+        </div>`;
+        document.body.appendChild(scrim);
+        const stage=$('cropStage'), imgEl=$('cropImg');
+        const nw=img.naturalWidth||1, nh=img.naturalHeight||1;
+        const box=stage.getBoundingClientRect().width||260;
+        const st={ scale:box/Math.min(nw,nh), minScale:box/Math.min(nw,nh), ox:0, oy:0, gray:0, blur:0 };
+        const clamp=()=>{ const sw=nw*st.scale, sh=nh*st.scale; const maxX=Math.max(0,(sw-box)/2), maxY=Math.max(0,(sh-box)/2);
+          st.ox=Math.max(-maxX,Math.min(maxX,st.ox)); st.oy=Math.max(-maxY,Math.min(maxY,st.oy)); };
+        const paint=()=>{ imgEl.style.width=(nw*st.scale)+'px'; imgEl.style.height=(nh*st.scale)+'px';
+          imgEl.style.transform=`translate(calc(-50% + ${st.ox}px), calc(-50% + ${st.oy}px))`;
+          imgEl.style.filter=`grayscale(${st.gray}%) blur(${(st.blur*.14).toFixed(1)}px)`; };
+        paint();
+        let dragging=false, sx=0, sy=0, ox0=0, oy0=0;
+        stage.addEventListener('pointerdown',e=>{ dragging=true; stage.classList.add('grabbing'); sx=e.clientX; sy=e.clientY; ox0=st.ox; oy0=st.oy; try{ stage.setPointerCapture(e.pointerId); }catch(err){} });
+        stage.addEventListener('pointermove',e=>{ if(!dragging)return; st.ox=ox0+(e.clientX-sx); st.oy=oy0+(e.clientY-sy); clamp(); paint(); });
+        const endDrag=()=>{ dragging=false; stage.classList.remove('grabbing'); };
+        stage.addEventListener('pointerup',endDrag); stage.addEventListener('pointercancel',endDrag); stage.addEventListener('pointerleave',()=>{ if(dragging)endDrag(); });
+        $('crZoom').oninput=e=>{ st.scale=st.minScale*(1+(+e.target.value/100)*2); clamp(); paint(); };
+        $('crGray').oninput=e=>{ st.gray=+e.target.value; paint(); };
+        $('crBlur').oninput=e=>{ st.blur=+e.target.value; paint(); };
+        const cleanup=()=>{ URL.revokeObjectURL(url); scrim.remove(); };
+        $('crCancel').onclick=()=>{ cleanup(); resolve(null); };
+        scrim.addEventListener('click',e=>{ if(e.target===scrim){ cleanup(); resolve(null); } });
+        $('crSave').onclick=()=>{
+          const OUT=512;
+          const c=document.createElement('canvas'); c.width=OUT; c.height=OUT;
+          const ctx=c.getContext('2d');
+          ctx.filter=`grayscale(${st.gray}%) blur(${(st.blur*.14*(OUT/box)).toFixed(1)}px)`;
+          const visW=box/st.scale, visH=box/st.scale;
+          const cx=nw/2-st.ox/st.scale, cy=nh/2-st.oy/st.scale;
+          ctx.drawImage(img, cx-visW/2, cy-visH/2, visW, visH, 0, 0, OUT, OUT);
+          c.toBlob(blob=>{ cleanup(); if(!blob){ resolve(null); return; }
+            let out; try{ out=new File([blob],'avatar.jpg',{type:'image/jpeg'}); }catch(e){ out=blob; }
+            resolve(out);
+          },'image/jpeg',0.9);
+        };
+      };
+      img.onerror=()=>{ URL.revokeObjectURL(url); toast('Could not read image'); resolve(null); };
       img.src=url;
     });
   }
@@ -3154,7 +3298,7 @@
     h+=`<div class="field"><label>Message density</label><div class="segmented" style="margin:0"><button id="apDenComf" class="${sel.density==='comfortable'?'on':''}">Comfortable</button><button id="apDenComp" class="${sel.density==='compact'?'on':''}">Compact</button></div></div>`;
     h+=`<button class="btn block" id="apSave">Save</button><div style="height:16px"></div></div>`;
     $('sheet').className='sheet'; showSheet(h);
-    const pp=$('apPicPrev'); if(pp){ pp.onclick=()=>$('apPic').click(); $('apPic').onchange=async ()=>{ const f=$('apPic').files[0]; if(!f)return; try{ picFile=await cropToSquare(f,512); }catch(e){ toast(e.message||'Could not use that image'); return; } const url=URL.createObjectURL(picFile); pp.innerHTML=`<div class="av" style="width:64px;height:64px"><img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`; }; }
+    const pp=$('apPicPrev'); if(pp){ pp.onclick=()=>$('apPic').click(); $('apPic').onchange=async ()=>{ const f=$('apPic').files[0]; if(!f)return; $('apPic').value=''; const result=await openAvatarCropper(f); if(!result)return; picFile=result; const url=URL.createObjectURL(picFile); pp.innerHTML=`<div class="av" style="width:64px;height:64px"><img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`; }; }
     const bp=$('apBannerPrev'); if(bp){ bp.onclick=()=>$('apBanner').click(); $('apBanner').onchange=()=>{ bannerFile=$('apBanner').files[0]; if(bannerFile){ const url=URL.createObjectURL(bannerFile); bp.style.background=`#000 url('${url}') center/cover`; bp.textContent=''; } }; }
     const syncColorUI=()=>{ $('apColor').querySelectorAll('.sw[data-c]').forEach(x=>x.classList.toggle('on',x.dataset.c===sel.color)); $('apCustomSw').classList.toggle('on',!SWATCH.includes(sel.color)); $('apBannerStyle').querySelectorAll('.banner-sw').forEach(x=>x.style.background=BANNER_STYLES[x.dataset.bs](sel.color)+',var(--surface-2)'); };
     $('apColor').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ sel.color=b.dataset.c; syncColorUI(); });
@@ -3551,12 +3695,16 @@
     lock:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg>',
     sparkle:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="currentColor"/></svg>',
     sound:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M11 5L6.5 9H3v6h3.5L11 19V5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M15.5 9.5a3.5 3.5 0 010 5M18 7a7 7 0 010 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    download:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>'
+    download:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    blur:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="10" r="5.5" stroke="currentColor" stroke-width="1.4" opacity=".45"/><circle cx="15" cy="14" r="5.5" stroke="currentColor" stroke-width="1.7"/></svg>'
   };
 
   /* ═══ ROUTER ═══ */
   const TITLES={nexus:'Nexus',connect:'Connect',feed:'For You',debates:'Debates',live:'Live',lobby:'Lobby',overwatch:'Overwatch'};
-  const SUBS={nexus:'one world',feed:'main',debates:'practice',live:'main',lobby:'main',overwatch:'admin'};
+  // feed/live/lobby/overwatch used to repeat "main"/"admin" here — pure noise since the
+  // tier pill sitting right next to it already says exactly that, and on longer titles
+  // (Overwatch) it was stealing the width the title itself needed, forcing an ellipsis.
+  const SUBS={nexus:'one world',debates:'practice'};
   const PAID={feed:1,live:1,lobby:1};
   // NOTE: Live/streaming is hidden for now (code kept below, just unreachable) — re-add ['live','Live',IC.live] to restore.
   // NOTE: Live and Lobby are hidden for now (code kept, just unreachable) — re-add ['live'...] / ['lobby','Lobby',IC.lobby] to restore.
@@ -3800,6 +3948,11 @@
     }, { passive: true });
   })();
   applyAppTheme();
+  // Register the service worker immediately at boot, not lazily once someone finishes signing
+  // up — Chrome only fires 'beforeinstallprompt' once it's seen both a valid manifest AND an
+  // active service worker, so waiting until enter() meant the real install prompt often hadn't
+  // had a chance to arrive yet by the time postSignupFlow() checked for it.
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   (function runIntro(){ const intro=$('intro'); const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches || !!state.reduceMotion; let done=false; const finish=()=>{ if(done)return; done=true; intro.classList.add('gone'); setTimeout(()=>{intro.style.display='none';},650); }; const t=setTimeout(finish,reduce?1200:2700); intro.addEventListener('click',()=>{ clearTimeout(t); finish(); }); boot(); })();
 })();
 </script>
