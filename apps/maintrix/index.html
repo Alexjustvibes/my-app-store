@@ -787,6 +787,119 @@
   .thread.mono-theme .thread-head { background:#000; backdrop-filter:none; -webkit-backdrop-filter:none; }
   .thread.mono-theme .composer { background:#000; }
   .thread.mono-theme .msg:hover { background:#141414; }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     MICRO-ANIMATIONS — a broad pass of small, targeted motion across
+     surfaces that had none: lists, badges, empty states, banners, controls,
+     loading states. Every keyframe here is either killed outright or has
+     its duration/iteration collapsed under body.reduce-motion at the end
+     of this block, on top of the existing app-wide wildcard kill-switch.
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  /* Rows in a freshly-rendered list (search results, DMs, servers, notifs,
+     friend requests, members) used to all just appear at once. Staggered
+     fade+rise reads as the list "settling into place" instead of a flat
+     paint. nth-child caps at 14 rows — plenty for one screen's worth. */
+  /* Scoped to .row/.notif/.chip/.badge-chip specifically — checked every other user of those
+     classes first: message reactions use .react (not .chip) and the @mention popup uses plain
+     buttons, so neither hot-reloads (re-renders on every send/keystroke) this animation. The
+     handful of remaining re-render paths (voice presence, category filters) are low-frequency
+     enough that a replay is a non-issue. */
+  .row, .notif, .chip, .badge-chip { animation: rowIn .38s var(--ease-out) backwards; }
+  @keyframes rowIn { from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
+  .row:nth-child(1),.notif:nth-child(1){animation-delay:.02s}
+  .row:nth-child(2),.notif:nth-child(2){animation-delay:.05s}
+  .row:nth-child(3),.notif:nth-child(3){animation-delay:.08s}
+  .row:nth-child(4),.notif:nth-child(4){animation-delay:.11s}
+  .row:nth-child(5),.notif:nth-child(5){animation-delay:.14s}
+  .row:nth-child(6),.notif:nth-child(6){animation-delay:.17s}
+  .row:nth-child(7),.notif:nth-child(7){animation-delay:.2s}
+  .row:nth-child(8),.notif:nth-child(8){animation-delay:.23s}
+  .row:nth-child(9),.notif:nth-child(9){animation-delay:.26s}
+  .row:nth-child(10),.notif:nth-child(10){animation-delay:.29s}
+  .row:nth-child(n+11),.notif:nth-child(n+11){animation-delay:.32s}
+  /* chip rows (fear/goal pickers, trait lists) stagger too, but faster — there are often more of them */
+  .chips .chip:nth-child(1){animation-delay:.02s} .chips .chip:nth-child(2){animation-delay:.045s}
+  .chips .chip:nth-child(3){animation-delay:.07s} .chips .chip:nth-child(4){animation-delay:.095s}
+  .chips .chip:nth-child(5){animation-delay:.12s} .chips .chip:nth-child(n+6){animation-delay:.145s}
+
+  /* Verified checkmark badges get the same shine sweep as the MAIN pill and badge chips —
+     one consistent "this is special" language across all three instead of three different ones. */
+  .verified-badge { position:relative; display:inline-flex; overflow:hidden; border-radius:50%; }
+  .verified-badge::after { content:''; position:absolute; top:0; bottom:0; left:-60%; width:35%; background:linear-gradient(100deg,transparent,#ffffff55,transparent); transform:skewX(-18deg); animation:pillSweep 4.6s ease-in-out infinite; }
+
+  /* Empty states (no messages yet, no results, nothing here) got a static icon in a static
+     circle — a slow bob gives the whole screen a hint of life without being distracting. */
+  .empty-state .es-ic { animation: esFloat 3.2s ease-in-out infinite; }
+  @keyframes esFloat { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+
+  /* Unread dots (bell, DM list, notif rows) pulse a soft glow ring instead of sitting static —
+     the kind of "something's waiting" cue a static dot doesn't give. */
+  .nd { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--live); position:relative; }
+  .nd::after { content:''; position:absolute; inset:-4px; border-radius:50%; border:1.5px solid var(--live); animation:ndPulse 1.8s ease-out infinite; }
+  @keyframes ndPulse { 0%{ transform:scale(.5); opacity:.9; } 100%{ transform:scale(1.6); opacity:0; } }
+
+  /* Profile banners were a flat gradient — a slow diagonal light sweep gives it the same
+     "alive" quality the MAIN pill and verified badge already have, at a much slower pace
+     since it's a large, always-visible surface (fast would be obnoxious, not lively). */
+  .prof-banner { overflow:hidden; }
+  .prof-banner::before { content:''; position:absolute; inset:0; background:linear-gradient(115deg,transparent 30%,#ffffff14 48%,transparent 66%); background-size:250% 100%; animation:bannerSweep 7s ease-in-out infinite; pointer-events:none; }
+
+  /* Segmented controls (Search/DMs/Servers, Public/Private, text size, visibility toggles)
+     snapped instantly between states — active pill now eases into place via the same spring
+     already used for its own scale, just applied to the highlight. */
+  .segmented { position:relative; }
+  .segmented button.on { transition: background .28s var(--ease-spring), color .22s, transform .16s var(--ease-spring), box-shadow .3s; }
+
+  /* Danger actions (kick, ban, delete, wipe) get a red-tinted ripple instead of the default
+     white one — a small thing, but it's the difference between "this control did something"
+     and "this control did something serious." */
+  .danger .ripple, [style*="var(--danger)"] .ripple { background: radial-gradient(circle,#ff425766,#ff425718 60%,transparent 70%); }
+
+  /* Send button gets a little "launch" flex on press instead of the generic .btn press alone —
+     scoped narrowly (only when .sent is toggled by the actual send handler) so it fires once
+     per message, not on every hover/press. */
+  .send.sent { animation: sendLaunch .38s var(--ease-spring); }
+  @keyframes sendLaunch { 0%{ transform:scale(1) rotate(0); } 40%{ transform:scale(.82) rotate(-14deg); } 100%{ transform:scale(1) rotate(0); } }
+
+  /* A reusable ring spinner for anywhere a bare "Loading…" string was standing in for a real
+     loading state — opt-in via class, doesn't change anything that doesn't use it. */
+  .spinner { width:20px; height:20px; border-radius:50%; border:2.5px solid color-mix(in srgb,var(--accent) 25%,transparent); border-top-color:var(--accent); animation:spin .7s linear infinite; display:inline-block; }
+  @keyframes spin { to{ transform:rotate(360deg); } }
+
+  /* Cards/rows on devices that actually have a mouse get a slight 3D tilt toward the pointer —
+     skipped entirely on touch (hover:hover guards it) so it never fights a real tap. */
+  @media (hover:hover) and (pointer:fine) {
+    .card, .post-cell { transition: transform .22s var(--ease-out), box-shadow .25s; }
+    .card:hover { transform: translateY(-3px) scale(1.012); }
+  }
+
+  /* Icebreaker / personality-match banners shimmer their sparkle icon to read as "a small
+     discovery," matching the tone of the copy ("you're both X — ask them about it"). */
+  .icebreaker { position:relative; overflow:hidden; }
+  .icebreaker::after { content:''; position:absolute; top:0; bottom:0; left:-50%; width:30%; background:linear-gradient(100deg,transparent,#ffffff22,transparent); transform:skewX(-18deg); animation:pillSweep 5.5s ease-in-out infinite; pointer-events:none; }
+
+  /* Toast icon gets a small pop-in instead of appearing flat alongside the slide-in the toast
+     container itself already has. */
+  .toast-ic { display:inline-flex; animation: toastIcPop .32s var(--ease-spring) .05s backwards; }
+  @keyframes toastIcPop { from{ transform:scale(.4) rotate(-20deg); opacity:0; } to{ transform:scale(1) rotate(0); opacity:1; } }
+
+  /* Server/room icons and the app logo mark get a soft breathing glow on hover (desktop) /
+     focus-visible — small, but it's the difference between an icon and a *button*. */
+  @media (hover:hover) and (pointer:fine) {
+    .tb-btn:hover svg, .botnav button:hover svg { filter: drop-shadow(0 0 6px color-mix(in srgb,var(--accent) 55%,transparent)); }
+  }
+
+  /* Progress bars (debate rank progress, polls) now ease width changes instead of snapping —
+     matters most on the poll bars, which update live over Realtime as votes come in. */
+  .debate-bar-fill, .poll-bar-fill { transition: width .7s cubic-bezier(.22,.9,.3,1); }
+
+  body.reduce-motion .row, body.reduce-motion .notif, body.reduce-motion .chip, body.reduce-motion .badge-chip { animation:none; }
+  body.reduce-motion .verified-badge::after, body.reduce-motion .empty-state .es-ic,
+  body.reduce-motion .nd::after, body.reduce-motion .prof-banner::before,
+  body.reduce-motion .icebreaker::after, body.reduce-motion .send.sent,
+  body.reduce-motion .spinner, body.reduce-motion .toast-ic { animation:none; }
+  body.reduce-motion .debate-bar-fill, body.reduce-motion .poll-bar-fill { transition:none; }
 </style>
 </head>
 <body>
@@ -1953,18 +2066,19 @@
       if(!editing && state.drafts && state.drafts[th.key]) input.value=state.drafts[th.key];
       input.addEventListener('input',()=>{ state.drafts=state.drafts||{}; if(input.value)state.drafts[th.key]=input.value; else delete state.drafts[th.key]; save(); });
       wireTyping(input,th);
+      const flySend=()=>{ const b=$('thSend'); if(b){ b.classList.remove('sent'); void b.offsetWidth; b.classList.add('sent'); } };
       const doSend=()=>{ const v=input.value.trim(); if(!v)return;
         if(onlineRoom){
           if(editing){ const id=editing; editing=null; input.value=''; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); const m=(state.msgs[th.key]||[]).find(x=>x.id===id); if(m){m.t=v;m.edited=true;} db.messages.edit(id,v); closeMentions(); renderReplyBar(); repaint(); return; }
           if(!th.roomId){ toast('Room still loading…'); return; }
           const rid=replyTo?replyTo.id:null, rprev=replyTo?{a:replyTo.a,t:(replyTo.t||'').slice(0,60)}:null; replyTo=null; input.value=''; clearDraft(); closeMentions(); renderReplyBar();
-          SFX.play('send');
+          SFX.play('send'); flySend();
           db.messages.send(th.roomId, v, {replyTo:rid}).then(m=>{ if(rprev)m.replyTo=rprev; const L=state.msgs[th.key]=state.msgs[th.key]||[]; if(!L.some(x=>x.id===m.id)){ L.push(m); if(active&&active.key===th.key)repaint(m.id); } }).catch(()=>{ SFX.play('error'); toast(th.dmKey?'One message until they accept your request':'Send failed'); });
           return;
         }
         let justSentId=null;
         if(editing){ const m=list.find(x=>x.id===editing); if(m){m.t=v; m.edited=true;} editing=null; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); }
-        else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg); justSentId=msg.id; SFX.play('send');
+        else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg); justSentId=msg.id; SFX.play('send'); flySend();
           if(th.dmKey && !dmFree(th.dmKey)){ state.sentDm.push(th.dmKey); save(); toast('DM request sent — one message until they accept'); setTimeout(()=>simAcceptDm(th.dmKey),4000); } }
         replyTo=null; save(); input.value=''; clearDraft(); closeMentions(); renderReplyBar(); th._animateId=justSentId; sc.innerHTML=renderMsgs(list,th); th._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,th);
         if(isCommons)sendCommons(v); else if(th.dmKey&&dmFree(th.dmKey))simReply(th.key,th.dmKey);
@@ -3968,12 +4082,25 @@
     // which event types count as a real "user activation" for audio, and pointerdown alone
     // wasn't reliably one of them on every version.
     ['touchend','mousedown','click','keydown'].forEach(ev=>document.addEventListener(ev,()=>SFX.arm(),{passive:true}));
-    // Reported repeatedly as "the screen goes up when you tap a button": whatever the exact
-    // trigger (iOS Safari's chrome show/hide, a focus change, a sheet opening), the fix that
-    // actually matters is re-settling .frame's height/scroll after every interaction rather than
-    // only on visualViewport events — cheap (two reads, two writes at most) and self-correcting
-    // regardless of which specific thing caused the drift.
-    document.addEventListener('click', () => { syncFrame(); resetFrameScroll(); setTimeout(() => { syncFrame(); resetFrameScroll(); }, 150); }, { passive: true });
+    // The actual mechanism behind "tapping a button scrolls/jumps the screen", most likely:
+    // tapping a <button> can hand it browser focus, and focus on anything inside .frame (which
+    // is overflow:hidden — still a real scrollable element as far as the DOM is concerned, just
+    // not user-draggable) can trigger the browser's own "scroll the focused element into view"
+    // behavior, even when the element was already fully visible. Buttons don't need focus for
+    // their click handler to fire at all, so the standard fix (used by most component libraries
+    // for exactly this reason) is to stop them taking it in the first place: preventDefault on
+    // mousedown for anything button-like. Never do this for real inputs — they need focus to be
+    // typable. This must be a real (non-passive) listener, or preventDefault is a silent no-op.
+    document.addEventListener('mousedown', e => {
+      const src = e.target; if (!src || typeof src.closest !== 'function') return;
+      if (src.closest('input,textarea,select,[contenteditable]')) return;
+      if (src.closest('button,[role="button"],.btn,.chip,.tb-btn,.segmented button,.botnav button')) e.preventDefault();
+    });
+    // Kept as a second layer regardless: re-settle .frame's height/scroll after every
+    // interaction, in case something other than focus-scroll is also contributing — cheap and
+    // self-correcting no matter the exact cause. Widened the retry window since a real device
+    // may settle later than the desktop testing here ever showed.
+    document.addEventListener('click', () => { const fix=()=>{ syncFrame(); resetFrameScroll(); }; fix(); setTimeout(fix,150); setTimeout(fix,350); setTimeout(fix,700); }, { passive: true });
     document.addEventListener('pointerdown', e => {
       SFX.arm();
       const src = e.target; if (!src || typeof src.closest !== 'function') return;

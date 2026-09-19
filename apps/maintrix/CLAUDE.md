@@ -200,6 +200,61 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.21 — the actual click-jump root cause, and a full micro-animation pass)
+
+- **The "screen goes up when you tap a button" report, round 3 — this time
+  a real mechanism, not another defensive patch.** Re-derived it from
+  first principles instead of continuing to guess: tapping a `<button>`
+  can hand it browser focus, and focus on anything inside `.frame`
+  (`overflow:hidden` — still a real scrollable element as far as the DOM
+  is concerned, just not user-draggable, confirmed by v0.18's onboarding
+  scroll bugs living on the exact same element) can trigger the browser's
+  *own* "scroll the focused element into view" behavior, even when that
+  element was already fully on-screen. Buttons don't need focus for their
+  click handler to fire at all, so — same technique most component
+  libraries use for exactly this reason — added a real (non-passive)
+  `mousedown` listener that calls `preventDefault()` for anything
+  button-like (`button`, `[role=button]`, `.btn`, `.chip`, `.tb-btn`,
+  segmented/bottom-nav buttons), explicitly excluding real inputs/
+  textareas/selects/`[contenteditable]` since those need focus to be
+  typable at all. Verified in-browser via **real** click events (not
+  synthetic `.click()`, which bypasses `mousedown` entirely and would
+  have hidden this): bottom-nav navigation, a sheet's own buttons, and
+  typing into a real text input all still work exactly as before —
+  focus-suppression only touched the elements it was supposed to. The
+  existing v0.20 universal click-resync stays too, as a second layer in
+  case something else also contributes. Still couldn't be confirmed on
+  an actual device — if this specific report resurfaces after this
+  ships, that's the signal the mechanism above isn't the (whole) story
+  and it needs a real device session to actually watch it happen rather
+  than another guess from this environment.
+- **A full micro-animation pass** — everywhere that had zero motion
+  before now has some, all respecting `body.reduce-motion`:
+  - Rows in a freshly-opened list (search results, DMs, servers, notifs,
+    friend requests, chip pickers) fade+rise in with a short stagger
+    instead of appearing all at once — checked first that this doesn't
+    touch anything that hot-reloads on a timer/keystroke (message
+    reactions use `.react` not `.chip`, the @mention popup uses plain
+    buttons — neither is affected).
+  - Verified-badge checkmarks and badge chips get the same shine-sweep
+    language as the MAIN pill (one consistent "this is special" motion
+    instead of three different ones).
+  - Empty-state icons get a slow float; unread dots (bell + elsewhere)
+    pulse an expanding ring instead of sitting static; profile banners
+    get a slow diagonal light sweep.
+  - Segmented controls (Search/DMs/Servers, Public/Private, text size)
+    ease into their active state instead of snapping.
+  - Danger actions (kick/ban/delete/wipe) get a red-tinted ripple instead
+    of the default white one.
+  - The send button does a quick "launch" flex (`flySend()`, wired into
+    both the online and offline send paths) instead of nothing.
+  - Added a reusable `.spinner` ring class for future use anywhere a
+    bare "Loading…" string is standing in for a real loading state.
+  - Cards get a slight pointer-following tilt on desktop only
+    (`hover:hover` + `pointer:fine` guarded, so it can never fire from a
+    touch tap). Poll/rank progress bars now ease width changes instead
+    of snapping — most visible on a poll's live vote bars.
+
 ## Build state (as of v0.20 — deeper audio fix, universal viewport-jump guard, landscape handling, more visual polish)
 
 - **Audio: found a second real bug on top of last round's fix, both now
