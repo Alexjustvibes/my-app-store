@@ -55,6 +55,18 @@
   .frame::after { content:''; position:absolute; inset:0; pointer-events:none; z-index:1; opacity:.05; mix-blend-mode:overlay; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
   body.reduce-motion .frame::after { display:none; }
   @media (min-width:500px){ .frame { border-left:1px solid var(--line); border-right:1px solid var(--line); } }
+  /* A phone's chat UI just doesn't have anywhere to put itself at landscape phone HEIGHTS
+     (topbar + composer + bottom nav alone can eat most of ~375px) — this was never designed
+     for and silently looked broken there. max-height (not max-width) is the deliberate check:
+     it targets an actual rotated phone without also catching a normal short-but-wide desktop
+     browser window, which has plenty of room and should keep working exactly as before. */
+  #rotatePrompt { display:none; }
+  @media (orientation:landscape) and (max-height:500px) {
+    #rotatePrompt { display:flex; position:fixed; inset:0; z-index:999; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:var(--ground); color:var(--muted); text-align:center; padding:24px; }
+    #rotatePrompt svg { color:var(--accent); }
+    #rotatePrompt p { max-width:280px; font-size:14px; line-height:1.5; }
+    .frame > *:not(#rotatePrompt) { visibility:hidden; }
+  }
   .hidden { display:none !important; }
   .chip { display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:20px; border:1px solid var(--line); background:linear-gradient(160deg,var(--surface-2),var(--surface)); color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; transition:background .2s,border-color .2s,color .2s,transform .16s var(--ease-spring),box-shadow .2s; user-select:none; position:relative; overflow:hidden; }
   .chip.on { background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 28%,transparent),var(--accent-soft)); border-color:var(--accent); color:var(--accent-hi); box-shadow:0 0 16px -6px var(--accent); }
@@ -725,8 +737,13 @@
   .post-cell:hover { transform:translateY(-3px) scale(1.02); box-shadow:var(--sh-2),0 0 22px -12px var(--accent); z-index:2; }
   .likebtn { transition:transform .16s var(--ease-spring),background .2s,box-shadow .2s; }
   .likebtn:active { transform:scale(.9); }
-  .likebtn.on { box-shadow:0 0 18px -6px var(--accent); animation:likePop .42s var(--ease-spring); }
+  .likebtn.on { box-shadow:0 0 18px -6px var(--accent); animation:likePop .42s var(--ease-spring); position:relative; overflow:visible; }
   @keyframes likePop { 0%{transform:scale(1);} 45%{transform:scale(1.22);} 100%{transform:scale(1);} }
+  .likebtn.on::after { content:''; position:absolute; inset:0; border-radius:inherit; border:1.5px solid var(--accent); opacity:.9; animation:likeRing .5s var(--ease-out) forwards; pointer-events:none; }
+  @keyframes likeRing { to{ transform:scale(1.7); opacity:0; } }
+  #notifBtn.bell-ring { animation:bellRing .5s ease-in-out; }
+  @keyframes bellRing { 0%,100%{transform:rotate(0);} 15%{transform:rotate(16deg);} 30%{transform:rotate(-13deg);} 45%{transform:rotate(9deg);} 60%{transform:rotate(-6deg);} 75%{transform:rotate(3deg);} }
+  body.reduce-motion .likebtn.on::after, body.reduce-motion #notifBtn.bell-ring { animation:none; }
   .go-live-btn { background:linear-gradient(140deg,#ff5a78,var(--live) 55%,#c9153a); box-shadow:0 10px 28px -8px var(--live),inset 0 1px 0 #ffffff33; transition:transform .16s var(--ease-spring),box-shadow .25s; }
   .go-live-btn:active { transform:scale(.97); }
   .live-badge { box-shadow:0 0 16px -4px var(--live); }
@@ -742,7 +759,10 @@
   .settings-row { transition:background .18s,padding-left .2s; position:relative; overflow:hidden; }
   .settings-row:hover { padding-left:22px; }
   .trait-group .tg-k { transition:color .2s; } .pt-toggle:hover .tg-k,.pt-toggle:hover { color:var(--muted); }
-  .badge-chip { transition:transform .18s var(--ease-spring); } .badge-chip:hover { transform:translateY(-2px) scale(1.04); }
+  .badge-chip { transition:transform .18s var(--ease-spring),box-shadow .2s; position:relative; overflow:hidden; box-shadow:0 2px 10px -6px #000c,inset 0 1px 0 #ffffff1f; }
+  .badge-chip:hover { transform:translateY(-2px) scale(1.04); box-shadow:0 6px 16px -6px #000c,inset 0 1px 0 #ffffff1f,0 0 14px -6px currentColor; }
+  .badge-chip::after { content:''; position:absolute; top:0; bottom:0; left:-60%; width:30%; background:linear-gradient(100deg,transparent,#ffffff30,transparent); transform:skewX(-18deg); animation:pillSweep 5s ease-in-out infinite; pointer-events:none; }
+  body.reduce-motion .badge-chip::after { display:none; }
 
   /* notifications */
   .notif { transition:background .2s; } .notif:hover { background:var(--hover); }
@@ -771,6 +791,7 @@
 </head>
 <body>
 <div class="frame">
+  <div id="rotatePrompt"><svg width="52" height="52" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M19 9v6M22 10.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><p>Maintrix is built for portrait — rotate your device to continue.</p></div>
   <div id="intro"><span class="ex-ring"></span><span class="ex-ring two"></span><div class="ex-word">Expansion</div><div class="ex-sub">presents</div><div class="ex-skip">tap to skip</div></div>
 
   <div id="auth">
@@ -875,7 +896,7 @@
     const ac = () => {
       if (ctx) return ctx;
       try { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
-        ctx = new AC(); master = ctx.createGain(); master.gain.value = .16; master.connect(ctx.destination);
+        ctx = new AC(); master = ctx.createGain(); master.gain.value = .28; master.connect(ctx.destination);
       } catch (e) { ctx = null; }
       return ctx;
     };
@@ -942,7 +963,18 @@
       play(name) {
         if (typeof state === 'undefined' || state.sound === false) return;
         const f = BANK[name]; if (!f) return;
-        try { const c = ac(); if (!c) return; if (c.state !== 'running') unlock(); f(); } catch (e) {}
+        try {
+          const c = ac(); if (!c) return;
+          if (c.state === 'running') { f(); return; }
+          // Scheduling immediately into a context that's still technically 'suspended' at this
+          // exact millisecond silently dropped the very first sound of a session on iOS, even
+          // though the unlock had actually started and every sound after it played fine — easy
+          // to read as "sound doesn't work at all" if that first tap is what gets judged.
+          // resume() already got kicked off synchronously inside this same gesture (that part
+          // matters for the unlock to count); this only delays the audible *result* briefly.
+          unlock();
+          setTimeout(() => { try { f(); } catch (e) {} }, 60);
+        } catch (e) {}
       }
     };
   })();
@@ -1413,7 +1445,7 @@
     const sk=$('igSkip'); if(sk)sk.onclick=()=>{ closeSheet(); if(opt.onDone)opt.onDone(); };
   }
   let notifChannel=null;
-  async function loadNotifs(){ if(!online()||!me()||!me().id) return; try{ const list=await db.notifs.list(); state.notifications=list; await ensureProfiles(list.map(n=>n.who).filter(Boolean)); save(); paintBell(); if(notifChannel)db.messages.unsubscribe(notifChannel); notifChannel=db.notifs.subscribe(async row=>{ const n=rowToNotif(row); if((state.notifications||[]).some(x=>x.id===n.id))return; await ensureProfiles([n.who]); state.notifications.unshift(n); if(state.notifications.length>60)state.notifications.length=60; save(); paintBell(); }); }catch(e){} }
+  async function loadNotifs(){ if(!online()||!me()||!me().id) return; try{ const list=await db.notifs.list(); state.notifications=list; await ensureProfiles(list.map(n=>n.who).filter(Boolean)); save(); paintBell(); if(notifChannel)db.messages.unsubscribe(notifChannel); notifChannel=db.notifs.subscribe(async row=>{ const n=rowToNotif(row); if((state.notifications||[]).some(x=>x.id===n.id))return; await ensureProfiles([n.who]); state.notifications.unshift(n); if(state.notifications.length>60)state.notifications.length=60; save(); paintBell(true); SFX.play('notify'); }); }catch(e){} }
   /* ── presence (Phase 5): who's online ── */
   let ONLINE=new Set(), presenceChannel=null, _presenceSynced=false;
   function initPresence(){ if(!online()||!sb||!me()||!me().id||presenceChannel) return; const ch=sb.channel('presence-global',{ config:{ presence:{ key: me().id } } });
@@ -1727,9 +1759,9 @@
     {id:mid(),type:'reply',who:'dax',t:'replied to your message',time:'1d',read:true}
   ]; }
   const NOTIF_IC={like:'♥',post_like:'♥',tag:'@',reply:'↩',comment:'@',dm:'@',friend:'＋',friend_request:'＋',debate_join:'⚔',debate_end:'⚔',badge:'★',server_join:'＋'};
-  function pushNotif(type,who,t){ (state.notifications=state.notifications||[]).unshift({id:mid(),type,who,t,time:'now',read:false}); if(state.notifications.length>40)state.notifications.length=40; save(); paintBell(); SFX.play('notify'); }
+  function pushNotif(type,who,t){ (state.notifications=state.notifications||[]).unshift({id:mid(),type,who,t,time:'now',read:false}); if(state.notifications.length>40)state.notifications.length=40; save(); paintBell(true); SFX.play('notify'); }
   function unreadNotifs(){ return (state.notifications||[]).filter(n=>!n.read).length; }
-  function paintBell(){ const b=$('notifBtn'); if(b)b.innerHTML=IC.bell+(unreadNotifs()?'<span class="nd"></span>':''); }
+  function paintBell(ring){ const b=$('notifBtn'); if(!b)return; b.innerHTML=IC.bell+(unreadNotifs()?'<span class="nd"></span>':''); if(ring&&!document.body.classList.contains('reduce-motion')){ b.classList.remove('bell-ring'); void b.offsetWidth; b.classList.add('bell-ring'); } }
   function seedMsgs(){ const m={}; for(const k in SEED) m[k]=SEED[k].map(x=>({...x,id:mid(),time:seedTime()})); return m; }
   function save(){ try { localStorage.setItem(LS, JSON.stringify(state)); } catch(e){} }
   function seedTime(){ const h=7+Math.floor(Math.random()*12),m=Math.floor(Math.random()*60); return `${((h+11)%12)+1}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`; }
@@ -1770,7 +1802,7 @@
   function roomMembers(ctx){ if(!ctx)return []; if(ctx.dmKey)return [ctx.dmKey]; if(ctx.serverId){ const s=state.servers.find(x=>x.id===ctx.serverId); return s?s.members.map(m=>m.k).filter(k=>k!==me().name):[]; } if(ctx.key==='acolyte-hub')return ACOLYTES; return Object.keys(PEOPLE).filter(k=>!PEOPLE[k].bot&&k!==me().name); }
 
   function fmt(t){ return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/(^|\s)@([a-z0-9_]+)/gi,'$1<span class="mention" data-mention="$2">@$2</span>').replace(/(^|\s)#([a-z0-9_]+)/gi,'$1<span class="mention hashtag" data-hashtag="$2">#$2</span>'); }
-  function avatar(a,size,opt){ opt=opt||{}; const p=person(a),s=size||40; const dotCls=online()?(isOnlineNow(a)?'online':'offline'):(p.status||'online'); const dot=opt.dot?`<span class="dot ${dotCls}" style="width:${s*.3}px;height:${s*.3}px"></span>`:''; const live=(opt.ring&&p.live)?' live':''; const bg=p.bot?'linear-gradient(150deg,#ff4257,#c11d31)':p.color; const inner=p.avatarPath?`<img src="${attr(postMediaUrl(p.avatarPath))}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:(p.bot?'<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':`<span style="font-size:${s*.4}px">${(p.name[0]||'?').toUpperCase()}</span>`); return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`; }
+  function avatar(a,size,opt){ opt=opt||{}; const p=person(a),s=size||40; const dotCls=online()?(isOnlineNow(a)?'online':'offline'):(p.status||'online'); const dot=opt.dot?`<span class="dot ${dotCls}" style="width:${s*.3}px;height:${s*.3}px"></span>`:''; const live=(opt.ring&&p.live)?' live':''; const bg=p.bot?'linear-gradient(150deg,#ff4257,#c11d31)':`linear-gradient(155deg,${p.color},color-mix(in srgb,${p.color} 60%,#000))`; const inner=p.avatarPath?`<img src="${attr(postMediaUrl(p.avatarPath))}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:(p.bot?'<svg width="55%" height="55%" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" fill="#fff"/><path d="M9 12l2 2 4-4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>':`<span style="font-size:${s*.4}px">${(p.name[0]||'?').toUpperCase()}</span>`); return `<div class="av${live}" style="width:${s}px;height:${s}px;background:${bg}">${inner}${dot}</div>`; }
   function toast(m,icon){ const t=$('toast'); t.className='toast'; t.innerHTML = icon?`<span class="toast-ic">${icon}</span><span>${esc(m)}</span>`:esc(m); t.classList.add('on'); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('on'),2200); }
   function toastUndo(msg,onUndo,onCommit,delay){
     delay=delay||5000; const t=$('toast'); clearTimeout(toast._t); clearTimeout(toastUndo._t);
@@ -3930,6 +3962,18 @@
   /* ═══ TACTILE LAYER — one delegated listener gives every control a ripple + click ═══ */
   (function wireTactile(){
     const RIPPLE_ON = '.btn,.chip,.card,.row,.settings-row,.botnav button,.tb-btn,.segmented button,.msgbar button,.trait-opt,.post-cell,.live-card,.notif';
+    // Belt-and-suspenders on the audio unlock specifically: SFX.arm() is idempotent (no-op the
+    // instant the context is actually running), so listening on every one of these costs
+    // nothing once unlocked — but different iOS/WebKit versions have historically disagreed on
+    // which event types count as a real "user activation" for audio, and pointerdown alone
+    // wasn't reliably one of them on every version.
+    ['touchend','mousedown','click','keydown'].forEach(ev=>document.addEventListener(ev,()=>SFX.arm(),{passive:true}));
+    // Reported repeatedly as "the screen goes up when you tap a button": whatever the exact
+    // trigger (iOS Safari's chrome show/hide, a focus change, a sheet opening), the fix that
+    // actually matters is re-settling .frame's height/scroll after every interaction rather than
+    // only on visualViewport events — cheap (two reads, two writes at most) and self-correcting
+    // regardless of which specific thing caused the drift.
+    document.addEventListener('click', () => { syncFrame(); resetFrameScroll(); setTimeout(() => { syncFrame(); resetFrameScroll(); }, 150); }, { passive: true });
     document.addEventListener('pointerdown', e => {
       SFX.arm();
       const src = e.target; if (!src || typeof src.closest !== 'function') return;
