@@ -200,6 +200,77 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.26 — debates made appealing: crowd-sourced ending, real rank icons, a launch button that announces itself)
+
+- **The debate launch button in the Nexus header was an unlabeled icon
+  nobody could identify** (flagged with a screenshot — it read as two bare
+  chat bubbles with no indication of what tapping it does). Replaced with
+  `.debate-launch-btn`: the same icon plus a small **"DEBATE"** label
+  stacked underneath, wrapped in an accent-tinted pill with a slow pulsing
+  glow and a periodic light-sweep shine — same "this is worth tapping"
+  language already used elsewhere (the MAIN pill, badge chips), just
+  applied here for the first time. Still lives in exactly the same spot,
+  top-right of the embedded Nexus room header, next to the voice-call icon.
+- **Debate ranks had exactly two icons total** (`IC.medal` for every
+  non-top tier, `IC.trophy` only for Master) doing duty as "rank symbols" —
+  flagged as looking cheap and generic. `DEBATE_RANKS` now carries a real,
+  distinct icon per tier that actually escalates with rank: Novice (a plain
+  outlined circle) → Contender (single chevron) → Skilled (double chevron)
+  → Sharp (outlined star) → Expert (filled star) → Elite (faceted gem) →
+  Master (a crown). Drawn as raw inline SVG directly in the `DEBATE_RANKS`
+  array rather than through the `IC` map, which sidesteps the exact reason
+  they were removed from there in the first place (`IC` isn't defined yet
+  at that point in load order) without giving up per-tier icons entirely.
+  Verified visually in an isolated render at both badge size (~11–16px, the
+  size they actually appear at in a `.rank-pill`) and blown up to 64px —
+  all seven read as clearly distinct shapes at both sizes, not just
+  distinct colors.
+- **Neither the host nor the opponent can end a debate anymore — this was
+  a real fairness bug, not just a feature request.** The creator could
+  previously end their own debate at any moment via `end_debate()`, which
+  means a debater losing the vote could simply never end it while a
+  debater winning could end it the instant they pulled ahead — the ending
+  mechanic itself was biased toward whoever was already winning. Migration
+  `0024_debate_crowd_end.sql`: `end_debate()` is now **admin-only**; a new
+  `vote_end_debate()` RPC lets any *spectator* (explicitly blocked for the
+  creator and opponent, same as the existing side-voting rule) cast a
+  crowd vote to end early. Quorum scales with actual engagement rather
+  than being a fixed number: majority of everyone who's cast a side-vote
+  in that debate, floor of 2, so a debate with real spectators needs real
+  consensus to cut short, while a quiet one can still be ended by a
+  couple of people rather than being permanently stuck open. Both ending
+  paths (admin-direct and crowd-vote-reaches-quorum) now funnel through
+  one shared `finalize_debate()` function so winner/ELO logic can't drift
+  between the two — and that function is deliberately **not** granted
+  `execute` to `authenticated`, so it can only ever run as an internal
+  call from inside another security-definer function, never invoked
+  directly as its own RPC. Client: the old unconditional "End debate"
+  button is now admin-only (relabeled "End debate (admin)"); spectators
+  instead see a "Vote to end debate" button with a live progress bar
+  (`N/required votes to end`) that fills in real time over the same
+  `debate_end_votes` Realtime channel already wired for side-votes.
+- **The side-vote panel and avatar rings got a real visual upgrade to
+  match.** Each vote button (`.dvp-btn`) is now tinted with that debater's
+  *own* rank color (gradient fill, colored border, a small checkmark that
+  lights up solid once it's your active pick) instead of two identical
+  gray ghost buttons — voting for someone now visually feels like backing
+  a side, not filling out a form. Whoever's currently ahead on votes gets
+  a subtle animated brightness pulse on their avatar ring
+  (`.debate-side.leading`), recalculated on every tally refresh, so the
+  lead is visible at a glance without reading the numbers. All of the
+  above respects `body.reduce-motion` (pulses, shine sweeps, and the
+  leading-ring animation are all killed by the existing wildcard rule plus
+  explicit overrides for the two new keyframes).
+- **Not verified against a live two-account round trip** — same
+  limitation as other multi-account admin/RPC features this session; the
+  quorum math, RLS grants, and client wiring were checked by reading the
+  migration and rendering the actual updated CSS/markup in-browser
+  (confirmed the launch button's pulse/shine, all seven rank icons, the
+  colored vote buttons, and the vote-to-end progress bar all render
+  correctly against the real stylesheet), but casting a real crowd vote to
+  an actual quorum needs more than one live account, which this
+  environment doesn't have.
+
 ## Build state (as of v0.25 — the actual install-prompt fix, DM list overhaul, notifications-off banner, DM chat streaks)
 
 - **Install-to-Home-Screen, diagnosed properly this time.** This had been
