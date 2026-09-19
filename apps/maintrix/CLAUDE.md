@@ -200,6 +200,86 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.19 — Discord-style avatar cropper, per-screen visual identity, mobile audio fix, real install path)
+
+- **Push notifications: verified already working in production, no code
+  change needed.** Queried `net._http_response` directly against the live
+  project — real (non-synthetic) rows exist with `status_code:200` and
+  bodies like `{"sent":1,"removed":0,"errors":[]}`, meaning actual pushes
+  have been successfully delivered to real subscribed devices. Also
+  confirmed 4 of the 5 live `push_subscriptions` rows are
+  `web.push.apple.com` endpoints — i.e. at least one real person has
+  already installed the PWA to an iPhone Home Screen *and* has push
+  working. Didn't fire a fresh test push this round since that means a
+  real notification lands on a real person's phone with fabricated
+  content — confirmed via existing history instead of manufacturing new
+  evidence.
+- **Fixed mobile sounds not playing — the real bug was a one-shot unlock
+  flag.** `SFX.arm()` set a permanent `armed=true` after its *first*
+  attempt to resume the shared `AudioContext`, whether or not that resume
+  actually took. iOS in particular doesn't always fully unlock on the
+  first try; once `armed` was set, every subsequent tap for the rest of
+  the session silently skipped trying again, even though each of those
+  taps was a perfectly good gesture that could have unlocked it. Replaced
+  with `unlock()`, which keeps retrying on every `pointerdown` until the
+  context genuinely reports `'running'` (cheap no-op once it already is),
+  and also plays a silent buffer via a real `AudioBufferSourceNode`
+  alongside `resume()` — the same combination Howler.js and other audio
+  libraries use because `resume()` alone has historically been
+  insufficient on some iOS/WebKit versions. Real caveat that's outside
+  what any web app can fix: iOS Safari's Web Audio output respects the
+  physical silent/mute switch by default — if that's flagged, no web
+  audio plays regardless of unlocking, same as it would for any other
+  website. Couldn't be verified on an actual phone in this environment.
+- **"Add to Home Screen" is a real one-tap install wherever the platform
+  allows it — this was already true, but it now actually gets the chance
+  to fire.** `beforeinstallprompt` was only ever checked for *after* the
+  service worker registration that `enter()` kicks off, meaning on a
+  first-ever visit Chrome frequently hadn't had time to evaluate
+  installability yet by the time `postSignupFlow()` looked for it. The
+  service worker now registers immediately at boot instead. **iOS is a
+  hard platform wall, not a bug**: no browser engine on iOS — Safari,
+  Chrome-for-iOS, anything — exposes *any* API for a website to trigger
+  "Add to Home Screen" itself; Apple simply doesn't allow it, for any
+  site, including ones far bigger than this one. The three-tap manual
+  guide (`openInstallGuide()`, shipped last round) is the actual ceiling
+  of what's possible there.
+- **Profile pictures now get a real Discord-style cropper**, not an
+  instant auto-crop. `openAvatarCropper(file)`: drag to reposition, a
+  zoom slider, plus a monochrome slider and a blur slider — all three
+  previewed live via CSS `filter` and then genuinely baked into the
+  saved image (Canvas 2D `ctx.filter`, not just a client-side preview
+  effect that gets thrown away). Always outputs a real 512×512 square
+  regardless of what was uploaded or how it's framed. Server icons keep
+  the plain auto-center-crop from last round — nobody asked for the full
+  picker there.
+- **Every main screen now has its own visual identity** instead of
+  sharing one bare background: Feed gets a photo/film light-leak
+  diagonal, Connect a fading constellation of dots, Debates a top-down
+  arena spotlight, Lobby slowly rising warm embers (gold, not the usual
+  all-red palette — reduce-motion kills the rise animation like
+  everywhere else), Watch/Live thin broadcast scanlines with an on-air
+  glow, and Overwatch a fading HUD/targeting grid. All pure CSS
+  (`::before`, `z-index:-1`, `pointer-events:none`) — no HTML/JS
+  structure changes, so risk of breaking anything underneath is close to
+  zero. Live and Lobby are still unreachable from navigation (unchanged
+  from earlier — re-add per the existing note in `navItems()`), so their
+  treatments are ready for whenever those come back, same as the
+  Nexus-variant code already preserved that way.
+- **Fixed a real topbar collision found while testing the above**: the
+  "Overwatch" title was long enough to visually overlap the tier pill
+  next to it — `.tb-title > span:first-child` was pinned
+  `flex:0 0 auto` (deliberately non-shrinking, from the v0.15.1 title-
+  wrap fix) with no overflow handling of its own, so when the title
+  itself didn't fit, it spilled into its neighbor instead of clipping.
+  Now shrinks with `overflow:hidden;text-overflow:ellipsis` as a
+  fallback. Also found the actual root cause was mostly starvation, not
+  just missing ellipsis: `SUBS` had `feed:'main'`, `live:'main'`,
+  `lobby:'main'`, `overwatch:'admin'` — pure duplicate noise, since the
+  tier pill sitting right next to it already says exactly that — and
+  removing those gave the title back most of the room it needed. Only
+  `nexus` and `debates` keep a real, non-duplicate subtitle now.
+
 ## Build state (as of v0.18 — security hardening, avatar fix, viewport jump fix, admin delete account, Nexus rebrand)
 
 - **Root-caused and fixed the sign-up/onboarding "completely unaligned" report**
