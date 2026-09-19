@@ -200,6 +200,64 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.20 — deeper audio fix, universal viewport-jump guard, landscape handling, more visual polish)
+
+- **Audio: found a second real bug on top of last round's fix, both now
+  fixed together.** `SFX.play()` called `unlock()` then fired the sound
+  *immediately after*, without waiting for `resume()` to actually land —
+  the very first sound of a session could get scheduled on a context that
+  was still technically `'suspended'` at that exact millisecond and got
+  silently dropped, even though the unlock had genuinely started and
+  every sound after it played fine. If someone's whole test was "tap
+  once, don't hear anything," that's exactly what this produces. Now
+  `play()` defers the very first sound ~60ms (only when the context
+  isn't already running — zero added latency once it is) so `resume()`
+  has a beat to land before anything's scheduled. Also widened the
+  unlock trigger from `pointerdown` alone to also `touchend`/`mousedown`/
+  `click`/`keydown` (idempotent, near-zero cost once unlocked — different
+  iOS/WebKit versions have disagreed on which event types count as a
+  real "user activation" for audio), and raised the master gain .16→.28
+  since some of the shorter taps were plausibly just too quiet to
+  register as "working" on a phone speaker. Real, unfixable-from-the-web
+  caveat repeated from last round: the iOS silent/mute switch mutes all
+  Web Audio output regardless of any of this. Still couldn't be verified
+  on an actual phone in this environment.
+- **The "screen goes up when you tap a button" report, round 2**: added
+  a universal safety net rather than continuing to chase the exact
+  trigger — every click in the app now re-runs `syncFrame()` +
+  `resetFrameScroll()` (immediately and again 150ms later), on top of
+  the existing visibility/focus/pageshow triggers from v0.18. Self-
+  correcting regardless of which specific thing (iOS Safari chrome
+  show/hide, a focus change, a sheet transition) is actually causing the
+  drift, and cheap enough (two reads, two writes, worst case) to run on
+  every tap without it being noticeable.
+- **Landscape phone orientation is now handled on purpose instead of
+  silently looking broken.** A phone-chat layout genuinely has nowhere
+  to put itself at landscape phone *heights* (topbar + composer +
+  bottom nav alone can eat most of ~375px) — this had literally zero
+  handling before (one `@media` rule in the whole app, for a desktop
+  border). Added `#rotatePrompt`, shown via
+  `@media (orientation:landscape) and (max-height:500px)` — deliberately
+  keyed on height, not width, so it catches an actually-rotated phone
+  without also catching a normal short-but-wide desktop window. Verified
+  in-browser at 375×667 (shortest common iPhone height), 430×932
+  (largest common iPhone), and a rotated 844×390 — all three correct,
+  and rotating back to portrait recovers instantly with no reload
+  needed (pure CSS, nothing to re-render).
+- **More visual polish**: every avatar app-wide now renders a two-tone
+  diagonal gradient (`color-mix` off the same stored color) instead of a
+  flat fill — one change in the shared `avatar()` helper, so it applies
+  everywhere a person renders (messages, profiles, search, DMs,
+  servers) at once. Liking something now bursts a quick expanding ring
+  outline alongside the existing pop. The notification bell does a
+  quick shake (`bell-ring`) on a genuinely new real-time notification —
+  previously arrived with no sound *or* animation at all online (the
+  local/offline demo path already had a chime; the real online
+  Realtime-subscription path didn't). Badge chips got a subtle
+  metallic shine sweep and real depth shadow instead of a flat chip
+  background, closer to a trophy-case feel. All of the above respect
+  `body.reduce-motion`.
+
 ## Build state (as of v0.19 — Discord-style avatar cropper, per-screen visual identity, mobile audio fix, real install path)
 
 - **Push notifications: verified already working in production, no code
