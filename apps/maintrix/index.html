@@ -162,6 +162,11 @@
   .row { display:flex; align-items:center; gap:13px; padding:11px 16px; cursor:pointer; position:relative; overflow:hidden; transition:background .18s; } .row:hover { background:var(--hover); }
   .row .r-main { flex:1; min-width:0; } .row .r-name { font-size:16px; font-weight:600; color:var(--text-hi); display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
   .row .r-sub { font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dm-row .r-sub { max-width:100%; }
+  .dm-close { flex:0 0 auto; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:transparent; border:none; color:var(--dim); cursor:pointer; opacity:0; transform:scale(.85); transition:opacity .15s, transform .15s, background .15s, color .15s; }
+  .dm-row:hover .dm-close, .dm-close:focus-visible { opacity:1; transform:scale(1); }
+  .dm-close:hover { background:var(--danger-line); color:var(--danger); }
+  @media (hover:none) { .dm-close { opacity:.55; transform:scale(1); } }
   .tag-shared { font-family:var(--mono); font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--accent-hi); background:var(--accent-soft); padding:2px 6px; border-radius:5px; }
   .loc-tag { font-family:var(--mono); font-size:9px; letter-spacing:.03em; color:var(--dim); }
   .label-home { font-family:var(--mono); font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--green); background:#23a55a22; padding:1px 5px; border-radius:4px; }
@@ -224,6 +229,10 @@
   .typing-dots i:nth-child(2) { animation-delay:.15s; } .typing-dots i:nth-child(3) { animation-delay:.3s; }
   @keyframes typingBounce { 0%,60%,100% { transform:translateY(0); opacity:.5; } 30% { transform:translateY(-4px); opacity:1; } }
   .icebreaker { flex:0 0 auto; display:flex; align-items:center; gap:10px; background:var(--accent-soft); color:var(--text); font-size:12.5px; padding:8px 14px; } .icebreaker b { color:var(--accent-hi); } .icebreaker button { margin-left:auto; background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; }
+  .notif-off-banner { flex:0 0 auto; display:flex; align-items:center; gap:10px; background:var(--danger-line); color:var(--text); font-size:12.5px; padding:8px 14px; border-bottom:1px solid var(--line); }
+  .notif-off-banner span { flex:1; min-width:0; display:flex; align-items:center; gap:7px; }
+  .notif-off-banner .chip { flex:0 0 auto; }
+  .notif-off-banner .nob-x { flex:0 0 auto; background:none; border:none; color:var(--muted); display:flex; align-items:center; justify-content:center; width:22px; height:22px; cursor:pointer; }
 
   /* ── verified badge (official servers) ── */
   .verified-badge { display:inline-flex; align-items:center; justify-content:center; width:15px; height:15px; background:#000; border-radius:50%; margin-left:3px; vertical-align:middle; box-shadow:0 0 0 1px #fff2; }
@@ -271,6 +280,25 @@
   .debate-rank-card { display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:14px; }
   .debate-rank-card .drc-top { display:flex; align-items:center; justify-content:space-between; }
   .drc-wl { font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .streak-hero { display:flex; flex-direction:column; align-items:center; text-align:center; border:1px solid var(--line); border-radius:16px; padding:26px 20px 22px; margin-bottom:18px; }
+  .streak-flame svg { width:38px; height:38px; }
+  .streak-flame { animation:streakFlicker 2.2s ease-in-out infinite; }
+  body.reduce-motion .streak-flame { animation:none; }
+  @keyframes streakFlicker { 0%,100%{ transform:scale(1) rotate(0deg); } 25%{ transform:scale(1.06) rotate(-2deg); } 50%{ transform:scale(.97) rotate(1deg); } 75%{ transform:scale(1.04) rotate(-1deg); } }
+  .streak-count { font-family:var(--display); font-size:44px; font-weight:700; color:var(--text-hi); line-height:1.1; margin-top:8px; }
+  .streak-tiername { font-family:var(--mono); font-size:13px; text-transform:uppercase; letter-spacing:.06em; margin-top:2px; font-weight:700; }
+  .streak-sub { font-size:12.5px; color:var(--muted); margin-top:10px; max-width:280px; }
+  .streak-tier-row { display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--line); opacity:.5; }
+  .streak-tier-row.reached { opacity:1; }
+  .streak-tier-row.current { background:color-mix(in srgb,var(--tc) 10%,transparent); border-radius:10px; padding:11px 8px; }
+  .stt-ic { flex:0 0 auto; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb,var(--tc) 20%,transparent); color:var(--tc); }
+  .streak-tier-row:not(.reached) .stt-ic { color:var(--dim); background:var(--surface-2); }
+  .stt-main { flex:1; min-width:0; }
+  .stt-name { font-size:14px; font-weight:700; color:var(--text-hi); }
+  .stt-days { font-family:var(--mono); font-size:10.5px; color:var(--dim); font-weight:400; margin-left:4px; }
+  .stt-flavor { font-size:12px; color:var(--muted); margin-top:2px; }
+  .stt-check { flex:0 0 auto; color:var(--tc); }
+  .stt-check svg { width:16px; height:16px; }
   .debate-intro { padding:40px 24px 24px; text-align:center; display:flex; flex-direction:column; align-items:center; }
   .debate-intro-ic { color:var(--accent-hi); margin-bottom:14px; } .debate-intro-ic svg { width:52px; height:52px; }
   .debate-intro h2 { font-family:var(--display); font-size:26px; margin-bottom:10px; color:var(--text-hi); }
@@ -1062,7 +1090,7 @@
   const LS = 'maintrix.v4';
   // Bumped by hand alongside sw.js's CACHE constant on every ship — shown at the bottom of
   // Settings so "is my update actually live" is a glance instead of a guess or a dev-tools trip.
-  const BUILD_VERSION = 'v54';
+  const BUILD_VERSION = 'v55';
   const DAY = 86400000;
 
   /* ═══ SFX — every sound is synthesized live via Web Audio, so there are no
@@ -1243,6 +1271,65 @@
   function debateRankBadge(elo,size){ const r=debateRankFor(elo); const ic=r.top?IC.trophy:IC.medal; return `<span class="rank-pill rank-t${r.t}${size==='big'?' big':''}" style="background:linear-gradient(135deg,${r.color}30,${r.color}12);color:${r.color};border-color:${r.color}66;${size==='sm'?'font-size:10px;padding:1px 6px 1px 5px':''}"><span class="rp-shine"></span><span class="rp-ic">${ic}</span> ${esc(r.name)} · ${elo}</span>`; }
   function nextRankBarHtml(elo){ const ni=nextRankInfo(elo); if(!ni) return `<div class="rank-progress maxed"><div class="rp-track"><div class="rp-fill" style="width:100%;background:${DEBATE_RANKS[DEBATE_RANKS.length-1].color}"></div></div><div class="rp-label">Top rank reached</div></div>`; return `<div class="rank-progress"><div class="rp-track"><div class="rp-fill" style="width:${ni.pct}%;background:${ni.next.color}"></div></div><div class="rp-label">${ni.pct}% to ${esc(ni.next.name)}</div></div>`; }
   function debateRankCardHtml(elo,sub){ const r=debateRankFor(elo); return `<div class="debate-rank-card" style="background:linear-gradient(135deg,${r.color}26,var(--surface) 60%);border-color:${r.color}55"><div class="drc-top">${debateRankBadge(elo,'big')}<div class="drc-wl">${esc(sub)}</div></div>${nextRankBarHtml(elo)}</div>`; }
+
+  /* ── DM chat streaks (Snapchat-style per-pair, distinct from the global per-user daily streak) ── */
+  const STREAK_TIERS = [
+    {min:0,   name:'No streak',     color:'#8a8a8a', t:0},
+    {min:3,   name:'Spark',         color:'#f0b232', t:1},
+    {min:7,   name:'Kindling',      color:'#f0663b', t:2},
+    {min:14,  name:'Ember',         color:'#ed2e44', t:3},
+    {min:30,  name:'Flame',         color:'#ff2d55', t:4},
+    {min:60,  name:'Wildfire',      color:'#a855f7', t:5},
+    {min:100, name:'Inferno',       color:'#4a9eff', t:6},
+    {min:365, name:'Eternal Flame', color:'#f0b232', t:7, top:true}
+  ];
+  const STREAK_FLAVOR = {
+    'Spark':'You two are just getting started.',
+    'Kindling':'A full week of daily messages — this one has legs.',
+    'Ember':'Two weeks straight. It’s really glowing now.',
+    'Flame':'A whole month, every single day. That’s a real flame.',
+    'Wildfire':'Two months running — this is spreading fast.',
+    'Inferno':'Triple digits. Elite territory.',
+    'Eternal Flame':'A full year, every day, no gaps. Legendary.'
+  };
+  function streakTierFor(n){ let r=STREAK_TIERS[0]; for(const x of STREAK_TIERS){ if(n>=x.min)r=x; } return r; }
+  function nextStreakTierInfo(n){ const r=streakTierFor(n); const idx=STREAK_TIERS.indexOf(r); const next=STREAK_TIERS[idx+1]; if(!next) return null; const pct=Math.max(0,Math.min(100,Math.round((n-r.min)/(next.min-r.min)*100))); return {r,next,pct}; }
+  const todayStr = () => new Date().toISOString().slice(0,10);
+  const yesterdayStr = () => new Date(Date.now()-864e5).toISOString().slice(0,10);
+  function touchLocalStreak(k,who){
+    state.dmStreaks=state.dmStreaks||{};
+    const rec=state.dmStreaks[k]||{count:0,lastStreakDate:null,meDate:null,otherDate:null};
+    const today=todayStr();
+    if(who==='me')rec.meDate=today; else rec.otherDate=today;
+    if(rec.meDate===today && rec.otherDate===today){
+      if(!rec.lastStreakDate) rec.count=1;
+      else if(rec.lastStreakDate!==today) rec.count = rec.lastStreakDate===yesterdayStr() ? rec.count+1 : 1;
+      rec.lastStreakDate=today;
+    }
+    state.dmStreaks[k]=rec; save();
+  }
+  function localStreak(k){ const rec=state.dmStreaks&&state.dmStreaks[k]; if(!rec)return null; return {streak_count:rec.count,last_streak_date:rec.lastStreakDate}; }
+  async function openDmStreaks(th){
+    let rec=null;
+    try{ rec = (online()&&th.roomId) ? await db.dm.streak(th.roomId) : localStreak(th.dmKey); }catch(e){ rec=null; }
+    const count = rec?rec.streak_count||0:0;
+    const today=todayStr(), y=yesterdayStr();
+    let statusLine;
+    if(!rec||!rec.last_streak_date) statusLine='No streak yet — message each other every day to start one.';
+    else if(rec.last_streak_date===today) statusLine='Today’s streak is locked in.';
+    else if(rec.last_streak_date===y) statusLine='At risk — reply today to keep it alive!';
+    else statusLine=`Streak ended at ${count} — start a new one today.`;
+    const tier=streakTierFor(count);
+    let h=`<div class="sheet-grab"></div><div class="pad">`;
+    h+=`<div class="streak-hero" style="background:linear-gradient(135deg,${tier.color}30,var(--surface) 65%);border-color:${tier.color}55"><div class="streak-flame" style="color:${tier.color}">${tier.top?IC.trophy:IC.flame}</div><div class="streak-count">${count}</div><div class="streak-tiername" style="color:${tier.color}">${esc(tier.name)}</div><div class="streak-sub">${esc(statusLine)}</div></div>`;
+    h+=`<div class="sec-title" style="padding-left:0">Milestones</div>`;
+    STREAK_TIERS.filter(x=>x.min>0).forEach(x=>{
+      const reached=count>=x.min, current=tier.min===x.min && reached;
+      h+=`<div class="streak-tier-row${reached?' reached':''}${current?' current':''}" style="--tc:${x.color}"><div class="stt-ic">${x.top?IC.trophy:IC.flame}</div><div class="stt-main"><div class="stt-name">${esc(x.name)} <span class="stt-days">${x.min}+ days</span></div><div class="stt-flavor">${esc(STREAK_FLAVOR[x.name]||'')}</div></div>${reached?`<span class="stt-check">${IC.check}</span>`:''}</div>`;
+    });
+    h+=`</div>`;
+    $('sheet').className='sheet'; showSheet(h);
+  }
   // db.* is the swap seam for later phases; Phase 1 implements profiles/auth.
   const db = {
     auth:{
@@ -1281,7 +1368,28 @@
     },
     dm:{
       async getOrCreate(otherId){ await initSB(); const { data, error } = await sb.rpc('get_or_create_dm', { other:otherId }); if(error) throw error; return data; },
-      async list(){ await initSB(); const meId=me().id; const { data } = await sb.from('rooms').select('id,slug').eq('kind','dm'); const mine=(data||[]).map(r=>{ const p=(r.slug||'').split(':'); const other=p[1]===meId?p[2]:p[1]; return {roomId:r.id, otherId:other}; }).filter(x=>x.otherId&&x.otherId!==meId); await ensureProfiles(mine.map(x=>x.otherId)); return mine; }
+      async streak(roomId){ await initSB(); try{ const { data } = await sb.from('dm_streaks').select('*').eq('room_id',roomId).maybeSingle(); return data||null; }catch(e){ return null; } },
+      // Ordered by most recent activity and carrying a real last-message preview now — used to
+      // be id order with no preview at all ("tap to open"). One extra query for all rooms'
+      // last messages at once (not N+1 per room), capped at the 500 most recent messages
+      // across all of a person's DMs combined — plenty for normal use; a room that's had zero
+      // activity in that window (everyone's most recent 500 messages, combined) would fall back
+      // to showing no preview rather than a stale/wrong one.
+      async list(){
+        await initSB(); const meId=me().id;
+        const { data } = await sb.from('rooms').select('id,slug').eq('kind','dm');
+        const mine=(data||[]).map(r=>{ const p=(r.slug||'').split(':'); const other=p[1]===meId?p[2]:p[1]; return {roomId:r.id, otherId:other}; }).filter(x=>x.otherId&&x.otherId!==meId);
+        await ensureProfiles(mine.map(x=>x.otherId));
+        if(!mine.length) return mine;
+        try{
+          const ids=mine.map(x=>x.roomId);
+          const { data:msgs } = await sb.from('messages').select('room_id,body,author_id,created_at').in('room_id',ids).order('created_at',{ascending:false}).limit(500);
+          const lastByRoom={}; (msgs||[]).forEach(m=>{ if(!lastByRoom[m.room_id]) lastByRoom[m.room_id]=m; });
+          mine.forEach(x=>{ const m=lastByRoom[x.roomId]; x.lastMsg=m?{body:m.body,authorId:m.author_id}:null; x.lastAt=m?m.created_at:null; });
+        }catch(e){ mine.forEach(x=>{ x.lastMsg=null; x.lastAt=null; }); }
+        mine.sort((a,b)=>new Date(b.lastAt||0)-new Date(a.lastAt||0));
+        return mine;
+      }
     },
     messages:{
       async list(roomId){ await initSB(); const { data } = await sb.from('messages').select('*').eq('room_id', roomId).order('created_at',{ascending:true}).limit(300); return (data||[]).map(rowToMsg); },
@@ -1676,7 +1784,7 @@
         <div class="ig-step"><span class="ig-n">3</span><div>Tap <b>Add</b> — Maintrix now opens like a real app, and push notifications will work</div></div>
       </div>`;
     } else {
-      h+=`<h3>Add Maintrix to your Home Screen</h3><p class="sub">Open this page on your phone, then look for "Add to Home Screen" or "Install app" in your browser's menu.</p>`;
+      h+=`<h3>Add Maintrix to your Home Screen</h3><p class="sub">Look for an option like "Add to Home Screen" or "Install app" in your browser's menu — every browser calls it something slightly different.</p>`;
     }
     if(opt.skippable) h+=`<button class="btn ghost block" id="igSkip" style="margin-top:${installed||canPrompt?'8':'18'}px">${installed?'Continue':'Not now'}</button>`;
     h+=`<div style="height:10px"></div></div>`;
@@ -1685,7 +1793,7 @@
     const sk=$('igSkip'); if(sk)sk.onclick=()=>{ closeSheet(); if(opt.onDone)opt.onDone(); };
   }
   let notifChannel=null;
-  async function loadNotifs(){ if(!online()||!me()||!me().id) return; try{ const list=await db.notifs.list(); state.notifications=list; await ensureProfiles(list.map(n=>n.who).filter(Boolean)); save(); paintBell(); if(notifChannel)db.messages.unsubscribe(notifChannel); notifChannel=db.notifs.subscribe(async row=>{ const n=rowToNotif(row); if((state.notifications||[]).some(x=>x.id===n.id))return; await ensureProfiles([n.who]); state.notifications.unshift(n); if(state.notifications.length>60)state.notifications.length=60; save(); paintBell(true); SFX.play('notify'); }); }catch(e){} }
+  async function loadNotifs(){ if(!online()||!me()||!me().id) return; try{ const list=await db.notifs.list(); state.notifications=list; await ensureProfiles(list.map(n=>n.who).filter(Boolean)); save(); paintBell(); if(notifChannel)db.messages.unsubscribe(notifChannel); notifChannel=db.notifs.subscribe(async row=>{ const n=rowToNotif(row); if((state.notifications||[]).some(x=>x.id===n.id))return; await ensureProfiles([n.who]); state.notifications.unshift(n); if(state.notifications.length>60)state.notifications.length=60; if(n.type==='dm'&&state.closedDms&&state.closedDms.includes(n.who)){ state.closedDms=state.closedDms.filter(x=>x!==n.who); if(state.screen==='connect'&&state.connectTab==='dms')renderDmList(); } save(); paintBell(true); SFX.play('notify'); }); }catch(e){} }
   /* ── presence (Phase 5): who's online ── */
   let ONLINE=new Set(), presenceChannel=null, _presenceSynced=false;
   function initPresence(){ if(!online()||!sb||!me()||!me().id||presenceChannel) return; const ch=sb.channel('presence-global',{ config:{ presence:{ key: me().id } } });
@@ -2196,11 +2304,13 @@
       const optTitle = th.serverId?'Room settings':(isCall?'Voice call':(isMuted?'Unmute':'Mute'));
       h+=`<button class="tb-btn${(isMuted&&!th.serverId&&!isCall)?' muted-on':''}" id="thOptions" title="${optTitle}" style="margin-left:6px">${optIcon}</button>`;
     }
+    if(th.dmKey)h+=`<button class="tb-btn" id="thStreak" title="Streak">${IC.flame}</button>`;
     if(isEmbed)h+=`<button class="tb-btn" id="thDebates" title="Debates" style="margin-left:6px">${IC.debates}</button>`;
     h+=`</div>`;
     if(isDebate) h+=renderDebateHead(th.debate);
     const ice = th.dmKey ? personalityOverlap(me(),person(th.dmKey)) : [];
     if(ice.length && !(state.dismissedIcebreakers||[]).includes(th.key)) h+=`<div class="icebreaker" id="iceBanner"><span>${IC.sparkle} You're both <b>${esc(ice[0])}</b> — ask them about it.</span><button id="iceDismiss">✕</button></div>`;
+    h+=`<div id="notifOffBanner"></div>`;
     const wallpaperStyle=(state.wallpapers&&state.wallpapers[th.key])?` style="background:${attr(state.wallpapers[th.key])}"`:'';
     h+=`<div class="thread-scroll" id="thScroll"${wallpaperStyle}>${renderMsgs(list,th)}</div>`;
     h+=`<div id="typingHint" class="typing-hint"></div>`;
@@ -2222,7 +2332,9 @@
     { const debBtn=$('thDebates'); if(debBtn) debBtn.onclick=()=>{ state.screen='debates'; save(); render(); }; }
     { const idb=$('iceDismiss'); if(idb)idb.onclick=()=>{ state.dismissedIcebreakers=state.dismissedIcebreakers||[]; state.dismissedIcebreakers.push(th.key); save(); const ib=$('iceBanner'); if(ib)ib.remove(); }; }
     { const optBtn=$('thOptions'); if(optBtn) optBtn.onclick=()=>{ if(isEmbed||th.dmKey){ if(!online()||!th.roomId){ toast('Voice needs the live backend'); return; } openVoiceChannel(th.roomId,th.title); } else openRoomOptions(th,canManage); }; }
+    { const stB=$('thStreak'); if(stB) stB.onclick=()=>openDmStreaks(th); }
     if(isDebate) wireDebateRoom(th);
+    refreshNotifBanner(th.key);
     if(onlineRoom){ state.msgs[th.key]=[]; sc.innerHTML=skeletonMsgs(); hydrateOnlineRoom(th); }
     else { if(isCommons)connectCommons(); wireMsgMenu(sc,list,th); }
     if(!dmLocked && $('thInput')){
@@ -2245,7 +2357,8 @@
         let justSentId=null;
         if(editing){ const m=list.find(x=>x.id===editing); if(m){m.t=v; m.edited=true;} editing=null; input.placeholder='Message '+(th.dmKey?'@'+th.title:th.title); }
         else { const msg={a:me().name,t:v,time:nowTime(),id:mid()}; if(replyTo)msg.replyTo={a:replyTo.a,t:replyTo.t.slice(0,60)}; list.push(msg); justSentId=msg.id; SFX.play('send'); flySend();
-          if(th.dmKey && !dmFree(th.dmKey)){ state.sentDm.push(th.dmKey); save(); toast('DM request sent — one message until they accept'); setTimeout(()=>simAcceptDm(th.dmKey),4000); } }
+          if(th.dmKey && !dmFree(th.dmKey)){ state.sentDm.push(th.dmKey); save(); toast('DM request sent — one message until they accept'); setTimeout(()=>simAcceptDm(th.dmKey),4000); }
+          if(th.dmKey && dmFree(th.dmKey)) touchLocalStreak(th.dmKey,'me'); }
         replyTo=null; save(); input.value=''; clearDraft(); closeMentions(); renderReplyBar(); th._animateId=justSentId; sc.innerHTML=renderMsgs(list,th); th._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,list,th);
         if(isCommons)sendCommons(v); else if(th.dmKey&&dmFree(th.dmKey))simReply(th.key,th.dmKey);
         if(th.dmKey&&!dmFree(th.dmKey))renderThread();
@@ -2262,6 +2375,24 @@
     }
     if(onlineRoom && th.serverId) ensureServerComposer(th);
     updateChrome();
+  }
+  const notifBannerDismissed = new Set();
+  async function refreshNotifBanner(key){
+    const box=$('notifOffBanner'); if(!box)return;
+    if(!online()||!PushMgr.supported()||notifBannerDismissed.has(key)){ box.innerHTML=''; return; }
+    let st; try{ st=await PushMgr.status(); }catch(e){ return; }
+    if(!$('notifOffBanner')||!active||active.key!==key)return;
+    if(st==='on'||st==='unsupported'){ box.innerHTML=''; return; }
+    if(st==='blocked') box.innerHTML=`<div class="notif-off-banner"><span>${IC.bell} Notifications are blocked in your browser settings — enable them there to catch replies here.</span><button class="nob-x" id="nobDismiss" title="Dismiss">${IC.close}</button></div>`;
+    else if(st==='needs-install') box.innerHTML=`<div class="notif-off-banner"><span>${IC.bell} Add Maintrix to your Home Screen to get notifications.</span><button class="chip on" id="nobAction">Show me</button><button class="nob-x" id="nobDismiss" title="Dismiss">${IC.close}</button></div>`;
+    else box.innerHTML=`<div class="notif-off-banner"><span>${IC.bell} Your notifications are off — turn them on so you don't miss a thing.</span><button class="chip on" id="nobAction">Turn on</button><button class="nob-x" id="nobDismiss" title="Dismiss">${IC.close}</button></div>`;
+    const ab=$('nobAction'); if(ab)ab.onclick=async ()=>{
+      if(st==='needs-install'){ openInstallGuide({skippable:true}); return; }
+      ab.disabled=true; ab.textContent='Enabling…';
+      try{ await PushMgr.enable(); await db.profiles.update({ notif_prefs:Object.assign({},me().notifPrefs||{},{push:true}) }).catch(()=>{}); SFX.play('success'); toast('Notifications on',IC.bell); box.innerHTML=''; }
+      catch(e){ SFX.play('error'); toast((e&&e.message)||'Could not enable notifications'); ab.disabled=false; ab.textContent='Turn on'; }
+    };
+    const xb=$('nobDismiss'); if(xb)xb.onclick=()=>{ notifBannerDismissed.add(key); box.innerHTML=''; };
   }
   async function ensureServerComposer(th){ try{ const rank=await db.servers.myRank(th.serverId); if(rank||!active||active.key!==th.key) return; const comp=document.querySelector('.thread .composer'); if(!comp) return; comp.innerHTML=`<div class="note" style="display:flex;gap:10px;align-items:center;justify-content:center;padding-bottom:calc(10px + env(safe-area-inset-bottom))"><span>Join to chat here</span><button class="chip on" id="joinToChat">Join server</button></div>`; $('joinToChat').onclick=async ()=>{ try{ await db.servers.join(th.serverId); toast('Joined'); renderThread(); }catch(e){ toast('Could not join'); } }; }catch(e){} }
   let mediaRec=null, recChunks=[];
@@ -2686,7 +2817,7 @@
     });
   }
   const REPLIES=['ha, true','say more','oh that’s good','holding you to it 🔒','agreed','let’s go','proud of you honestly'];
-  function simReply(key,dmKey){ setTimeout(()=>{ pushNotif('reply',dmKey,'replied to your message'); if(active&&active.key===key){ const newMsg={a:dmKey,t:REPLIES[Math.floor(Math.random()*REPLIES.length)],time:nowTime(),id:mid()}; state.msgs[key].push(newMsg); save(); const sc=$('thScroll'); active._animateId=newMsg.id; sc.innerHTML=renderMsgs(state.msgs[key],active); active._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,state.msgs[key],active); } },1400); }
+  function simReply(key,dmKey){ setTimeout(()=>{ pushNotif('reply',dmKey,'replied to your message'); touchLocalStreak(dmKey,'other'); if(state.closedDms&&state.closedDms.includes(dmKey)){ state.closedDms=state.closedDms.filter(x=>x!==dmKey); save(); } if(active&&active.key===key){ const newMsg={a:dmKey,t:REPLIES[Math.floor(Math.random()*REPLIES.length)],time:nowTime(),id:mid()}; state.msgs[key].push(newMsg); save(); const sc=$('thScroll'); active._animateId=newMsg.id; sc.innerHTML=renderMsgs(state.msgs[key],active); active._animateId=null; sc.scrollTop=sc.scrollHeight; wireMsgMenu(sc,state.msgs[key],active); } },1400); }
   function simAcceptDm(k){ if(state.dmAccepted.includes(k))return; state.dmAccepted.push(k); state.sentDm=state.sentDm.filter(x=>x!==k); if(!state.dmAccepted.includes(k))return; save(); toast('@'+person(k).name+' accepted your DM'); if(active&&active.dmKey===k)renderThread(); }
 
   /* ═══ NEXUS HUB ═══
@@ -2790,7 +2921,13 @@
     } else if(t==='dms'){
       h+=`<div class="row" id="dmReq" style="border-bottom:1px solid var(--line)"><div class="av" style="width:42px;height:42px;background:var(--surface-2);color:var(--accent-hi)">${IC.inbox}</div><div class="r-main"><div class="r-name">DM requests</div><div class="r-sub">${state.dmRequests.length} pending</div></div>${state.dmRequests.length?`<span class="rank-badge" style="color:var(--accent-hi);border-color:var(--accent)">${state.dmRequests.length}</span>`:''}${IC.chev}</div>`;
       h+=`<div class="sec-title">Direct messages</div><div id="dmList"></div>`;
-      if(!online()){ state.dmAccepted.forEach(k=>{ const key='dm-'+k; const last=(state.msgs[key]||[]).slice(-1)[0]; h+=`<div class="row" data-dm="${k}">${avatar(k,46,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">${last?esc((last.a===me().name?'You: ':'')+last.t):'Say hi'}</div></div></div>`; }); }
+      if(!online()){
+        const closed=state.closedDms||[];
+        const open=state.dmAccepted.filter(k=>!closed.includes(k));
+        const withLast=open.map(k=>{ const last=(state.msgs['dm-'+k]||[]).slice(-1)[0]; const at=last?parseInt(String(last.id).slice(1,14))||0:0; return {k,last,at}; });
+        withLast.sort((a,b)=>b.at-a.at);
+        withLast.forEach(({k,last})=>{ const body=last?(last.a===me().name?'You: ':'')+last.t:'Say hi'; h+=`<div class="row dm-row" data-dm="${k}">${avatar(k,46,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(person(k).name)}</div><div class="r-sub">${esc(body.length>48?body.slice(0,46)+'…':body)}</div></div><button class="dm-close" data-dmclose="${attr(k)}" title="Close DM">${IC.close}</button></div>`; });
+      }
       h+=`<div class="empty" style="padding-top:16px">DMs are private. Start one from <b>Search</b>.</div>`;
     } else {
       h+=`<div class="pad" style="padding-bottom:0"><button class="btn block" id="srvCreate" style="margin-bottom:10px">${IC.plus} Create a server</button><button class="btn ghost block" id="srvBrowse">${IC.search} Browse public servers</button></div>`;
@@ -2801,6 +2938,7 @@
     $('s-connect').innerHTML=h;
     $('s-connect').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{ state.connectTab=b.dataset.t; save(); renderConnect(); });
     $('s-connect').querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>openDm(b.dataset.dm));
+    $('s-connect').querySelectorAll('[data-dmclose]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const k=b.dataset.dmclose; state.closedDms=state.closedDms||[]; if(!state.closedDms.includes(k))state.closedDms.push(k); save(); toast('DM closed — it\'ll come back if they message you'); renderConnect(); });
     $('s-connect').querySelectorAll('[data-server]').forEach(b=>b.onclick=()=>{ b.dataset.server==='commons'?openThread({key:'commons',roomSlug:'commons',title:'The Commons',sub:'everyone signed in · live',back:'connect'}):openServer(b.dataset.server); });
     const dr=$('dmReq'); if(dr)dr.onclick=openDmRequests;
     const sc=$('srvCreate'); if(sc)sc.onclick=createServer;
@@ -2821,7 +2959,26 @@
   function runSearch(q){ const box=$('searchResults'); if(!box)return;
     if(online()){ const seq=++_searchSeq; box.innerHTML='<div class="empty" style="padding:16px">Searching…</div>'; db.profiles.search(q).then(list=>{ if(seq!==_searchSeq||!$('searchResults'))return; cacheProfiles(list); if(!list.length){ box.innerHTML=`<div class="empty">${(q||'').trim()?'No one found.':'No other members yet — you’re early. Invite people.'}</div>`; return; } let h=''; list.forEach(p=>{ const sh=shared(p); h+=`<div class="row" data-user="${attr(p.id)}">${avatar(p.id,42,{ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh?`<span class="tag-shared">${sh.k==='goal'?'◎':'⚑'} ${esc(sh.v)}</span>`:''}</div><div class="r-sub">@${esc(p.handle||'')}${locStr(p)?' · '+esc(locStr(p)):''}</div></div><button class="chip" data-dmuser="${attr(p.id)}">Message</button></div>`; }); box.innerHTML=h; box.querySelectorAll('[data-dmuser]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openDm(b.dataset.dmuser); }); }).catch(()=>{ if($('searchResults'))box.innerHTML='<div class="empty">Search failed — try again.</div>'; }); return; }
     q=(q||'').trim().toLowerCase(); const res=SEARCH_USERS.filter(k=>person(k).name.toLowerCase().includes(q)); let h=q?'':'<div class="sec-title">Suggested people</div>'; if(q&&!res.length){box.innerHTML=`<div class="empty">No one found for “${esc(q)}”.</div>`;return;} res.forEach(k=>{ const p=person(k),sh=shared(p); h+=`<div class="row" data-user="${attr(k)}">${avatar(k,42,{dot:true,ring:true})}<div class="r-main"><div class="r-name">${esc(p.name)} ${sh?`<span class="tag-shared">${sh.k==='goal'?'◎':'⚑'} ${esc(sh.v)}</span>`:''}</div><div class="r-sub">${esc(locStr(p))} · tap to view</div></div>${state.friends.includes(k)?'<span class="rank-badge">friend</span>':`<button class="chip" data-add="${k}">Add</button>`}</div>`; }); box.innerHTML=h; box.querySelectorAll('[data-add]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); toast('Friend request sent to @'+b.dataset.add); b.textContent='Sent'; }); }
-  async function renderDmList(){ const box=$('dmList'); if(!box)return; try{ const dms=await db.dm.list(); if(!$('dmList'))return; if(!dms.length){ box.innerHTML=''; return; } box.innerHTML=dms.map(d=>`<div class="row" data-dmid="${attr(d.otherId)}">${avatar(d.otherId,46,{ring:true})}<div class="r-main"><div class="r-name">${esc(person(d.otherId).name)}</div><div class="r-sub">@${esc(person(d.otherId).handle||'')} · tap to open</div></div></div>`).join(''); box.querySelectorAll('[data-dmid]').forEach(b=>b.onclick=()=>openDm(b.dataset.dmid)); }catch(e){} }
+  // "Closing" a DM (Discord-style X) only hides it from your own list — the room/history is
+  // untouched, and it un-hides itself the moment a new message arrives (see loadNotifs()).
+  function dmPreviewText(d){
+    if(!d.lastMsg) return 'Say hi';
+    const mine=d.lastMsg.authorId===me().id;
+    const body=(d.lastMsg.body||'').replace(/\s+/g,' ').trim();
+    return esc((mine?'You: ':'')+(body.length>46?body.slice(0,44)+'…':body));
+  }
+  async function renderDmList(){
+    const box=$('dmList'); if(!box)return;
+    try{
+      const all=await db.dm.list(); if(!$('dmList'))return;
+      const closed=state.closedDms||[];
+      const dms=all.filter(d=>!closed.includes(d.otherId));
+      if(!dms.length){ box.innerHTML=''; return; }
+      box.innerHTML=dms.map(d=>`<div class="row dm-row" data-dmid="${attr(d.otherId)}">${avatar(d.otherId,46,{ring:true})}<div class="r-main"><div class="r-name">${esc(person(d.otherId).name)}</div><div class="r-sub">${dmPreviewText(d)}</div></div><button class="dm-close" data-dmclose="${attr(d.otherId)}" title="Close DM">${IC.close}</button></div>`).join('');
+      box.querySelectorAll('[data-dmid]').forEach(b=>b.onclick=()=>openDm(b.dataset.dmid));
+      box.querySelectorAll('[data-dmclose]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const k=b.dataset.dmclose; state.closedDms=state.closedDms||[]; if(!state.closedDms.includes(k))state.closedDms.push(k); save(); toast('DM closed — it\'ll come back if they message you'); renderDmList(); });
+    }catch(e){}
+  }
   function openDm(k){ if(online()){ openThread({key:'dm-'+k,dmUser:k,dmKey:k,title:person(k).name,sub:'@'+(person(k).handle||''),back:'connect'}); return; } openThread({key:'dm-'+k,title:person(k).name,dmKey:k,back:'connect'}); }
   function openDmRequests(){
     let h=`<div class="sub-head"><button class="back" id="drBack">${IC.back}</button><div class="st">DM requests</div></div><div class="sub-body">`;
@@ -4184,6 +4341,7 @@
     sparkle:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="currentColor"/></svg>',
     sound:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M11 5L6.5 9H3v6h3.5L11 19V5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M15.5 9.5a3.5 3.5 0 010 5M18 7a7 7 0 010 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
     download:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17v2a2 2 0 002 2h10a2 2 0 002-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    close:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
     blur:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="10" r="5.5" stroke="currentColor" stroke-width="1.4" opacity=".45"/><circle cx="15" cy="14" r="5.5" stroke="currentColor" stroke-width="1.7"/></svg>'
   };
 
@@ -4341,21 +4499,27 @@
   // One-time beat right after signup: offer notifications, then (skippable) offer installing
   // to the Home Screen — the two prompts iOS treats as separate device capabilities, so they're
   // asked one at a time instead of bundled into one confusing dialog.
-  // Was gated on "isIOS OR we already captured a real beforeinstallprompt event" — on Android/
-  // Chrome without a captured prompt (Chrome's own install-eligibility heuristics don't always
-  // fire it in time, or at all, on a brand-new visit), that condition is false and the whole
-  // guide silently never showed. This is the one screen in the whole app explicitly called out
-  // as critical, so it's no longer conditional on having a native prompt in hand: any phone
-  // (iOS or Android — desktop is skipped, since "Add to Home Screen" isn't a real desktop
-  // browser affordance and would just be confusing there) always sees *something* — a real
-  // one-tap install button when a native prompt exists, manual steps otherwise.
-  function isMobileDevice(){ return PushMgr.isIOS() || /Android/i.test(navigator.userAgent); }
+  // Round 2 on this: last fix removed the "needs a captured beforeinstallprompt" gate, but
+  // that only fires from finishOb() — which ONLY runs at the exact moment a brand-new account
+  // is created. Reopening the app normally (an existing account, any later session) never
+  // touches that code path at all, so testing on an already-created account would never show
+  // it regardless of whether the signup-time logic was correct. This is the one screen in the
+  // whole app explicitly called out as critical, so it no longer depends on catching that one
+  // narrow moment: `maybeShowInstallPrompt()` runs from *every* successful boot (both the
+  // brand-new-signup path via postSignupFlow, and the plain "open the app normally" path via
+  // boot()'s own enter()), gated by a one-shot per-device flag (`state.installPromptShown`) so
+  // it still only ever nags once, not on every single launch. Also dropped the mobile-only
+  // restriction — desktop Chrome/Edge can install PWAs too (a real button, same as mobile), and
+  // even browsers with no install support at all just get worded-generically manual steps
+  // rather than being skipped outright.
+  function maybeShowInstallPrompt(suggested){
+    if(state.installPromptShown)return;
+    state.installPromptShown=true; save();
+    if(PushMgr.standalone())return;
+    openInstallGuide({ skippable:true, onDone:()=>{}, suggested:suggested!==false });
+  }
   function postSignupFlow(done){
-    const askInstall=()=>{
-      const already=PushMgr.standalone();
-      if(already || !isMobileDevice()){ done(); return; }
-      openInstallGuide({ skippable:true, onDone:done, suggested:true });
-    };
+    const askInstall=()=>{ maybeShowInstallPrompt(true); done(); };
     if(!PushMgr.supported()){ askInstall(); return; }
     let h=`<div class="sheet-grab"></div><div class="pad install-guide"><div class="ig-icon">${IC.bell}</div><h3>Turn on notifications?</h3><p class="sub">Get pinged for DMs, replies, mentions and more — fine-tune exactly what later in Settings.</p><button class="btn block" id="psEnable">Enable notifications</button><button class="btn ghost block" id="psSkip" style="margin-top:8px">Not now</button></div>`;
     $('sheet').className='sheet'; showSheet(h);
@@ -4413,13 +4577,13 @@
   if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',e=>{ const d=e.data||{}; if(d.type==='push-open'&&d.url){ try{ routeFromUrl(new URL(d.url).search); }catch(err){} } });
   function cleanOnlineState(){ if(state._onlineClean)return; ['friends','dmAccepted','dmRequests','friendRequests','sentDm','likesGiven','postLikes','notifications','servers','joined','topicRooms'].forEach(k=>state[k]=[]); state.msgs={}; state._onlineClean=true; save(); }
   async function boot(){
-    if(!online()){ if(me()&&me().name)enter(); return; }   // local mode — unchanged
+    if(!online()){ if(me()&&me().name){ enter(); setTimeout(()=>maybeShowInstallPrompt(),1000); } return; }   // local mode — unchanged
     $('auth').classList.add('hidden'); cleanOnlineState();
     try{
       const sess=await db.auth.session();
       if(!sess){ showSupaAuth(); return; }
       const prof=await db.profiles.mine();
-      if(prof){ state.profile=prof; cacheProfile(prof); save(); await loadSocial(); enter(); loadNotifs(); initPresence(); PushMgr.sync(); routeFromUrl(location.search); }
+      if(prof){ state.profile=prof; cacheProfile(prof); save(); await loadSocial(); enter(); loadNotifs(); initPresence(); PushMgr.sync(); routeFromUrl(location.search); setTimeout(()=>maybeShowInstallPrompt(),1000); }
       else startOnboarding();
     }catch(e){ toast('Connection issue — try again'); showSupaAuth(); }
   }
