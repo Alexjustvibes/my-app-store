@@ -200,6 +200,52 @@ debate ELO ranks (migration `0014`):
   too. Verified in-browser: switching themes now leaves Kick/Delete/DND red
   while the rest of the chrome recolors.
 
+## Build state (as of v0.23 — cozy ambience effects, personality card customization goes deep)
+
+- **New "Ambience" setting** (Profile → Settings → Theme & display):
+  purely decorative, opt-in-only overlay effects — **Rain**, **Snow**,
+  **Fireplace**, **Fireflies**, **Starlight**, or **None** (the default,
+  and it stays the default for every account; nothing here ever turns
+  itself on). `applyAmbience()` builds the chosen effect from a handful
+  of absolutely-positioned spans (rain streaks / snowflakes / firelight
+  glow / drifting fireflies / twinkling stars, each with randomized
+  size/speed/delay so it doesn't look mechanically repetitive) into a
+  `.ambience-layer` on `.frame`. Personal and client-side only, same
+  category as app themes — nobody else ever sees it. Two real layout
+  bugs had to be fixed for this to sit correctly: `.botnav` and
+  `.msgbar` had no explicit `z-index`, so a positioned overlay with any
+  z-index above 0 would have painted *over* them regardless of DOM
+  order (a real CSS stacking quirk, not specific to this feature) —
+  both now get `z-index:5` to match the topbar, and the ambience layer
+  sits at `z-index:3`, so effects show over screen content but always
+  stay behind every tappable control. Killed outright under
+  `body.reduce-motion`, verified in-browser for rain and fireplace:
+  both render with the correct layering (visible over messages, correctly
+  behind/under the topbar and bottom nav, never blocking a tap).
+- **The personality card customizer goes from 4 toggles to a real "so
+  many options" editor.** New: background style (Aurora / Mesh /
+  Starfield / Solid / Minimal), texture (Dots / Lines / Grain / None),
+  font pairing (Serif / Mono / Sans — actually changes which of the
+  app's own three loaded fonts draws the name and labels, not just a
+  label), border treatment (None / Frame / HUD-style Corners), aspect
+  ratio (Portrait / Square / Story), a glow-intensity slider, and a
+  background-darkness slider — on top of the existing accent color and
+  section toggles, which themselves grew from 4 to 9 (added handle,
+  tier pill, join date, bio quote, and debate rank as independently
+  toggleable, each only appearing in its own list of picks if the
+  underlying data actually exists — no empty rank row for someone who's
+  never debated). Verified in-browser: every picker row and both
+  sliders redraw the live preview correctly and reflect immediately
+  (mesh background + corner brackets + mono font all correctly applied
+  together, bio/join-date toggles inserting their text in the right
+  place, square ratio correctly resizing the actual canvas element to
+  800×800). One accepted limitation, not fixed: Square/Story ratios
+  don't reflow font sizes or spacing to fit — a maximalist combination
+  (everything toggled on) on the Square ratio specifically can run past
+  the canvas bottom into the footer. Fixing that means a real auto-fit
+  pass (shrink text/spacing to the available height), which is a
+  bigger, separate piece of work than this round's scope.
+
 ## Build state (as of v0.22 — a likely explanation for "no changes visible", a real personality-card rebuild)
 
 - **Found a real, concrete explanation for "I don't see any changes" and
