@@ -1,7 +1,7 @@
 // The build id and the self-hosted font list are stamped in by build.mjs — every build gets a
 // fresh cache name automatically, and the woff2 files are precached so fonts work offline.
-const CACHE = 'maintrix-86fe4fef';
-const ASSETS = ['index.html', 'app.js?v=86fe4fef', 'app.css?v=86fe4fef', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].concat(["fonts/Fraunces-latin-ext.woff2","fonts/Fraunces-latin.woff2","fonts/Fraunces-vietnamese.woff2","fonts/HankenGrotesk-cyrillic-ext.woff2","fonts/HankenGrotesk-latin-ext.woff2","fonts/HankenGrotesk-latin.woff2","fonts/HankenGrotesk-vietnamese.woff2","fonts/JetBrainsMono-cyrillic-ext.woff2","fonts/JetBrainsMono-cyrillic.woff2","fonts/JetBrainsMono-greek.woff2","fonts/JetBrainsMono-latin-ext.woff2","fonts/JetBrainsMono-latin.woff2","fonts/JetBrainsMono-vietnamese.woff2"]);
+const CACHE = 'maintrix-4edd798a';
+const ASSETS = ['index.html', 'app.js?v=4edd798a', 'app.css?v=4edd798a', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].concat(["fonts/Fraunces-latin-ext.woff2","fonts/Fraunces-latin.woff2","fonts/Fraunces-vietnamese.woff2","fonts/HankenGrotesk-cyrillic-ext.woff2","fonts/HankenGrotesk-latin-ext.woff2","fonts/HankenGrotesk-latin.woff2","fonts/HankenGrotesk-vietnamese.woff2","fonts/JetBrainsMono-cyrillic-ext.woff2","fonts/JetBrainsMono-cyrillic.woff2","fonts/JetBrainsMono-greek.woff2","fonts/JetBrainsMono-latin-ext.woff2","fonts/JetBrainsMono-latin.woff2","fonts/JetBrainsMono-vietnamese.woff2"]);
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
