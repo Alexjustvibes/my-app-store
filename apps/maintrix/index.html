@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Maintrix</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Maintrix">
+<meta name="theme-color" content="#150e10">
+<!-- script-src is 'self' only: the app is one external bundle (app.js) with the Supabase client
+     compiled in, so there is no inline script and no third-party script host to allow. That means
+     an injected <script> or on*= handler is blocked by the browser even if an escaping bug ever
+     slips through. style-src still needs 'unsafe-inline' for the app's inline style attributes.
+     frame-ancestors/report-uri/sandbox are no-ops via <meta> (need a real HTTP header). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'self'; form-action 'self'; object-src 'none';">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="frame">
+  <div id="rotatePrompt"><svg width="52" height="52" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M19 9v6M22 10.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><p>Maintrix is built for portrait — rotate your device to continue.</p></div>
+  <div id="intro"><span class="ex-ring"></span><span class="ex-ring two"></span><div class="ex-word">Expansion</div><div class="ex-sub">presents</div><div class="ex-skip">tap to skip</div></div>
+
+  <div id="auth">
+    <div class="auth-glow"></div>
+    <div class="logo-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="eyebrow">Maintrix</div>
+    <h1>Welcome to heaven on earth.</h1>
+    <p class="tag">Discord for smart people. One <b>self</b>, one <b>world</b> — where you talk, you grow, and you become who you're trying to be.</p>
+    <div class="auth-feats">
+      <span class="auth-feat"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 3V5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Talk</span>
+      <span class="auth-feat"><svg viewBox="0 0 24 24" fill="none"><path d="M12 20V10M12 10c0-3 2-6 6-6-1 4-2 6-6 6zM12 10c0-2-1.5-4-5-4 .5 3 1.5 4 5 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Grow</span>
+      <span class="auth-feat"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>Become</span>
+    </div>
+    <div style="max-width:340px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:10px">
+      <button class="btn block" id="beginBtn">Create your identity</button>
+    </div>
+    <div class="fine">Your identity is saved on this device.</div>
+  </div>
+
+  <div id="supaAuth" class="hidden">
+    <div class="auth-glow"></div>
+    <div class="logo-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="eyebrow">Maintrix</div>
+    <h1 id="saTitle">Sign in to your world.</h1>
+    <p class="tag" id="saTag">Your identity, your world — wherever you sign in.</p>
+    <div style="max-width:340px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:10px">
+      <div class="field-ic"><span class="fi-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 6.5l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><input id="saEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+      <div class="field-ic"><span class="fi-ic"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></span><input id="saPass" type="password" placeholder="Password" autocomplete="current-password"><button type="button" class="fi-toggle" id="saPassToggle" title="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
+      <button class="btn block" id="saGo">Sign in</button>
+      <button class="btn ghost block" id="saToggle">New here? Create an account</button>
+    </div>
+    <div class="fine" id="saStatus"></div>
+  </div>
+
+  <div id="onboard" class="hidden">
+    <div class="ob-head"><div class="ob-dots" id="obDots"></div></div>
+    <div class="ob-step on" data-step="0">
+      <div class="ob-k"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3 19a6 6 0 0112 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 6a3 3 0 010 6m1 7a6 6 0 00-2-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg> Identity · 1 of 4</div><h2>Who walks in?</h2>
+      <p class="sub">Your name and where you're from. Your location shows near you in the world rooms.</p>
+      <div class="field"><label>Display name</label><input id="obName" placeholder="Choose a name" maxlength="20" autocomplete="off"></div>
+      <div class="field"><label>@handle — permanent, for mentions</label><input id="obHandle" placeholder="handle" maxlength="20" autocomplete="off"></div>
+      <div class="field"><label>Country</label><select id="obCountry"></select></div>
+      <div class="field"><label>State / Region</label><div id="obRegionWrap"></div></div>
+    </div>
+    <div class="ob-step" data-step="1">
+      <div class="ob-k"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg> Identity · 2 of 4</div><h2>What are you chasing?</h2>
+      <p class="sub">The one thing you're psychologically drawn to. Permanent — it places you in your world and matches you to people chasing the same. Pick one.</p>
+      <div id="obGoals"></div>
+    </div>
+    <div class="ob-step" data-step="2">
+      <div class="ob-k"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6l8-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg> Identity · 3 of 4</div><h2>What are you escaping?</h2>
+      <p class="sub">What you're psychologically afraid of. Also permanent. Pick up to two, then a line about who you're becoming.</p>
+      <div class="chips" id="obFears" style="margin-bottom:18px"></div>
+      <div class="field"><label>Bio</label><textarea id="obBio" placeholder="Who are you becoming?"></textarea></div>
+    </div>
+    <div class="ob-step" data-step="3">
+      <div class="ob-k"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="currentColor"/></svg> Identity · 4 of 4</div><h2>Who are you, deeper down?</h2>
+      <p class="sub">Optional personality systems. Pick your type if you know it, leave any on "Unsure," and take the test for it anytime from your profile.</p>
+      <div id="obPersonality"></div>
+    </div>
+    <div class="ob-foot"><button class="btn ghost" id="obBack">Back</button><button class="btn block" id="obNext">Continue</button></div>
+  </div>
+
+  <div id="app">
+    <div id="maintBanner" class="maint-banner" style="display:none"></div>
+    <div class="topbar"><div class="tb-title"><span id="tbTitle">Nexus</span><span class="tb-sub" id="tbSub"></span></div><span class="tier-pill" id="tierPill">Lite</span><button class="tb-btn" id="globalSearchBtn"></button><button class="tb-btn bell" id="notifBtn"></button><button class="tb-btn" id="profileBtn"></button></div>
+    <div id="view">
+      <section class="screen" id="s-nexus"></section>
+      <section class="screen" id="s-connect"></section>
+      <section class="screen" id="s-feed"></section>
+      <section class="screen" id="s-debates"></section>
+      <section class="screen" id="s-live"></section>
+      <section class="screen" id="s-lobby"></section>
+      <section class="screen" id="s-overwatch"></section>
+    </div>
+    <div class="msgbar" id="msgBar"><button id="msgBarBtn"></button></div>
+    <nav class="botnav" id="botnav"></nav>
+  </div>
+
+  <div class="subscreen" id="subscreen"></div>
+  <div class="pv-screen" id="pvScreen"></div>
+  <div class="ls-screen" id="lsScreen"></div>
+  <div class="sheet-scrim" id="sheetScrim"><div class="sheet" id="sheet"></div></div>
+  <div class="confirm-scrim" id="confirmScrim"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
