@@ -1,7 +1,7 @@
 // The build id and the self-hosted font list are stamped in by build.mjs — every build gets a
 // fresh cache name automatically, and the woff2 files are precached so fonts work offline.
-const CACHE = 'maintrix-c4bb2129';
-const ASSETS = ['index.html', 'app.js', 'app.css', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].concat(["fonts/Fraunces-latin-ext.woff2","fonts/Fraunces-latin.woff2","fonts/Fraunces-vietnamese.woff2","fonts/HankenGrotesk-cyrillic-ext.woff2","fonts/HankenGrotesk-latin-ext.woff2","fonts/HankenGrotesk-latin.woff2","fonts/HankenGrotesk-vietnamese.woff2","fonts/JetBrainsMono-cyrillic-ext.woff2","fonts/JetBrainsMono-cyrillic.woff2","fonts/JetBrainsMono-greek.woff2","fonts/JetBrainsMono-latin-ext.woff2","fonts/JetBrainsMono-latin.woff2","fonts/JetBrainsMono-vietnamese.woff2"]);
+const CACHE = 'maintrix-fbfef392';
+const ASSETS = ['index.html', 'app.js?v=fbfef392', 'app.css?v=fbfef392', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].concat(["fonts/Fraunces-latin-ext.woff2","fonts/Fraunces-latin.woff2","fonts/Fraunces-vietnamese.woff2","fonts/HankenGrotesk-cyrillic-ext.woff2","fonts/HankenGrotesk-latin-ext.woff2","fonts/HankenGrotesk-latin.woff2","fonts/HankenGrotesk-vietnamese.woff2","fonts/JetBrainsMono-cyrillic-ext.woff2","fonts/JetBrainsMono-cyrillic.woff2","fonts/JetBrainsMono-greek.woff2","fonts/JetBrainsMono-latin-ext.woff2","fonts/JetBrainsMono-latin.woff2","fonts/JetBrainsMono-vietnamese.woff2"]);
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -18,6 +18,8 @@ self.addEventListener('activate', e => {
 // copy even though this code always calls fetch(). Forcing no-store means every fetch this SW
 // makes genuinely hits the network.
 self.addEventListener('fetch', e => {
+  // only this origin's GETs — API/storage/relay traffic goes straight to the network untouched
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
   e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request)));
 });
 
