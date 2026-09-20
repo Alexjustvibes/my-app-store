@@ -14,10 +14,10 @@
      an injected <script> or on*= handler is blocked by the browser even if an escaping bug ever
      slips through. style-src still needs 'unsafe-inline' for the app's inline style attributes.
      frame-ancestors/report-uri/sandbox are no-ops via <meta> (need a real HTTP header). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'self'; form-action 'self'; object-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'self'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="stylesheet" href="app.css?v=fbfef392" integrity="sha384-xql2g3dwWIs88QpNcnoRg7WYr3OUdzUj5j/jczR5keo2kWWL+0i5wP4sYYXUCuxg" crossorigin="anonymous">
+<link rel="stylesheet" href="app.css?v=86fe4fef" integrity="sha384-df0zZ80Fb7fwJu56xyjML33BkaeM4aasN3U0oSjr84MGBdLZrc4wF0w1CRaSd30U" crossorigin="anonymous">
 </head>
 <body>
 <div class="frame">
@@ -109,6 +109,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="app.js?v=fbfef392" defer integrity="sha384-NO6vWtfLQzQyf8PsablYTgxxPjTkBGamXxxCe06bOXYsOrPcWpiVbeAwNptDKYLp" crossorigin="anonymous"></script>
+<script src="app.js?v=86fe4fef" defer integrity="sha384-a3n0+cRWAALtu+Kn4d4rNBHqY6Rw+mcYXMv6jEA5BOVQw6o39Rfh2eSZzAAOJWQA" crossorigin="anonymous"></script>
 </body>
 </html>
