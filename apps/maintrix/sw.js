@@ -1,10 +1,28 @@
-// The build id and the self-hosted font list are stamped in by build.mjs — every build gets a
-// fresh cache name automatically, and the woff2 files are precached so fonts work offline.
-const CACHE = 'maintrix-fb23f1bb';
-const ASSETS = ['index.html', 'app.js?v=fb23f1bb', 'app.css?v=fb23f1bb', 'pow-worker.js?v=fb23f1bb', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].concat(["fonts/Fraunces-latin-ext.woff2","fonts/Fraunces-latin.woff2","fonts/Fraunces-vietnamese.woff2","fonts/HankenGrotesk-cyrillic-ext.woff2","fonts/HankenGrotesk-latin-ext.woff2","fonts/HankenGrotesk-latin.woff2","fonts/HankenGrotesk-vietnamese.woff2","fonts/JetBrainsMono-cyrillic-ext.woff2","fonts/JetBrainsMono-cyrillic.woff2","fonts/JetBrainsMono-greek.woff2","fonts/JetBrainsMono-latin-ext.woff2","fonts/JetBrainsMono-latin.woff2","fonts/JetBrainsMono-vietnamese.woff2"]);
+// The build id and the precache manifest are stamped in by build.mjs — every build gets a fresh
+// cache name automatically, and INTEGRITY maps each precached path (app, styles, worker,
+// icons, self-hosted fonts) to the SHA-256 of the exact bytes that build emitted.
+const CACHE = 'maintrix-4dc6c9bc';
+const INTEGRITY = {"index.html":"fab952742b816286b76929bed8aafec015372404b96f35d4717ba8dc19c83a9f","app.js?v=4dc6c9bc":"5581398302a6f054ca9dc8e45d2029a9c6e701104994df7b41f57aae2dfe527f","app.css?v=4dc6c9bc":"f0a24fc9e442b539c991271b75c969e791b9f6f9da0a276776a191f56a2c6286","pow-worker.js?v=4dc6c9bc":"d19a6e4f88d463b5e37e3056ff7f3e54f2fe0aedec25d73160ecd0244b07a214","manifest.json":"4dc3714736aa1bb5a6ca587dd844cf7953afa2d16d54bf65da2e048896299a77","apple-touch-icon.png":"82b09e94d834c87a3ef9d2317627bffcb10a49b1843c0565065e688445bea114","icon-192.png":"1c980b5fa429c5ec4d7616c0ad236a8ab2fbe7ffe765bfe867612c4ce47dc2c3","icon-512.png":"18dfae127a10f84b97b460b1b8f5ba4150e19595c20a671d9c4a897aef5ea18b","fonts/Fraunces-latin-ext.woff2":"f18853f63a870ebef013e30e789d8d544f102e4acd94988e57c223d9c796ddf4","fonts/Fraunces-latin.woff2":"a2930b27d13a228bd9ab6a49269b5f800237892ad560cb9dd7fab01b1620f88e","fonts/Fraunces-vietnamese.woff2":"7234ed860a9cc83045413c4faee63c960a8f2d1917adcf728119307d56e0d783","fonts/HankenGrotesk-cyrillic-ext.woff2":"e9201eddf1d41d0b62253295d869ce3cf65768f7102b797f02c7f8c876b4a9d5","fonts/HankenGrotesk-latin-ext.woff2":"992b5d147edde9d637ce22e7bb9cc9e6909c05410226b36a2e581ada9877eb4a","fonts/HankenGrotesk-latin.woff2":"768af2923e0ab1549f1dfba0a5c8ea749c4c01f01d8e77ffaf7fcd12f57a0a24","fonts/HankenGrotesk-vietnamese.woff2":"7ba47c78279dc529afe577dc2476bc8fd3c0e32f78efa26dca9f9382d49a157d","fonts/JetBrainsMono-cyrillic-ext.woff2":"cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a","fonts/JetBrainsMono-cyrillic.woff2":"d6c74dfddab488c40652ff116952624a88f8fa1de196732fd58b8e042a8967d2","fonts/JetBrainsMono-greek.woff2":"26c9ed511def1f0fd3d1b5fe6d5c0c594d9ef8dd2435d2ff240ea265a416b6e4","fonts/JetBrainsMono-latin-ext.woff2":"bb7b98e92899b511e8f3e99c924142f4421896b2cbc9406c3727c25427662cc9","fonts/JetBrainsMono-latin.woff2":"879df9319f1cbf633bee1dd489e376a9e1e8c458f4abddcfe381cb83b5e6b027","fonts/JetBrainsMono-vietnamese.woff2":"5b6dee4610cdaab7c4218c1692aa9a536414010eef4e5b3cfb25f45007811bcc"};
+const ASSETS = Object.keys(INTEGRITY);
 
+const hex = buf => Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
+// Precache with verification: an asset is stored only if its bytes hash to what this build
+// expects. A stale CDN copy, a proxy rewrite or a tampered response is simply not cached, so
+// the offline fallback can never serve anything but this build's own files. (The page's own
+// loads are covered by SRI in index.html; this closes the same gap for the SW cache.)
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil((async () => {
+    const c = await caches.open(CACHE);
+    await Promise.all(ASSETS.map(async a => {
+      try {
+        const r = await fetch(a, { cache: 'no-store' });
+        if (!r.ok) return;
+        const buf = await r.arrayBuffer();
+        if (hex(await crypto.subtle.digest('SHA-256', buf)) !== INTEGRITY[a]) return;
+        await c.put(a, new Response(buf, { status: 200, headers: r.headers }));
+      } catch (_) {}
+    }));
+  })());
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
@@ -20,7 +38,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   // only this origin's GETs — API/storage/relay traffic goes straight to the network untouched
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
-  e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request)));
+  e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request).then(hit => hit || (e.request.mode === 'navigate' ? caches.match('index.html') : undefined))));
 });
 
 // ── Web Push ──

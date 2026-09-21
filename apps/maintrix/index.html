@@ -14,10 +14,10 @@
      an injected <script> or on*= handler is blocked by the browser even if an escaping bug ever
      slips through. style-src still needs 'unsafe-inline' for the app's inline style attributes.
      frame-ancestors/report-uri/sandbox are no-ops via <meta> (need a real HTTP header). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'self'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'none'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="stylesheet" href="app.css?v=fb23f1bb" integrity="sha384-jAPf/7YfrHSBGO8xGdmos7904peSX3n7vvMqPSe0+LbXER9YNf6ermumrF3uxlBW" crossorigin="anonymous">
+<link rel="stylesheet" href="app.css?v=4dc6c9bc" integrity="sha384-jAPf/7YfrHSBGO8xGdmos7904peSX3n7vvMqPSe0+LbXER9YNf6ermumrF3uxlBW" crossorigin="anonymous">
 </head>
 <body>
 <div class="frame">
@@ -109,6 +109,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="app.js?v=fb23f1bb" defer integrity="sha384-HJKTX4OuAJpq6kSOFGZuePGT6qbW7DyNstQ9a6mv7Bel2uoIlu7koZQeV78dqmVu" crossorigin="anonymous"></script>
+<script src="app.js?v=4dc6c9bc" defer integrity="sha384-PSHQgiZxBvytqgRZ6fcrhNtpncgR9ROZxXt09o27WE1nMlBmSBjAPhV5oQIz7wDR" crossorigin="anonymous"></script>
 </body>
 </html>
