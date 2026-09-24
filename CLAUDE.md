@@ -73,6 +73,12 @@ localStorage.setItem('courage.v1.streak', value);
 localStorage.getItem('courage.v1.completions');
 ```
 
+**Exception — `apps/maintrix/`:** Maintrix is backend-connected (Supabase auth +
+data), not localStorage-only. Its `app.js`/`app.css` are **built, minified bundles**
+whose source lives in a **separate project** (not in this repo) — do not hand-edit
+them. A hosted Supabase MCP server is configured in `.mcp.json` (run `/mcp` to
+authenticate). See `apps/maintrix/CLAUDE.md` before working on it.
+
 ## iOS PWA requirements
 
 Every app's `<head>` must include:

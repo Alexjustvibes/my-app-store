@@ -1,3 +1,8 @@
 # Obsidian vault config lives inside the synced wiki; keep it out of the
 # public repo (it's editor state, not notes). Delete this line to publish it.
 notes/.obsidian/
+
+# Local MCP server config (Supabase, etc.) — personal tooling, not app source.
+# Auth is handled via OAuth in the app, so this file holds no secrets; kept local
+# by default. Remove this line if you'd rather commit/share it across machines.
+.mcp.json
