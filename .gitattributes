@@ -1,13 +1,13 @@
-# Maintrix ships a byte-exact PWA whose assets are pinned by Subresource Integrity
+# Maintrix (served from the site root) ships a byte-exact PWA whose assets are pinned by Subresource Integrity
 # (index.html) and service-worker precache hashes (sw.js). Any CRLF/LF conversion on
 # checkout changes the bytes and breaks those hashes — a wrong SRI hash makes the browser
 # block app.js so the app never boots. On a machine with core.autocrlf=true this happened
 # silently. Pin every hashed asset so no eol/autocrlf setting can rewrite it.
-apps/maintrix/app.js        -text
-apps/maintrix/app.css       -text
-apps/maintrix/index.html    text eol=lf
-apps/maintrix/sw.js         text eol=lf
-apps/maintrix/pow-worker.js text eol=lf
-apps/maintrix/manifest.json text eol=lf
-apps/maintrix/*.png         binary
-apps/maintrix/fonts/**      binary
+/app.js        -text
+/app.css       -text
+/index.html    text eol=lf
+/sw.js         text eol=lf
+/pow-worker.js text eol=lf
+/manifest.json text eol=lf
+/*.png         binary
+/fonts/**      binary

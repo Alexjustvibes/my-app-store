@@ -1,3 +1,8 @@
+> **Layout change (2026-09-24):** the domain maintrix.online serves **Maintrix at the site root**. The
+> App Store page is now **store/** (store/index.html, store/sw.js, store/manifest.json, store icons); apps
+> link back to ../../store/index.html. Root index.html/app.js/app.css/sw.js/manifest.json/icons/fonts
+> belong to Maintrix — see apps/maintrix/CLAUDE.md before touching them.
+
 # CLAUDE.md — Personal PWA App Store
 
 ## What this repo is

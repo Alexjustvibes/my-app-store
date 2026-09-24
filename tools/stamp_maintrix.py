@@ -40,7 +40,7 @@ import re
 import sys
 from pathlib import Path
 
-APP_DIR = Path(__file__).resolve().parent.parent / "apps" / "maintrix"
+APP_DIR = Path(__file__).resolve().parent.parent  # Maintrix is served from the site root
 INDEX = APP_DIR / "index.html"
 SW = APP_DIR / "sw.js"
 
