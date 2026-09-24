@@ -53,8 +53,19 @@ with features: docs, account, database, debugging, development, functions, branc
 Pushing to `main` auto-deploys via GitHub Pages (see root `CLAUDE.md` → Deployment),
 so the built files committed here go **live**. When updating the bundles:
 1. Rebuild in the external source project.
-2. Copy the new `app.js` / `app.css` here.
-3. Update the `?v=` query strings and `integrity=` SRI hashes in `index.html` to match.
-4. Bump `CACHE` in `sw.js` and update its `ASSETS` list so PWAs don't serve stale files.
+2. Copy the new `app.js` / `app.css` (and any other changed assets) here.
+3. **Run `python tools/stamp_maintrix.py`** (from the repo root). This recomputes
+   the `integrity=` SRI hashes in `index.html` and the `INTEGRITY` map + `CACHE`
+   in `sw.js` from the actual bundle bytes. It leaves the `?v=` id alone (the
+   bundle references assets by that id internally) and only touches those two files.
+4. Commit and push.
+
+> ⚠️ **Do not hand-edit the SRI / INTEGRITY hashes.** The external build's own
+> stamping step has shipped mismatched hashes more than once (builds 39 and 40
+> both deployed dead — a wrong SRI hash makes the browser block `app.js`, so the
+> app never boots and never reaches Supabase). Always run the stamper, and gate
+> deploys with `python tools/stamp_maintrix.py --check` (exit 1 = stale). The
+> real fix is in the external `build.mjs`; until that's corrected, the stamper is
+> the safety net. See `tools/stamp_maintrix.py` for details.
 
 _Setup note: repo cloned to the user's Desktop and Supabase MCP wired up 2026-09-24._
