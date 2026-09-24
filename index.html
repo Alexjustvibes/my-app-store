@@ -2,6 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+  // maintrix.online is Maintrix's own domain — send visitors straight to the app.
+  // Every other host (e.g. the github.io URL) still gets the full App Store below.
+  // Runs before the store renders, so there's no flash of the store list.
+  (function () {
+    var h = location.hostname;
+    if (h === 'maintrix.online' || h === 'www.maintrix.online') {
+      location.replace('apps/maintrix/' + location.search + location.hash);
+    }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>My App Store</title>
 

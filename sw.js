@@ -1,6 +1,6 @@
 /* Minimal offline cache for the store shell.
    Bump CACHE when you change index.html so devices pull the new version. */
-const CACHE = 'store-v3';
+const CACHE = 'store-v4';
 const ASSETS = ['index.html', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
