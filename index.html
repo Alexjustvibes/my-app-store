@@ -17,7 +17,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'none'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="stylesheet" href="app.css?v=3c6c7969" integrity="sha384-BXoOxboXzCYAjhcAoBRipsR95JGsfZdIxOxtPdJjZvVd2Qxsp80vOWqtfqCpo+ot" crossorigin="anonymous">
+<link rel="stylesheet" href="app.css?v=facf3780" integrity="sha384-MNSNY3bae6JVh7aS5L4sBCYhaR82BXJPlCQkwTa8pf7VmJ2CjCrPWngpw0iX76NO" crossorigin="anonymous">
 </head>
 <body>
 <div class="frame">
@@ -28,7 +28,7 @@
     <div class="auth-glow"></div>
     <div class="logo-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="eyebrow">Maintrix</div>
-    <h1>Welcome to heaven on earth.</h1>
+    <h1>You’ve climbed the fence — meet your destination</h1>
     <p class="tag">Discord for smart people. One <b>self</b>, one <b>world</b> — where you talk, you grow, and you become who you're trying to be.</p>
     <div class="auth-feats">
       <span class="auth-feat"><svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 3V5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Talk</span>
@@ -43,16 +43,22 @@
 
   <div id="supaAuth" class="hidden">
     <div class="auth-glow"></div>
+    <div class="auth-stars" id="authStars" aria-hidden="true"></div>
+    <div class="auth-horizon" aria-hidden="true"></div>
     <div class="logo-mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="eyebrow">Maintrix</div>
     <h1 id="saTitle">Sign in to your world.</h1>
     <p class="tag" id="saTag">Your identity, your world — wherever you sign in.</p>
-    <div style="max-width:340px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:10px">
-      <div class="field-ic"><span class="fi-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 6.5l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><input id="saEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
-      <div class="field-ic"><span class="fi-ic"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></span><input id="saPass" type="password" placeholder="Password" autocomplete="current-password"><button type="button" class="fi-toggle" id="saPassToggle" title="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
-      <button class="btn block" id="saGo">Sign in</button>
-      <button class="btn ghost block" id="saToggle">New here? Create an account</button>
+    <div class="sa-card">
+      <div class="sa-seg" id="saSeg" role="tablist"><i class="sa-seg-pill"></i><button type="button" data-m="signin" class="on" role="tab">Sign in</button><button type="button" data-m="signup" role="tab">Create account</button></div>
+      <div class="field-ic" id="saEmailWrap"><span class="fi-ic"><svg viewBox="0 0 24 24" fill="none"><path d="M3 6.5l9 6 9-6M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><input id="saEmail" type="email" placeholder="you@email.com" autocomplete="email" inputmode="email" spellcheck="false"><span class="fi-ok" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      <div class="field-ic" id="saPassWrap"><span class="fi-ic"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></span><input id="saPass" type="password" placeholder="Password" autocomplete="current-password"><button type="button" class="fi-toggle" id="saPassToggle" title="Show password"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
+      <div class="sa-strength" id="saStrength"><div class="sa-meter"><i></i><i></i><i></i><i></i></div><div class="sa-meter-l" id="saStrengthL">Password strength</div><div class="sa-reqs"><span data-req="len"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>10+ characters</span><span data-req="mix"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Letters + numbers</span><span data-req="xtra"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Capital or symbol</span></div></div>
+      <div class="field-ic" id="saPass2Wrap"><span class="fi-ic"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg></span><input id="saPass2" type="password" placeholder="Confirm password" autocomplete="new-password"><span class="fi-ok" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      <button class="btn block sa-go" id="saGo">Sign in</button>
+      <button class="btn ghost block sa-toggle" id="saToggle">New here? Create an account</button>
     </div>
+    <div class="sa-steps" id="saSteps"><span class="on"><b>1</b>Account</span><i></i><span><b>2</b>Identity</span><i></i><span><b>3</b>The Nexus</span></div>
     <div class="fine" id="saStatus"></div>
   </div>
 
@@ -61,6 +67,7 @@
     <div class="ob-step on" data-step="0">
       <div class="ob-k"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3 19a6 6 0 0112 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 6a3 3 0 010 6m1 7a6 6 0 00-2-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg> Identity · 1 of 4</div><h2>Who walks in?</h2>
       <p class="sub">Your name and where you're from. Your location shows near you in the world rooms.</p>
+      <div class="ob-idcard" id="obIdCard" aria-live="polite"></div>
       <div class="field"><label>Display name</label><input id="obName" placeholder="Choose a name" maxlength="20" autocomplete="off"></div>
       <div class="field"><label>@handle — permanent, for mentions</label><input id="obHandle" placeholder="handle" maxlength="20" autocomplete="off"></div>
       <div class="field"><label>Country</label><select id="obCountry"></select></div>
@@ -109,6 +116,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="app.js?v=3c6c7969" defer integrity="sha384-yUuFlBk4Rkzu/SYuJAz98w8eUQtrQTRgGS6Maltajjy1Hpa5GndZOs4flsuePcCS" crossorigin="anonymous"></script>
+<script src="app.js?v=facf3780" defer integrity="sha384-5/60Mq+pLQj07XqBYJ8queLSZ99NKiPlGQSNIhRLd7tx8yVfvNsKF7GA60irwfW0" crossorigin="anonymous"></script>
 </body>
 </html>
