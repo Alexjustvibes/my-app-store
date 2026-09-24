@@ -3,12 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <script>
-  // maintrix.online is Maintrix's own domain — send visitors straight to the app.
-  // Every other host (e.g. the github.io URL) still gets the full App Store below.
-  // Runs before the store renders, so there's no flash of the store list.
+  // maintrix.online is Maintrix's own domain — send visitors straight to the app,
+  // so the domain opens Maintrix directly. Escape hatch: maintrix.online/?store
+  // (or any URL carrying a `store` query param) shows this App Store list instead.
+  // (GitHub redirects the github.io URL to the custom domain, so ?store is the
+  // store's reachable address.) Runs before render, so there's no flash.
   (function () {
     var h = location.hostname;
-    if (h === 'maintrix.online' || h === 'www.maintrix.online') {
+    var wantStore = /[?&]store\b/.test(location.search);
+    if ((h === 'maintrix.online' || h === 'www.maintrix.online') && !wantStore) {
       location.replace('apps/maintrix/' + location.search + location.hash);
     }
   })();
