@@ -54,18 +54,22 @@ Pushing to `main` auto-deploys via GitHub Pages (see root `CLAUDE.md` → Deploy
 so the built files committed here go **live**. When updating the bundles:
 1. Rebuild in the external source project.
 2. Copy the new `app.js` / `app.css` (and any other changed assets) here.
-3. **Run `python tools/stamp_maintrix.py`** (from the repo root). This recomputes
-   the `integrity=` SRI hashes in `index.html` and the `INTEGRITY` map + `CACHE`
-   in `sw.js` from the actual bundle bytes. It leaves the `?v=` id alone (the
-   bundle references assets by that id internally) and only touches those two files.
+3. **Verify with `python tools/stamp_maintrix.py --check`** (from the repo root).
+   It confirms the `integrity=` SRI hashes in `index.html` and the `INTEGRITY` map
+   in `sw.js` match the actual bundle bytes (exit 1 if stale). Run the same command
+   without `--check` to repair a genuine mismatch — it recomputes those hashes and,
+   only if they changed, bumps `CACHE`; it leaves the `?v=` id alone and touches only
+   those two files.
 4. Commit and push.
 
-> ⚠️ **Do not hand-edit the SRI / INTEGRITY hashes.** The external build's own
-> stamping step has shipped mismatched hashes more than once (builds 39 and 40
-> both deployed dead — a wrong SRI hash makes the browser block `app.js`, so the
-> app never boots and never reaches Supabase). Always run the stamper, and gate
-> deploys with `python tools/stamp_maintrix.py --check` (exit 1 = stale). The
-> real fix is in the external `build.mjs`; until that's corrected, the stamper is
-> the safety net. See `tools/stamp_maintrix.py` for details.
+> ⚠️ **These hashes are byte-exact — never hand-edit them, and mind line endings.**
+> A wrong SRI hash makes the browser block `app.js`, so the app never boots and never
+> reaches Supabase. The subtle trap: git stores these assets as **LF** (that's what
+> GitHub Pages serves), but a Windows checkout with `core.autocrlf=true` rewrites the
+> working copy to **CRLF** — different bytes, different hash. Re-stamping from those
+> CRLF bytes produces hashes that pass locally but are **dead on the server**. The
+> repo-root **`.gitattributes` pins every hashed Maintrix asset to LF** to prevent
+> this; keep it. The stamper also **refuses to run if a bundle contains CRLF**, and
+> its `--check` mode is the pre-deploy gate. See `tools/stamp_maintrix.py`.
 
 _Setup note: repo cloned to the user's Desktop and Supabase MCP wired up 2026-09-24._
