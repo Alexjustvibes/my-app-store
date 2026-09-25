@@ -14,10 +14,10 @@
      an injected <script> or on*= handler is blocked by the browser even if an escaping bug ever
      slips through. style-src still needs 'unsafe-inline' for the app's inline style attributes.
      frame-ancestors/report-uri/sandbox are no-ops via <meta> (need a real HTTP header). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'none'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh https://*.livekit.cloud wss://*.livekit.cloud; base-uri 'none'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="stylesheet" href="app.css?v=3bc7cbe9" integrity="sha384-dMytXbB1V6T6q2Jt1wLC6R7ZHs54Oo9Rg78iNgQaTxyzdfWV/ZoUaiaZUZeK6MT9" crossorigin="anonymous">
+<link rel="stylesheet" href="app.css?v=9db17e42" integrity="sha384-MeYHfRRiRXjq9zKy/2P2IPbtQd/eRfOs47PLvhcx5VHmRC+BKq/QoOMOWW3LpHYY" crossorigin="anonymous">
 </head>
 <body>
 <div class="frame">
@@ -117,7 +117,7 @@
 
   <div id="app">
     <div id="maintBanner" class="maint-banner" style="display:none"></div>
-    <div class="topbar"><div class="tb-title"><span id="tbTitle">Nexus</span><span class="tb-sub" id="tbSub"></span></div><span class="tier-pill" id="tierPill">Lite</span><button class="tb-btn" id="globalSearchBtn"></button><button class="tb-btn bell" id="notifBtn"></button><button class="tb-btn" id="profileBtn"></button></div>
+    <div class="topbar"><div class="tb-title"><span id="tbTitle">Nexus</span><span class="tb-sub" id="tbSub"></span></div><span class="tier-pill" id="tierPill">Lite</span><button class="tb-btn" id="updatesBtn" aria-label="Updates"></button><button class="tb-btn" id="globalSearchBtn"></button><button class="tb-btn bell" id="notifBtn"></button><button class="tb-btn" id="profileBtn"></button></div>
     <div id="view">
       <section class="screen" id="s-nexus"></section>
       <section class="screen" id="s-connect"></section>
@@ -139,6 +139,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="app.js?v=3bc7cbe9" defer integrity="sha384-EwBzyaxGBjfMz78WmLUeAJ6GZBQ0sKu6bboRPJsOA3oPaGi38bHvnVv1FNY04vee" crossorigin="anonymous"></script>
+<script src="app.js?v=9db17e42" defer integrity="sha384-e59adRpMP9+9hAHmj98VItLOg6IMOT4yaO42zTIV7aC5WQRP13lMFZhcEzBe2X1D" crossorigin="anonymous"></script>
 </body>
 </html>
