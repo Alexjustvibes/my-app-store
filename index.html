@@ -17,12 +17,28 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh; base-uri 'none'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="stylesheet" href="app.css?v=f23cab5c" integrity="sha384-44jp2ubDnbA4i+yPfuD6ReCIEiPjPpIOjuSQYLm0B0jkhIJeWjzg0tNDroLuIHyB" crossorigin="anonymous">
+<link rel="stylesheet" href="app.css?v=c0c6c1d3" integrity="sha384-MJ7s8SBmscY6YUQI934D9KT22uXZGJ4h0BYwmM8UIAVlgZ/VgHv1Fb+P8kW1dofo" crossorigin="anonymous">
 </head>
 <body>
 <div class="frame">
   <div id="rotatePrompt"><svg width="52" height="52" viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M19 9v6M22 10.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><p>Maintrix is built for portrait — rotate your device to continue.</p></div>
-  <div id="intro"><span class="ex-ring"></span><span class="ex-ring two"></span><div class="ex-word">Expansion</div><div class="ex-sub">presents</div><div class="ex-skip">tap to skip</div></div>
+  <div id="intro" aria-label="Expansion presents Maintrix">
+    <div class="ex-stars" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="ex-beam" aria-hidden="true"></div>
+    <span class="ex-ring" aria-hidden="true"></span><span class="ex-ring two" aria-hidden="true"></span><span class="ex-ring three" aria-hidden="true"></span>
+    <div class="ex-stage">
+      <div class="ex-word" aria-hidden="true"><span style="--i:0">E</span><span style="--i:1">X</span><span style="--i:2">P</span><span style="--i:3">A</span><span style="--i:4">N</span><span style="--i:5">S</span><span style="--i:6">I</span><span style="--i:7">O</span><span style="--i:8">N</span></div>
+      <div class="ex-rule" aria-hidden="true"><i></i></div>
+      <div class="ex-sub">presents</div>
+    </div>
+    <div class="ex-flash" aria-hidden="true"></div>
+    <div class="ex-title" aria-hidden="true">
+      <div class="ex-mark"><svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H7l-3 3V5z" fill="#fff"/><path d="M8.5 10.5l1.8 1.8 3.4-3.4" stroke="#ed2e44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="ex-name">Maintrix</div>
+      <div class="ex-tag">Welcome to heaven on earth.</div>
+    </div>
+    <div class="ex-skip">tap to skip</div>
+  </div>
 
   <div id="auth">
     <div class="auth-glow"></div>
@@ -116,6 +132,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="app.js?v=f23cab5c" defer integrity="sha384-mrBjhB505QWHtid6622T8wQnM/044PeLD8BVv0TPejYpOm3Kd3nV0Ltczcrbh0z0" crossorigin="anonymous"></script>
+<script src="app.js?v=c0c6c1d3" defer integrity="sha384-JN/MOR4he3SzfHOx/nVgHJqAd46k0T6QckFhTqbgtm+sWvktCLEtzNYw/zmt35gU" crossorigin="anonymous"></script>
 </body>
 </html>
