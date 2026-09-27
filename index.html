@@ -14,11 +14,11 @@
      an injected <script> or on*= handler is blocked by the browser even if an escaping bug ever
      slips through. style-src still needs 'unsafe-inline' for the app's inline style attributes.
      frame-ancestors/report-uri/sandbox are no-ops via <meta> (need a real HTTP header). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh https://*.livekit.cloud wss://*.livekit.cloud; base-uri 'none'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.supabase.co https://*.klipy.com; media-src 'self' blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ntfy.sh wss://ntfy.sh https://*.livekit.cloud wss://*.livekit.cloud; base-uri 'none'; form-action 'self'; object-src 'none'; frame-src https://challenges.cloudflare.com; child-src https://challenges.cloudflare.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests;">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="stylesheet" href="app.css?v=3567cd35" integrity="sha384-ApR/eV1Hgv76roeC7N/z0U7c7s/lsf4yCcSZpVBr2Xn37jtxubTzOOk2V7DlSniy" crossorigin="anonymous">
+<link rel="stylesheet" href="app.css?v=68c51143" integrity="sha384-XDbY9FBOs4a1Tck2o5yKQYX3LvSDM2I6ku8F7yIhQPwaCuVuQFK/xHxRKuYY0bVq" crossorigin="anonymous">
 </head>
 <body>
 <div class="frame">
@@ -140,6 +140,6 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script src="app.js?v=3567cd35" defer integrity="sha384-f+HsdqrxfNz7QaTTsoiKl5OWj8PBYktV9bA+FNV1iFfjrxN3p9xS1upCEiaGD66k" crossorigin="anonymous"></script>
+<script src="app.js?v=68c51143" defer integrity="sha384-7KGHyGOW85ha49XYGJk+fqgZPVgFewbDi5IxLEsAqE+PLrm083PYFyJK1+hd7oqE" crossorigin="anonymous"></script>
 </body>
 </html>
