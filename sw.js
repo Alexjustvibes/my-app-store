@@ -1,33 +1,15 @@
-// The build id and the precache manifest are stamped in by build.mjs — every build gets a fresh
-// cache name automatically, and INTEGRITY maps each precached path (app, styles, worker,
-// icons, self-hosted fonts) to the SHA-256 of the exact bytes that build emitted.
-const CACHE = 'maintrix-3567cd35';
-const INTEGRITY = {"index.html":"434148869cd88915f3b5c128d045d123be65b1997dd3c07f5aafbcfcaabbc35f","app.js?v=3567cd35":"078ec0ddfd6c817df4dd9e7d9df3ef05fd29730340f57b8997113ddfeca7dd0c","app.css?v=3567cd35":"4025646831bb87f5b215d3ca72b9f05e56c6a06125021ec70b70f46810d52b33","pow-worker.js?v=3567cd35":"1554a7e34ccc98090bc2fed1e934257a8cf7ae420e40fad716b9376b2a763034","manifest.json":"ff1ab8ea73ad8da46381753655f73579b30a0c52caa811271a1e6eb27bc6c33b","apple-touch-icon.png":"166460cc9aab37863053c7bf1e8cde3c9c4699143ea8dc28437f417f20888b95","icon-192.png":"57ed7d909c3ff69eba9bb276c1bacec42a3ffaf169cca5c167acd4c325171c74","icon-512.png":"fd73d989f33949a7a7e4472806261d703717d3c3fdd1073e3c6b18fedd119980","fonts/Fraunces-latin-ext.woff2":"f18853f63a870ebef013e30e789d8d544f102e4acd94988e57c223d9c796ddf4","fonts/Fraunces-latin.woff2":"a2930b27d13a228bd9ab6a49269b5f800237892ad560cb9dd7fab01b1620f88e","fonts/Fraunces-vietnamese.woff2":"7234ed860a9cc83045413c4faee63c960a8f2d1917adcf728119307d56e0d783","fonts/HankenGrotesk-cyrillic-ext.woff2":"e9201eddf1d41d0b62253295d869ce3cf65768f7102b797f02c7f8c876b4a9d5","fonts/HankenGrotesk-latin-ext.woff2":"992b5d147edde9d637ce22e7bb9cc9e6909c05410226b36a2e581ada9877eb4a","fonts/HankenGrotesk-latin.woff2":"768af2923e0ab1549f1dfba0a5c8ea749c4c01f01d8e77ffaf7fcd12f57a0a24","fonts/HankenGrotesk-vietnamese.woff2":"7ba47c78279dc529afe577dc2476bc8fd3c0e32f78efa26dca9f9382d49a157d","fonts/JetBrainsMono-cyrillic-ext.woff2":"cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a","fonts/JetBrainsMono-cyrillic.woff2":"d6c74dfddab488c40652ff116952624a88f8fa1de196732fd58b8e042a8967d2","fonts/JetBrainsMono-greek.woff2":"26c9ed511def1f0fd3d1b5fe6d5c0c594d9ef8dd2435d2ff240ea265a416b6e4","fonts/JetBrainsMono-latin-ext.woff2":"bb7b98e92899b511e8f3e99c924142f4421896b2cbc9406c3727c25427662cc9","fonts/JetBrainsMono-latin.woff2":"879df9319f1cbf633bee1dd489e376a9e1e8c458f4abddcfe381cb83b5e6b027","fonts/JetBrainsMono-vietnamese.woff2":"5b6dee4610cdaab7c4218c1692aa9a536414010eef4e5b3cfb25f45007811bcc"};
-const ASSETS = Object.keys(INTEGRITY);
+// The build id and the self-hosted font list are stamped in by build.mjs — every build gets a
+// fresh cache name automatically, and the woff2 files are precached so fonts work offline.
+const CACHE = 'maintrix-fb23f1bb';
+const ASSETS = ['index.html', 'app.js?v=fb23f1bb', 'app.css?v=fb23f1bb', 'pow-worker.js?v=fb23f1bb', 'manifest.json', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].concat(["fonts/Fraunces-latin-ext.woff2","fonts/Fraunces-latin.woff2","fonts/Fraunces-vietnamese.woff2","fonts/HankenGrotesk-cyrillic-ext.woff2","fonts/HankenGrotesk-latin-ext.woff2","fonts/HankenGrotesk-latin.woff2","fonts/HankenGrotesk-vietnamese.woff2","fonts/JetBrainsMono-cyrillic-ext.woff2","fonts/JetBrainsMono-cyrillic.woff2","fonts/JetBrainsMono-greek.woff2","fonts/JetBrainsMono-latin-ext.woff2","fonts/JetBrainsMono-latin.woff2","fonts/JetBrainsMono-vietnamese.woff2"]);
 
-const hex = buf => Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
-// Precache with verification: an asset is stored only if its bytes hash to what this build
-// expects. A stale CDN copy, a proxy rewrite or a tampered response is simply not cached, so
-// the offline fallback can never serve anything but this build's own files. (The page's own
-// loads are covered by SRI in index.html; this closes the same gap for the SW cache.)
 self.addEventListener('install', e => {
-  e.waitUntil((async () => {
-    const c = await caches.open(CACHE);
-    await Promise.all(ASSETS.map(async a => {
-      try {
-        const r = await fetch(a, { cache: 'no-store' });
-        if (!r.ok) return;
-        const buf = await r.arrayBuffer();
-        if (hex(await crypto.subtle.digest('SHA-256', buf)) !== INTEGRITY[a]) return;
-        await c.put(a, new Response(buf, { status: 200, headers: r.headers }));
-      } catch (_) {}
-    }));
-  })());
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k.startsWith('maintrix-') && k !== CACHE).map(k => caches.delete(k)))));
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 // cache:'no-store' matters here — without it, "network first" can still be silently satisfied
@@ -38,10 +20,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   // only this origin's GETs — API/storage/relay traffic goes straight to the network untouched
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== self.location.origin) return;
-  // the site root also hosts other folders (the app store under store/, its apps under apps/) —
-  // this worker leaves them to their own workers and the network
-  { const p = new URL(e.request.url).pathname, sc = new URL(self.registration.scope).pathname; if (p.startsWith(sc + 'apps/') || p.startsWith(sc + 'store/')) return; }
-  e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request).then(hit => hit || (e.request.mode === 'navigate' ? caches.match('index.html') : undefined))));
+  e.respondWith(fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request)));
 });
 
 // ── Web Push ──
