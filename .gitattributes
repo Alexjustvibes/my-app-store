@@ -5,6 +5,7 @@
 # silently. Pin every hashed asset so no eol/autocrlf setting can rewrite it.
 /app.js        -text
 /app.css       -text
+/lk.js         -text
 /index.html    text eol=lf
 /sw.js         text eol=lf
 /pow-worker.js text eol=lf
