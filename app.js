@@ -28236,6 +28236,30 @@ ${_}`;
         _0x2545ca += "</div>";
         _0x346f68.innerHTML = _0x2545ca;
         _0x346f68.classList.add("on");
+        requestAnimationFrame(() => {
+          _0x346f68.querySelectorAll(".pv-body").forEach(_0xb7c101 => {
+            if (_0xb7c101.scrollHeight > 140) {
+              _0xb7c101.classList.add("pv-long");
+              if (_0xb7c101.parentElement) {
+                _0xb7c101.parentElement.classList.add("pv-has-long");
+              }
+              let _0xb7c104 = _0xb7c101.closest(".pv-slide");
+              let _0xb7c105 = _0xb7c104 && _0xb7c104.querySelector(".pv-text");
+              let _0xb7c102 = parseFloat(getComputedStyle(_0xb7c101).paddingTop) || 0;
+              let _0xb7c103 = _0xb7c101.scrollHeight - _0xb7c102 - 6;
+              if (_0xb7c105) {
+                _0xb7c102 = Math.max(_0xb7c102, Math.round(_0xb7c105.getBoundingClientRect().bottom - _0xb7c101.getBoundingClientRect().top + 14));
+                _0xb7c101.style.paddingTop = _0xb7c102 + "px";
+              }
+              _0xb7c101.style.paddingBottom = Math.max(6, _0xb7c101.clientHeight - _0xb7c103) + "px";
+              if (_0xb7c105) {
+                _0xb7c101.addEventListener("scroll", () => {
+                  _0xb7c105.style.opacity = String(Math.max(0.12, 1 - _0xb7c101.scrollTop / Math.max(60, _0xb7c102)));
+                }, { passive: true });
+              }
+            }
+          });
+        });
         let _0x308884 = _0x1f1dd4("pvScroll");
         _0x308884.scrollTop = _0x2be161 * _0x308884.clientHeight;
         let _0x57de7d = () => {
