@@ -171,7 +171,7 @@ begin
   if uid is null then return 0; end if;
   if not force then
     select checked_at into last_at from badge_checks where user_id = uid;
-    if last_at is not null and last_at > now() - interval '30 seconds' then return 0; end if;
+    if last_at is not null and last_at > now() - interval '5 seconds' then return 0; end if;
   end if;
   insert into badge_checks (user_id, checked_at) values (uid, now())
     on conflict (user_id) do update set checked_at = now();
