@@ -14,7 +14,7 @@ create extension if not exists citext;      -- case-insensitive handle
 -- ----------------------------------------------------------------------------
 create table profiles (
   id          uuid primary key references auth.users(id) on delete cascade,
-  handle      citext unique not null,
+  handle      citext unique,          -- NULL until onboarding sets it (app shows setup when empty)
   name        text not null,
   bio         text,
   color       text,
@@ -283,7 +283,7 @@ begin
                                temperament_dominant, temperament_secondary)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'handle', 'user_' || left(new.id::text, 8)),
+    nullif(new.raw_user_meta_data->>'handle', ''),   -- left NULL so the app runs its profile setup
     coalesce(new.raw_user_meta_data->>'name', 'New User'),
     new.raw_user_meta_data->>'country', new.raw_user_meta_data->>'region',
     coalesce((select array_agg(x) from jsonb_array_elements_text(new.raw_user_meta_data->'goals') x), '{}'),
