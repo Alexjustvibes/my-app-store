@@ -36686,7 +36686,7 @@ ${_}`;
           _0x39828e.classList.remove("ready");
           _0x39828e.textContent = "Saving…";
           try {
-            await _0x5295a4.profiles.create(_0x377877);
+            await _0x5295a4.profiles.create(_0x377877); { let _0x5f1e2d = await _0x5295a4.profiles.mine().catch(() => null); if (_0x5f1e2d && _0x5f1e2d.id) { Object.assign(_0x377877, _0x5f1e2d); } }
           } catch (_0x320dfe) {
             _0x39828e.disabled = false;
             _0x39828e.textContent = "Enter Maintrix";
