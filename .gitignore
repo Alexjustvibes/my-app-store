@@ -6,3 +6,6 @@ notes/.obsidian/
 # Auth is handled via OAuth in the app, so this file holds no secrets; kept local
 # by default. Remove this line if you'd rather commit/share it across machines.
 .mcp.json
+
+# Personal Claude Code settings (local permissions)
+.claude/settings.local.json
