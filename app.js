@@ -36076,7 +36076,7 @@ ${_}`;
           });
         }
         async function _0x38a277(_0x490c1e) {
-          if (_0x5a81d4() !== "turnstile" || !(await _0x1519f9())) {
+          if (!(await _0x1519f9()) || _0x5a81d4() !== "turnstile") {
             return null;
           }
           try {
