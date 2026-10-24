@@ -17729,14 +17729,68 @@ ${_}`;
           } catch {}
         }
         async function _0x15b164() {
-          if (!!_0x58d4b5() && !!_0x107384() && Notification.permission === "granted") {
+          // Push is on by default: keep this device subscribed unless the member turned push off
+          // in Settings → Notifications; if they've never been asked, offer it (re-asked every 3 days).
+          if (!_0x58d4b5() || !_0x107384()) {
+            return;
+          }
+          let _0x7c1a01 = (_0x2e6c84() && _0x2e6c84().notifPrefs) || {};
+          if (_0x7c1a01.push === false) {
+            return;
+          }
+          if (Notification.permission === "granted") {
             try {
-              let _0x4b8dff = await (await _0x46705d()).pushManager.getSubscription();
+              let _0x7c1a02 = await _0x46705d();
+              let _0x4b8dff = await _0x7c1a02.pushManager.getSubscription();
+              let _0x7c1a03 = _0x2aae46(_0x4c0f0b);
+              if (_0x4b8dff && _0x4b8dff.options && _0x4b8dff.options.applicationServerKey) {
+                let _0x7c1a04 = new Uint8Array(_0x4b8dff.options.applicationServerKey);
+                if (_0x7c1a04.length !== _0x7c1a03.length || _0x7c1a04.some((_0x7c1a05, _0x7c1a06) => _0x7c1a05 !== _0x7c1a03[_0x7c1a06])) {
+                  try {
+                    await _0x4b8dff.unsubscribe();
+                  } catch {}
+                  _0x4b8dff = null;
+                }
+              }
+              if (!_0x4b8dff) {
+                _0x4b8dff = await _0x7c1a02.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: _0x7c1a03
+                });
+              }
               if (_0x4b8dff) {
                 await _0x5295a4.push.save(_0x4b8dff);
               }
             } catch {}
+            return;
           }
+          if (Notification.permission !== "default") {
+            return;
+          }
+          let _0x7c1a07 = 0;
+          try {
+            _0x7c1a07 = Number(localStorage.getItem("mx.pushAsk")) || 0;
+          } catch {}
+          if (Date.now() - _0x7c1a07 < 259200000) {
+            return;
+          }
+          let _0x7c1a08 = "off";
+          try {
+            _0x7c1a08 = await _0x421980();
+          } catch {}
+          if (_0x7c1a08 !== "off") {
+            return;
+          }
+          setTimeout(() => {
+            let _0x7c1a09 = _0x1f1dd4("onboard");
+            if (_0x1f1dd4("sheetScrim").classList.contains("on") || _0x7c1a09 && !_0x7c1a09.classList.contains("hidden") || Notification.permission !== "default") {
+              return;
+            }
+            try {
+              localStorage.setItem("mx.pushAsk", String(Date.now()));
+            } catch {}
+            _0x2123eb(() => {});
+          }, 6000);
         }
         return {
           status: _0x421980,
