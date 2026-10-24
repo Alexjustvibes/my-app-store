@@ -35431,7 +35431,7 @@ ${_}`;
         lobby: 1
       };
       function _0xbf211e() {
-        let _0x5af5e4 = [["nexus", "Nexus", _0x50010e.nexus], ["feed", "Feed", _0x50010e.feed], ["connect", "Connect", _0x50010e.connect]];
+        let _0x5af5e4 = [["feed", "Feed", _0x50010e.feed], ["nexus", "Nexus", _0x50010e.nexus], ["connect", "Connect", _0x50010e.connect]];
         if (_0x2e6c84().isAdmin) {
           _0x5af5e4.push(["overwatch", "Watch", _0x50010e.watch]);
         }
@@ -35491,6 +35491,7 @@ ${_}`;
         }
       }
       function _0x5eb37a() {
+        _0x1f1dd4("app").classList.toggle("on-nexus", _0x13913b.screen === "nexus");
         let _0x4d3735 = _0x13913b.screen === "_thread" ? _0x1fc950 && _0x1fc950.back || "connect" : _0x13913b.screen;
         _0x1f1dd4("tbTitle").textContent = _0x711fbf[_0x4d3735] || "Maintrix";
         _0x1f1dd4("tbSub").textContent = _0x39078d[_0x4d3735] ? "· " + _0x39078d[_0x4d3735] : "";
@@ -36055,7 +36056,7 @@ ${_}`;
           }
         } catch {}
       }
-      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
+      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
       _0x1f1dd4("notifBtn").onclick = _0x13348b;
       _0x1f1dd4("msgBarBtn").innerHTML = _0x50010e.dm + "<span>Messages</span>";
       _0x1f1dd4("msgBarBtn").onclick = () => {
