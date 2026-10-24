@@ -28250,35 +28250,27 @@ ${_}`;
             _0xb7c107.textContent = "Read more";
             _0xb7c101.insertAdjacentElement("afterend", _0xb7c107);
             _0xb7c101.addEventListener("scroll", () => {
-              if (_0xb7c105 && _0xb7c101.classList.contains("pv-long")) {
-                _0xb7c105.style.opacity = String(Math.max(0.12, 1 - _0xb7c101.scrollTop / Math.max(60, parseFloat(_0xb7c101.style.paddingTop) || 60)));
-              }
+              _0xb7c101.classList.toggle("pv-scrolled", _0xb7c101.scrollTop > 4);
             }, { passive: true });
             _0xb7c107.onclick = _0xb7c109 => {
               _0xb7c109.stopPropagation();
               if (_0xb7c101.classList.contains("pv-long")) {
-                _0xb7c101.classList.remove("pv-long");
+                _0xb7c101.classList.remove("pv-long", "pv-scrolled");
                 _0xb7c106.classList.remove("pv-has-long");
-                _0xb7c101.style.paddingTop = "";
-                _0xb7c101.style.paddingBottom = "";
+                if (_0xb7c104) {
+                  _0xb7c104.classList.remove("pv-expanded");
+                }
                 _0xb7c101.scrollTop = 0;
                 _0xb7c101.classList.add("pv-clamp");
-                if (_0xb7c105) {
-                  _0xb7c105.style.opacity = "";
-                }
                 _0xb7c107.textContent = "Read more";
                 return;
               }
               _0xb7c101.classList.remove("pv-clamp");
               _0xb7c101.classList.add("pv-long");
               _0xb7c106.classList.add("pv-has-long");
-              let _0xb7c102 = parseFloat(getComputedStyle(_0xb7c101).paddingTop) || 0;
-              let _0xb7c103 = _0xb7c101.scrollHeight - _0xb7c102 - 6;
-              if (_0xb7c105) {
-                _0xb7c102 = Math.max(_0xb7c102, Math.round(_0xb7c105.getBoundingClientRect().bottom - _0xb7c101.getBoundingClientRect().top + 14));
-                _0xb7c101.style.paddingTop = _0xb7c102 + "px";
+              if (_0xb7c104) {
+                _0xb7c104.classList.add("pv-expanded");
               }
-              _0xb7c101.style.paddingBottom = Math.max(6, _0xb7c101.clientHeight - _0xb7c103) + "px";
               _0xb7c101.scrollTop = 0;
               _0xb7c107.textContent = "Show less";
             };
