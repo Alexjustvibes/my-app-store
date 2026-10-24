@@ -28238,13 +28238,40 @@ ${_}`;
         _0x346f68.classList.add("on");
         requestAnimationFrame(() => {
           _0x346f68.querySelectorAll(".pv-body").forEach(_0xb7c101 => {
-            if (_0xb7c101.scrollHeight > 140) {
-              _0xb7c101.classList.add("pv-long");
-              if (_0xb7c101.parentElement) {
-                _0xb7c101.parentElement.classList.add("pv-has-long");
+            if (_0xb7c101.scrollHeight <= 92) {
+              return;
+            }
+            let _0xb7c104 = _0xb7c101.closest(".pv-slide");
+            let _0xb7c105 = _0xb7c104 && _0xb7c104.querySelector(".pv-text");
+            let _0xb7c106 = _0xb7c101.parentElement;
+            _0xb7c101.classList.add("pv-clamp");
+            let _0xb7c107 = document.createElement("button");
+            _0xb7c107.className = "pv-more";
+            _0xb7c107.textContent = "Read more";
+            _0xb7c101.insertAdjacentElement("afterend", _0xb7c107);
+            _0xb7c101.addEventListener("scroll", () => {
+              if (_0xb7c105 && _0xb7c101.classList.contains("pv-long")) {
+                _0xb7c105.style.opacity = String(Math.max(0.12, 1 - _0xb7c101.scrollTop / Math.max(60, parseFloat(_0xb7c101.style.paddingTop) || 60)));
               }
-              let _0xb7c104 = _0xb7c101.closest(".pv-slide");
-              let _0xb7c105 = _0xb7c104 && _0xb7c104.querySelector(".pv-text");
+            }, { passive: true });
+            _0xb7c107.onclick = _0xb7c109 => {
+              _0xb7c109.stopPropagation();
+              if (_0xb7c101.classList.contains("pv-long")) {
+                _0xb7c101.classList.remove("pv-long");
+                _0xb7c106.classList.remove("pv-has-long");
+                _0xb7c101.style.paddingTop = "";
+                _0xb7c101.style.paddingBottom = "";
+                _0xb7c101.scrollTop = 0;
+                _0xb7c101.classList.add("pv-clamp");
+                if (_0xb7c105) {
+                  _0xb7c105.style.opacity = "";
+                }
+                _0xb7c107.textContent = "Read more";
+                return;
+              }
+              _0xb7c101.classList.remove("pv-clamp");
+              _0xb7c101.classList.add("pv-long");
+              _0xb7c106.classList.add("pv-has-long");
               let _0xb7c102 = parseFloat(getComputedStyle(_0xb7c101).paddingTop) || 0;
               let _0xb7c103 = _0xb7c101.scrollHeight - _0xb7c102 - 6;
               if (_0xb7c105) {
@@ -28252,12 +28279,9 @@ ${_}`;
                 _0xb7c101.style.paddingTop = _0xb7c102 + "px";
               }
               _0xb7c101.style.paddingBottom = Math.max(6, _0xb7c101.clientHeight - _0xb7c103) + "px";
-              if (_0xb7c105) {
-                _0xb7c101.addEventListener("scroll", () => {
-                  _0xb7c105.style.opacity = String(Math.max(0.12, 1 - _0xb7c101.scrollTop / Math.max(60, _0xb7c102)));
-                }, { passive: true });
-              }
-            }
+              _0xb7c101.scrollTop = 0;
+              _0xb7c107.textContent = "Show less";
+            };
           });
         });
         let _0x308884 = _0x1f1dd4("pvScroll");
