@@ -28446,7 +28446,7 @@ ${_}`;
         }
         let _0x4ff83e = "<div class=\"sheet-grab\"></div><div class=\"pad\"><div class=\"tb-title\" style=\"font-size:20px;margin-bottom:12px\">Create a post</div>";
         _0x4ff83e += "<div class=\"field\"><label>Caption — required, shows as the picture on your post</label><input id=\"cpCaption\" maxlength=\"60\" placeholder=\"e.g. Ship it, Day 14, Thesis\"></div>";
-        _0x4ff83e += "<div class=\"field\"><label>Say more — optional</label><textarea id=\"cpBody\" placeholder=\"What are you becoming?\"></textarea></div>";
+        _0x4ff83e += "<div class=\"field\"><label>Say more — optional</label><textarea id=\"cpBody\" maxlength=\"2000\" placeholder=\"What are you becoming?\"></textarea></div>";
         _0x4ff83e += "<div class=\"field\"><label>Photo / video — optional</label><label class=\"file-drop\"><input id=\"cpFile\" type=\"file\" accept=\"image/*,video/*,audio/*\"><span class=\"fd-ic\">" + _0x50010e.camera + "</span><span class=\"fd-t\"><b>Add a photo, video or audio</b><em id=\"cpFileName\">Tap to choose · up to 50 MB</em></span></label></div>";
         _0x4ff83e += "<button class=\"btn ghost block\" id=\"cpMic\" style=\"margin-bottom:10px\">" + _0x50010e.mic + " <span id=\"cpMicL\">Record a voice post</span></button>";
         _0x4ff83e += "<button class=\"btn block\" id=\"cpPost\">Post</button><div style=\"height:16px\"></div></div>";
@@ -28536,7 +28536,7 @@ ${_}`;
             }
             _0x5c7178.disabled = false;
             _0x5c7178.textContent = "Post";
-            _0x25604e(/exceeded the maximum|too large|payload/i.test(String(_0x330b9d && _0x330b9d.message)) ? "That file is too big — up to 50MB" : "Could not post — try again");
+            _0x25604e(/exceeded the maximum|too large|payload/i.test(String(_0x330b9d && _0x330b9d.message)) ? "That file is too big — up to 50MB" : /Too many posts|can be up to/.test(String(_0x330b9d && _0x330b9d.message)) ? String(_0x330b9d.message) : "Could not post — try again");
           }
         };
       }
