@@ -70,6 +70,9 @@ Deno.serve(async (req) => {
   let speaker = true;
   if (kind === "room") {
     if (!(await canReadRoom(id, uid))) return json({ error: "not allowed" }, 403);
+    // first person into Nexus voice tells everyone (the database rate-limits this to once per 20 min)
+    const { data: rm } = await admin.from("rooms").select("slug").eq("id", id).maybeSingle();
+    if (rm?.slug === "world") await admin.rpc("announce_nexus_vc", { p_uid: uid });
   } else if (kind === "channel") {
     const { data: ch } = await admin.from("voice_channels").select("room_id").eq("id", id).maybeSingle();
     if (!ch || !(await canReadRoom(ch.room_id, uid))) return json({ error: "not allowed" }, 403);

@@ -17544,6 +17544,8 @@ ${_}`;
         }
       }
       let _0x16cdbe = {
+        post_new: "posted in the feed",
+        vc_start: "started a voice chat in the Nexus",
         tag: "tagged you",
         reply: "replied to your message",
         post_like: "liked your post",
@@ -23164,7 +23166,7 @@ ${_}`;
         } else if (_0x54bf8b && !_0x2f89c6) {
           _0x442c80 += _0x2b7095(_0x5c564e.debate);
         } else {
-          let _0x2ebd5e = _0x58d4b5() && (_0x5c564e.dmKey || _0x5c564e.serverId);
+          let _0x2ebd5e = _0x58d4b5() && (_0x5c564e.dmKey || _0x5c564e.serverId || _0x5c564e.kind === "world");
           let _0x3cd3ce = _0x58d4b5() && (!!_0x5c564e.roomSlug || !!_0x5c564e.dmUser || !!_0x5c564e.topicId || !!_0x5c564e.roomId);
           let _0x32d30b = _0x3cd3ce;
           let _0x3f062f = _0x2ebd5e || _0x3cd3ce || _0x32d30b;
@@ -23809,7 +23811,10 @@ ${_}`;
             }
             return;
           }
-          let _0x3b0b3c = (_0x13913b.lastRead || {})[_0x59b07e.key];
+          try {
+          _0x5d0e02(_0x59b07e.roomId);
+        } catch {}
+        let _0x3b0b3c = (_0x13913b.lastRead || {})[_0x59b07e.key];
           let _0x10323f = await _0x5295a4.messages.list(_0x59b07e.roomId);
           await _0x120f76(_0x10323f.map(_0x5815ae => _0x5815ae.a));
           _0x10323f.forEach(_0x20a459 => {
@@ -28390,7 +28395,7 @@ ${_}`;
         };
         let _0x23a2fe = (_0x6cffac, _0x5d4a51) => "<div class=\"row\" style=\"align-items:flex-start;" + (_0x5d4a51 ? "padding-left:44px" : "") + "\"><div data-user=\"" + _0x203a06(_0x6cffac.a) + "\">" + _0x19c251(_0x6cffac.a, _0x5d4a51 ? 30 : 36, {
           ring: true
-        }) + "</div><div class=\"r-main\"><div class=\"r-name\" style=\"font-size:14px\">" + _0x546ca5(_0x3704eb(_0x6cffac.a).name) + "</div><div style=\"font-size:14px;color:var(--text);line-height:1.4\">" + _0x76f895(_0x6cffac.t) + "</div><div style=\"display:flex;gap:18px;margin-top:5px;font-size:12px;color:var(--muted)\"><span data-clike=\"" + _0x203a06(_0x6cffac.id) + "\" style=\"cursor:pointer;color:" + (_0x6cffac.liked ? "var(--accent-hi)" : "inherit") + "\">" + (_0x6cffac.liked ? "♥" : "♡") + " " + (_0x6cffac.likes || 0) + "</span>" + (_0x5d4a51 ? "" : "<span data-creply=\"" + _0x203a06(_0x6cffac.id) + "\" style=\"cursor:pointer\">Reply</span>") + "</div></div></div>";
+        }) + "</div><div class=\"r-main\"><div class=\"r-name\" style=\"font-size:14px\">" + _0x546ca5(_0x3704eb(_0x6cffac.a).name) + "</div><div style=\"font-size:14px;color:var(--text);line-height:1.4\">" + _0x76f895(_0x6cffac.t) + "</div><div style=\"display:flex;gap:18px;margin-top:5px;font-size:12px;color:var(--muted)\"><span data-clike=\"" + _0x203a06(_0x6cffac.id) + "\" style=\"cursor:pointer;color:" + (_0x6cffac.liked ? "var(--accent-hi)" : "inherit") + "\">" + (_0x6cffac.liked ? "♥" : "♡") + " " + (_0x6cffac.likes || 0) + "</span>" + (_0x5d4a51 ? "" : "<span data-creply=\"" + _0x203a06(_0x6cffac.id) + "\" style=\"cursor:pointer\">Reply</span>") + (_0x6cffac.a === _0x2e6c84().id ? "<span data-cdel=\"" + _0x203a06(_0x6cffac.id) + "\" style=\"cursor:pointer\">Delete</span>" : "") + "</div></div></div>";
         let _0x26142f = async () => {
           let _0x472cc0 = [];
           try {
@@ -28421,6 +28426,18 @@ ${_}`;
               _0x29c5e6.style.color = _0x4216de ? "var(--accent-hi)" : "";
               _0x29c5e6.innerHTML = (_0x4216de ? "♥" : "♡") + " " + _0x574dea.likes;
             }
+          });
+          _0x1893ad.querySelectorAll("[data-cdel]").forEach(_0x5d0e3a => _0x5d0e3a.onclick = async () => {
+            if (!confirm("Delete this comment?")) {
+              return;
+            }
+            let { error: _0x5d0e3b } = await _0x34bcfe.from("post_comments").delete().eq("id", _0x5d0e3a.dataset.cdel).eq("author_id", _0x2e6c84().id);
+            if (_0x5d0e3b) {
+              _0x25604e("Could not delete — try again");
+              return;
+            }
+            _0x25604e("Comment deleted");
+            _0x26142f();
           });
           _0x1893ad.querySelectorAll("[data-creply]").forEach(_0x3ca622 => _0x3ca622.onclick = () => {
             let _0x3aa72f = _0x472cc0.find(_0x583922 => _0x583922.id === _0x3ca622.dataset.creply);
@@ -29290,6 +29307,37 @@ ${_}`;
         }
         _0x29140e += "</div>";
         _0x38376d(_0x29140e);
+        if (_0x4e256c && _0x58d4b5()) {
+          let _0xa7f001 = _0x1f1dd4("sheet").querySelector(".prof-hero .p-av");
+          if (_0xa7f001) {
+            _0xa7f001.classList.add("p-av-edit");
+            _0xa7f001.title = "Change profile picture";
+            _0xa7f001.onclick = () => {
+              let _0xa7f002 = document.createElement("input");
+              _0xa7f002.type = "file";
+              _0xa7f002.accept = "image/*";
+              _0xa7f002.onchange = async () => {
+                let _0xa7f003 = _0xa7f002.files && _0xa7f002.files[0];
+                if (!_0xa7f003) {
+                  return;
+                }
+                _0x25604e("Uploading…");
+                try {
+                  let _0xa7f004 = await _0x2b241b(_0xa7f003, "image");
+                  await _0x5295a4.profiles.update({ avatar_path: _0xa7f004.path });
+                  _0x2e6c84().avatarPath = _0xa7f004.path;
+                  _0x6812ce(_0x2e6c84());
+                  _0x24efc1();
+                  _0x25604e("Profile picture updated");
+                  _0x394def();
+                } catch (_0xa7f005) {
+                  _0x25604e("Could not upload — " + (_0xa7f005 && _0xa7f005.message || "try again"));
+                }
+              };
+              _0xa7f002.click();
+            };
+          }
+        }
         if (_0x58d4b5() && _0x36110d(_0xa2385f.id)) {
           _0x27034d(_0xa2385f.id);
         }
@@ -35490,7 +35538,94 @@ ${_}`;
           };
         }
       }
+      let _0x7e2a00 = null;
+      async function _0x7e2a01() {
+        if (_0x7e2a00 !== null || !_0x58d4b5() || !_0x2e6c84() || !_0x36110d(_0x2e6c84().id)) {
+          return;
+        }
+        let _0x7e2a03 = false;
+        try {
+          _0x7e2a03 = localStorage.getItem("mx.nexusTip") === "1";
+        } catch {}
+        if (_0x7e2a03) {
+          _0x7e2a00 = false;
+          return;
+        }
+        _0x7e2a00 = "checking";
+        try {
+          let { count: _0x7e2a04, error: _0x7e2a05 } = await _0x34bcfe.from("messages").select("id", { count: "exact", head: true }).eq("author_id", _0x2e6c84().id);
+          if (_0x7e2a05) {
+            throw _0x7e2a05;
+          }
+          if (_0x7e2a04 > 0) {
+            try {
+              localStorage.setItem("mx.nexusTip", "1");
+            } catch {}
+            _0x7e2a00 = false;
+            return;
+          }
+        } catch {
+          _0x7e2a00 = null;
+          return;
+        }
+        _0x7e2a00 = true;
+        if (_0x13913b.screen !== "nexus") {
+          _0x13913b.screen = "nexus";
+          _0x24efc1();
+          _0x1858d8();
+          _0x19d9b7();
+        } else {
+          _0x5eb37a();
+        }
+      }
+      function _0x7e2a02() {
+        let _0x7e2a06 = _0x1f1dd4("app");
+        if (!_0x7e2a06) {
+          return;
+        }
+        let _0x7e2a07 = _0x7e2a00 === true && _0x13913b.screen === "nexus";
+        _0x7e2a06.classList.toggle("nexus-tip", _0x7e2a07);
+        let _0x7e2a08 = _0x1f1dd4("nexusTip");
+        if (_0x7e2a07 && !_0x7e2a08) {
+          _0x7e2a08 = document.createElement("div");
+          _0x7e2a08.id = "nexusTip";
+          _0x7e2a08.className = "nexus-tip-bubble";
+          _0x7e2a08.innerHTML = "<b>Welcome to Maintrix 👋</b><span>Say hi to everyone — send your first message in the Nexus to get started.</span><i class=\"nt-arrow\" aria-hidden=\"true\"></i>";
+          _0x7e2a06.appendChild(_0x7e2a08);
+        } else if (!_0x7e2a07 && _0x7e2a08) {
+          _0x7e2a08.remove();
+        }
+        let _0x7e2a09 = false;
+        try {
+          _0x7e2a09 = localStorage.getItem("mx.feedTip") !== "1";
+        } catch {}
+        let _0x7e2a0a = _0x7e2a09 && _0x58d4b5() && _0x13913b.screen === "feed" && _0x7e2a00 !== true;
+        _0x7e2a06.classList.toggle("feed-gated", _0x7e2a0a);
+        let _0x7e2a0b = _0x1f1dd4("feedGate");
+        if (_0x7e2a0a && !_0x7e2a0b) {
+          _0x7e2a0b = document.createElement("div");
+          _0x7e2a0b.id = "feedGate";
+          _0x7e2a0b.className = "feed-gate";
+          _0x7e2a0b.innerHTML = "<div class=\"fg-card\"><p>You can send a post to the feed, by making a post from your profile!</p><button class=\"btn\" id=\"feedGateOk\">OK</button></div>";
+          _0x1f1dd4("view").appendChild(_0x7e2a0b);
+          _0x1f1dd4("feedGateOk").onclick = () => {
+            try {
+              localStorage.setItem("mx.feedTip", "1");
+            } catch {}
+            _0x7e2a06.classList.remove("feed-gated");
+            _0x7e2a0b.remove();
+          };
+        } else if (!_0x7e2a0a && _0x7e2a0b) {
+          _0x7e2a0b.remove();
+        }
+        if (_0x7e2a00 === null && _0x13913b.screen === "nexus") {
+          _0x7e2a01();
+        }
+      }
       function _0x5eb37a() {
+        try {
+          _0x7e2a02();
+        } catch {}
         _0x1f1dd4("app").classList.toggle("on-nexus", _0x13913b.screen === "nexus");
         let _0x4d3735 = _0x13913b.screen === "_thread" ? _0x1fc950 && _0x1fc950.back || "connect" : _0x13913b.screen;
         _0x1f1dd4("tbTitle").textContent = _0x711fbf[_0x4d3735] || "Maintrix";
@@ -35991,7 +36126,37 @@ ${_}`;
           _0x25604e("Could not open room");
         }
       }
+      function _0x5d0e01(_0x5d0e1a) {
+        if (!_0x5d0e1a || !_0x58d4b5()) {
+          return;
+        }
+        let _0x5d0e1b = _0x13913b.notifications || [];
+        let _0x5d0e1c = _0x5d0e1b.filter(_0x5d0e1d => _0x5d0e1d.id === _0x5d0e1a.id || _0x5d0e1a.type === "dm" && _0x5d0e1d.type === "dm" && _0x5d0e1d.entity && _0x5d0e1a.entity && _0x5d0e1d.entity.room_id === _0x5d0e1a.entity.room_id).map(_0x5d0e1d => _0x5d0e1d.id).filter(_0x36110d);
+        _0x13913b.notifications = _0x5d0e1b.filter(_0x5d0e1d => !_0x5d0e1c.includes(_0x5d0e1d.id));
+        _0x24efc1();
+        try {
+          _0x348da2();
+        } catch {}
+        if (_0x5d0e1c.length) {
+          _0x34bcfe.from("notifications").delete().in("id", _0x5d0e1c).then(() => {}, () => {});
+        }
+      }
+      function _0x5d0e02(_0x5d0e2a) {
+        if (!_0x58d4b5() || !_0x36110d(_0x5d0e2a) || !_0x2e6c84() || !_0x2e6c84().id) {
+          return;
+        }
+        let _0x5d0e2b = ["dm", "tag", "reply", "everyone", "vc_start"];
+        _0x13913b.notifications = (_0x13913b.notifications || []).filter(_0x5d0e2c => !(_0x5d0e2b.includes(_0x5d0e2c.type) && _0x5d0e2c.entity && _0x5d0e2c.entity.room_id === _0x5d0e2a));
+        _0x24efc1();
+        try {
+          _0x348da2();
+        } catch {}
+        _0x34bcfe.from("notifications").delete().eq("user_id", _0x2e6c84().id).in("type", _0x5d0e2b).filter("entity->>room_id", "eq", _0x5d0e2a).then(() => {}, () => {});
+      }
       async function _0x40865b(_0x217ca7) {
+        try {
+          _0x5d0e01(_0x217ca7);
+        } catch {}
         if (_0x217ca7 && _0x217ca7.type === "notice") {
           let _0x3106c8 = _0x217ca7.entity && typeof _0x4cd3d9 !== "undefined" && _0x336db0(_0x4cd3d9, _0x217ca7.entity.feat);
           if (_0x3106c8) {
@@ -36054,9 +36219,19 @@ ${_}`;
             _0x1e46bc(_0x5e5581.room_id);
             return;
           }
+          if ((_0x217ca7.type === "like" || _0x217ca7.type === "friend" || _0x217ca7.type === "friend_request") && _0x217ca7.who) {
+            _0x2f9605();
+            setTimeout(() => _0x1a040a(_0x217ca7.who), 220);
+            return;
+          }
+          if (_0x217ca7.type === "badge") {
+            _0x2f9605();
+            setTimeout(() => _0x1a040a(), 220);
+            return;
+          }
         } catch {}
       }
-      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
+      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip", "1"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
       _0x1f1dd4("notifBtn").onclick = _0x13348b;
       _0x1f1dd4("msgBarBtn").innerHTML = _0x50010e.dm + "<span>Messages</span>";
       _0x1f1dd4("msgBarBtn").onclick = () => {
@@ -44088,6 +44263,8 @@ ${_}`;
         _0x13eda2.style.setProperty("--v", ((+_0x4a57c9.value - _0x2468d4) / (_0x4b4569 - _0x2468d4) * 100).toFixed(1) + "%");
       });
       var _0x30eba9 = {
+        post_new: ["feed", "#a78bfa"],
+        vc_start: ["phone", "#39c97e"],
         dm: ["dm", "#60a5fa"],
         tag: ["reply", "#ff5a6e"],
         reply: ["reply", "#ff5a6e"],
@@ -44213,10 +44390,10 @@ ${_}`;
           }
         }
       }
-      var _0x238cfa = [["People", [["dms", "Direct messages", "Someone DMs you", "dm"], ["mentions", "Mentions", "Someone @tags you in a room", "reply"], ["replies", "Replies", "Someone replies to your message", "reply"], ["friends", "Friends", "Friend requests and accepts", "people"]]], ["Your posts", [["likes", "Likes", "Likes on you or your posts", "heart"], ["comments", "Comments", "Comments on your posts", "chat"]]], ["Debates", [["debates", "Your debates", "Someone joins yours, and results when it ends", "debates"], ["debate_live", "Live debates", "Any debate going live on Maintrix — off unless you turn it on", "live"]]], ["Maintrix", [["badges", "Badges", "A new badge lands on your profile", "badge"], ["servers", "Servers", "Someone joins a server you own", "grid"], ["updates", "Updates", "When a new update comes out", "notes"]]]];
+      var _0x238cfa = [["People", [["dms", "Direct messages", "Someone DMs you", "dm"], ["mentions", "Mentions", "Someone @tags you in a room", "reply"], ["replies", "Replies", "Someone replies to your message", "reply"], ["friends", "Friends", "Friend requests and accepts", "people"]]], ["Your posts", [["likes", "Likes", "Likes on you or your posts", "heart"], ["comments", "Comments", "Comments on your posts", "chat"]]], ["Debates", [["debates", "Your debates", "Someone joins yours, and results when it ends", "debates"], ["debate_live", "Live debates", "When a debate or ranked match goes live on Maintrix", "live"]]], ["Everyone", [["posts_new", "New posts", "When someone posts in the feed", "feed"], ["voice", "Voice in the Nexus", "When someone starts a voice chat in the Nexus", "phone"]]], ["Maintrix", [["badges", "Badges", "A new badge lands on your profile", "badge"], ["servers", "Servers", "Someone joins a server you own", "grid"], ["updates", "Updates", "When a new update comes out", "notes"]]]];
       function _0x5b68d4(_0x43ed20, _0x50142d) {
         if (_0x50142d === "debate_live") {
-          return _0x43ed20[_0x50142d] === true;
+          return _0x43ed20[_0x50142d] !== false;
         } else {
           return _0x43ed20[_0x50142d] !== false;
         }
@@ -44481,7 +44658,7 @@ ${_}`;
       function _0x10ec13(_0x29e51b, _0x463aeb, _0x108a95, _0x3b49ac) {
         return "<button class=\"mm-i" + (_0x3b49ac ? " " + _0x3b49ac : "") + "\" data-act=\"" + _0x29e51b + "\"><span class=\"mm-ic\">" + _0x463aeb + "</span><span class=\"mm-l\">" + _0x108a95 + "</span></button>";
       }
-      let _0x1a7353 = [["colors", "Colours", "palette", "Pick colours for the whole app."], ["text", "Text", "book", "Size, font and spacing."], ["layout", "Layout", "grid", "Mobile or desktop, shapes and menus."], ["chat", "Chat", "chat", "How messages look."], ["effects", "Effects", "sparkle", "Glow, glass, motion and sound."], ["ambience", "Ambience", "moon", "A moving scene behind the app, with its own sound."], ["presets", "Presets", "star", "Ready-made looks, your saved looks and look codes."]];
+      let _0x1a7353 = [["colors", "Colours", "palette", "Pick colours for the whole app."], ["ambience", "Ambience", "moon", "A moving scene behind the app, with its own sound."], ["text", "Text", "book", "Size, font and spacing."], ["layout", "Layout", "grid", "Mobile or desktop, shapes and menus."], ["presets", "Presets", "star", "Ready-made looks, your saved looks and look codes."]];
       let _0x11879d = [["Night sky", ["bloodmoon", "starlight", "meteors", "aurora", "nebula", "galaxy"]], ["Weather", ["rain", "storm", "snow", "fog", "windowrain"]], ["Fire & light", ["fireplace", "candles", "lanterns", "fireflies", "wisps", "bokeh"]], ["Nature", ["sakura", "leaves", "dust"]], ["Water", ["ocean", "jellyfish"]], ["Retro & tech", ["synthwave", "digital", "lavalamp"]]];
       let _0x46df9a = [["#ff2a3d", "Crimson"], ["#ff7a1a", "Ember"], ["#ffc23a", "Gold"], ["#39d98a", "Emerald"], ["#22d3c5", "Teal"], ["#3b9dff", "Azure"], ["#8b5cff", "Violet"], ["#ff5fb4", "Pink"], ["#f0f0f0", "Mono"]];
       let _0x5550ea = {

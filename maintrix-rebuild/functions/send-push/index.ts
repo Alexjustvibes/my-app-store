@@ -22,10 +22,11 @@ const PREF: Record<string, string> = {
   debate_join: "debates", debate_end: "debates",
   ranked_match: "debates", ranked_turn: "debates", ranked_live: "debates", ranked_cancel: "debates",
   debate_live: "debate_live", badge: "badges", server_join: "servers", update: "updates",
+  post_new: "posts_new", vc_start: "voice",
 };
 
 function prefOn(prefs: Record<string, unknown>, key: string) {
-  return key === "debate_live" ? prefs[key] === true : prefs[key] !== false;
+  return prefs[key] !== false;
 }
 
 const clip = (s: unknown, n: number) => String(s ?? "").slice(0, n);
@@ -53,6 +54,9 @@ function compose(type: string, who: string, e: Record<string, any>): { title: st
     case "badge": return { title: "New badge", body: `You earned ${clip(e.label || e.title, 60)}` };
     case "server_join": return { title: clip(e.title || "Your server", 60), body: `${who} joined` };
     case "update": return { title: "Maintrix update", body: clip(e.summary || e.title || "Something new is here", 120) };
+    case "post_new": return { title: `${who} posted`, body: prev || "New post in the feed" };
+    case "vc_start": return { title: "Voice chat in the Nexus", body: `${who} started a voice chat — hop in` };
+    case "everyone": return { title: `${who} pinged @everyone`, body: prev };
     default: return { title: "Maintrix", body: clip(e.text || e.preview || "You have a new notification", 140) };
   }
 }
@@ -61,6 +65,7 @@ function link(type: string, e: Record<string, any>) {
   if (type.startsWith("ranked_")) return "./?ranked=1";
   if (type === "update") return "./?updates=1";
   if (e.debate_id) return `./?debate=${e.debate_id}`;
+  if (e.post_id) return `./?post=${e.post_id}`;
   if (e.room_id) return `./?room=${e.room_id}`;
   return "./?notifs=1";
 }
