@@ -24841,6 +24841,9 @@ ${_}`;
         if (_0x49b1fd.status === "active") {
           let _0x572e1e = _0x2e6c84().id;
           let _0x5e06a4 = _0x572e1e === _0x49b1fd.creatorId || _0x572e1e === _0x49b1fd.opponentId;
+          if (_0x5e06a4 && _0x49b1fd.status !== "ended") {
+            _0x283642 += "<button class=\"btn ghost block\" id=\"dbLeave\" style=\"margin-top:8px\">Leave debate</button>";
+          }
           if (_0x2e6c84().isAdmin) {
             _0x283642 += "<button class=\"btn ghost block\" id=\"dbEnd\" style=\"margin-top:8px\">End debate (admin)</button>";
           } else if (!_0x5e06a4) {
@@ -25133,6 +25136,26 @@ ${_}`;
               _0x1176d(_0x3d3f36);
             } catch {
               _0x25604e("Could not end debate");
+            }
+          });
+        }
+        let _0x6b1e01 = _0x1f1dd4("dbLeave");
+        if (_0x6b1e01) {
+          _0x6b1e01.onclick = () => _0x3f85fd("Leave this debate? It ends now and counts as a loss for you" + (_0x3d70f3.ranked ? " — and you lose ELO." : "."), async () => {
+            try {
+              let { error: _0x6b1e02 } = await _0x34bcfe.rpc("leave_debate", { d_id: _0x3d70f3.id });
+              if (_0x6b1e02) {
+                throw _0x6b1e02;
+              }
+              let _0x6b1e03 = await _0x5295a4.debates.get(_0x3d70f3.id);
+              _0x5e3d0f.debate = _0x6b1e03;
+              if (_0x1fc950 && _0x1fc950.key === _0x5e3d0f.key) {
+                _0x1a072e();
+              }
+              _0x1176d(_0x6b1e03);
+              _0x25604e("You left the debate");
+            } catch (_0x6b1e04) {
+              _0x25604e(_0x6b1e04 && _0x6b1e04.message || "Could not leave the debate");
             }
           });
         }
@@ -35557,7 +35580,9 @@ ${_}`;
           if (_0x7e2a05) {
             throw _0x7e2a05;
           }
-          if (_0x7e2a04 > 0) {
+          let { data: _0x7e2a0e } = await _0x34bcfe.from("profiles").select("created_at").eq("id", _0x2e6c84().id).maybeSingle();
+          let _0x7e2a0f = _0x7e2a0e && _0x7e2a0e.created_at ? Date.now() - new Date(_0x7e2a0e.created_at).getTime() : 0;
+          if (_0x7e2a04 > 0 || _0x7e2a0f > 172800000) {
             try {
               localStorage.setItem("mx.nexusTip", "1");
             } catch {}
@@ -35590,8 +35615,15 @@ ${_}`;
           _0x7e2a08 = document.createElement("div");
           _0x7e2a08.id = "nexusTip";
           _0x7e2a08.className = "nexus-tip-bubble";
-          _0x7e2a08.innerHTML = "<b>Welcome to Maintrix 👋</b><span>Say hi to everyone — send your first message in the Nexus to get started.</span><i class=\"nt-arrow\" aria-hidden=\"true\"></i>";
+          _0x7e2a08.innerHTML = "<b>Welcome to Maintrix 👋</b><span>Say hi to everyone — send your first message in the Nexus to get started.</span><button class=\"nt-skip\" id=\"nexusTipSkip\">Skip</button><i class=\"nt-arrow\" aria-hidden=\"true\"></i>";
           _0x7e2a06.appendChild(_0x7e2a08);
+          _0x1f1dd4("nexusTipSkip").onclick = () => {
+            _0x7e2a00 = false;
+            try {
+              localStorage.setItem("mx.nexusTip", "1");
+            } catch {}
+            _0x7e2a02();
+          };
         } else if (!_0x7e2a07 && _0x7e2a08) {
           _0x7e2a08.remove();
         }

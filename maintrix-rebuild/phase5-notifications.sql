@@ -90,3 +90,43 @@ begin
 end $$;
 revoke all on function announce_nexus_vc(uuid) from public, anon, authenticated;
 grant execute on function announce_nexus_vc(uuid) to service_role;
+
+-- Debaters can leave a live debate: it ends and counts as a loss for whoever leaves (ranked: ELO too)
+create or replace function public.leave_debate(d_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare d debates; me uuid := auth.uid(); w uuid; ra integer; rb integer; ea double precision; sa double precision; delta integer := 0;
+begin
+  select * into d from debates where id = d_id for update;
+  if not found or d.status = 'ended' then return; end if;
+  if me is null or (me is distinct from d.creator_id and me is distinct from d.opponent_id) then
+    raise exception 'Only the debaters can leave this debate';
+  end if;
+  if d.opponent_id is null then
+    update debates set status = 'ended', ended_at = now(), turn_holder = null, turn_ends_at = null where id = d_id;
+    return;
+  end if;
+  w := case when me = d.creator_id then d.opponent_id else d.creator_id end;
+  if d.ranked then
+    select elo into ra from profiles where id = d.creator_id;
+    select elo into rb from profiles where id = d.opponent_id;
+    ea := 1.0 / (1.0 + power(10.0, (coalesce(rb, 1000) - coalesce(ra, 1000)) / 400.0));
+    sa := case when w = d.creator_id then 1.0 else 0.0 end;
+    delta := round(32 * (sa - ea));
+    update profiles set elo = elo + delta where id = d.creator_id;
+    update profiles set elo = elo - delta where id = d.opponent_id;
+  end if;
+  update profiles set
+    debate_wins   = debate_wins   + case when id = w then 1 else 0 end,
+    debate_losses = debate_losses + case when id <> w then 1 else 0 end
+  where id in (d.creator_id, d.opponent_id);
+  update debates set status = 'ended', ended_at = now(), winner_id = w,
+    turn_holder = null, turn_ends_at = null, paused_at = null, paused_by = null, paused_left = null,
+    elo_delta = case when d.ranked then abs(delta) end,
+    elo_gain  = case when d.ranked then abs(delta) end,
+    elo_loss  = case when d.ranked then abs(delta) end
+  where id = d_id;
+  update ranked_matches set status = 'ended', ended_reason = 'forfeit', updated_at = now() where debate_id = d_id;
+  perform notify_user(w, 'debate_end', me, jsonb_build_object('room_id', d.room_id, 'debate_id', d.id, 'title', d.title, 'forfeit', true));
+end $$;
+revoke all on function public.leave_debate(uuid) from public, anon;
+grant execute on function public.leave_debate(uuid) to authenticated;
