@@ -35502,7 +35502,7 @@ ${_}`;
         lobby: 1
       };
       function _0xbf211e() {
-        let _0x5af5e4 = [["feed", "Feed", _0x50010e.feed], ["nexus", "Nexus", _0x50010e.nexus], ["connect", "Connect", _0x50010e.connect]];
+        let _0x5af5e4 = [["nexus", "Nexus", _0x50010e.nexus], ["feed", "Feed", _0x50010e.feed], ["connect", "Connect", _0x50010e.connect]];
         if (_0x2e6c84().isAdmin) {
           _0x5af5e4.push(["overwatch", "Watch", _0x50010e.watch]);
         }
