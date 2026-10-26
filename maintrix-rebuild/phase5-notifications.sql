@@ -130,3 +130,48 @@ begin
 end $$;
 revoke all on function public.leave_debate(uuid) from public, anon;
 grant execute on function public.leave_debate(uuid) to authenticated;
+
+-- Likes don't spam: one alert per person per post (or per profile) every 24 hours, even across like/unlike/like
+create table if not exists notif_dedupe (
+  user_id  uuid not null,
+  actor_id uuid not null,
+  kind     text not null,
+  ref      uuid not null,
+  last_at  timestamptz not null default now(),
+  primary key (user_id, actor_id, kind, ref)
+);
+alter table notif_dedupe enable row level security;
+
+create or replace function public._notify_once(p_user uuid, p_actor uuid, p_kind text, p_ref uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare ok boolean;
+begin
+  if p_user is null or p_actor is null or p_user = p_actor then return false; end if;
+  insert into notif_dedupe (user_id, actor_id, kind, ref, last_at) values (p_user, p_actor, p_kind, p_ref, now())
+  on conflict (user_id, actor_id, kind, ref) do update set last_at = now()
+    where notif_dedupe.last_at < now() - interval '24 hours'
+  returning true into ok;
+  return coalesce(ok, false);
+end $$;
+revoke all on function public._notify_once(uuid, uuid, text, uuid) from public, anon, authenticated;
+
+create or replace function trg_notify_post_like() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare p record;
+begin
+  select author_id, body, caption into p from posts where id = new.post_id;
+  if _notify_once(p.author_id, new.user_id, 'post_like', new.post_id) then
+    perform notify_user(p.author_id, 'post_like', new.user_id,
+      jsonb_build_object('post_id', new.post_id, 'preview', left(coalesce(nullif(p.caption, ''), p.body, ''), 100)));
+  end if;
+  return new;
+end $$;
+
+create or replace function trg_notify_user_like() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if _notify_once(new.liked_id, new.liker_id, 'like', new.liked_id) then
+    perform notify_user(new.liked_id, 'like', new.liker_id);
+  end if;
+  return new;
+end $$;
