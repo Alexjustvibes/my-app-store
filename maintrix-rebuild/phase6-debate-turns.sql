@@ -284,3 +284,15 @@ begin
   on conflict (user_id, endpoint) do update
     set endpoint = excluded.endpoint, p256dh = excluded.p256dh, auth = excluded.auth, user_agent = excluded.user_agent, last_seen = now();
 end $function$;
+
+-- Posts need at least one #tag (the composer has a required Tags field; tags are stored via trg_post_hashtags).
+create or replace function public.require_post_tag() returns trigger
+language plpgsql security definer set search_path = public as $b$
+begin
+  if coalesce(new.body, '') || ' ' || coalesce(new.caption, '') !~ '#[A-Za-z0-9_]{2,40}' then
+    raise exception 'Add at least one #tag to your post';
+  end if;
+  return new;
+end $b$;
+create or replace trigger b_require_post_tag before insert on public.posts
+  for each row execute function public.require_post_tag();

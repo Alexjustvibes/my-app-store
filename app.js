@@ -28790,6 +28790,7 @@ ${_}`;
         }
         let _0x4ff83e = "<div class=\"sheet-grab\"></div><div class=\"pad\"><div class=\"tb-title\" style=\"font-size:20px;margin-bottom:12px\">Create a post</div>";
         _0x4ff83e += "<div class=\"field\"><label>Caption — required, shows as the picture on your post</label><input id=\"cpCaption\" maxlength=\"60\" placeholder=\"e.g. Ship it, Day 14, Thesis\"></div>";
+        _0x4ff83e += "<div class=\"field cp-tags\"><label>Tags — required, at least one</label><input id=\"cpTags\" maxlength=\"160\" autocapitalize=\"none\" autocorrect=\"off\" spellcheck=\"false\" placeholder=\"e.g. #mindset #fitness #day14\"><div class=\"cp-hint\" id=\"cpTagsHint\">Add 1–5 tags so people can find your post. Letters, numbers and _ only.</div></div>";
         _0x4ff83e += "<div class=\"field\"><label>Say more — optional</label><textarea id=\"cpBody\" maxlength=\"2000\" placeholder=\"What are you becoming?\"></textarea></div>";
         _0x4ff83e += "<div class=\"field\"><label>Photo / video — optional</label><label class=\"file-drop\"><input id=\"cpFile\" type=\"file\" accept=\"image/*,video/*,audio/*\"><span class=\"fd-ic\">" + _0x50010e.camera + "</span><span class=\"fd-t\"><b>Add a photo, video or audio</b><em id=\"cpFileName\">Tap to choose · up to 50 MB</em></span></label></div>";
         _0x4ff83e += "<button class=\"btn ghost block\" id=\"cpMic\" style=\"margin-bottom:10px\">" + _0x50010e.mic + " <span id=\"cpMicL\">Record a voice post</span></button>";
@@ -28845,6 +28846,47 @@ ${_}`;
             return;
           }
           let _0x32684c = _0x1f1dd4("cpBody").value.trim();
+          let _0x7a6b01 = /#([A-Za-z0-9_]{2,40})/g;
+          let _0x7a6b02 = (_0x36f165 + " " + _0x32684c).match(_0x7a6b01) || [];
+          let _0x7a6b03 = [];
+          let _0x7a6b04 = false;
+          (_0x1f1dd4("cpTags").value || "").split(/[\s,]+/).map(_0x7a6b05 => _0x7a6b05.replace(/^#+/, "")).filter(Boolean).forEach(_0x7a6b06 => {
+            if (/^[A-Za-z0-9_]{2,40}$/.test(_0x7a6b06)) {
+              if (!_0x7a6b03.some(_0x7a6b07 => _0x7a6b07.toLowerCase() === _0x7a6b06.toLowerCase()) && !_0x7a6b02.some(_0x7a6b08 => _0x7a6b08.slice(1).toLowerCase() === _0x7a6b06.toLowerCase())) {
+                _0x7a6b03.push(_0x7a6b06);
+              }
+            } else {
+              _0x7a6b04 = true;
+            }
+          });
+          let _0x7a6b09 = _0x1f1dd4("cpTagsHint");
+          let _0x7a6b0a = _0x7a6b0b => {
+            if (_0x7a6b09) {
+              _0x7a6b09.textContent = _0x7a6b0b;
+              _0x7a6b09.classList.add("err");
+            }
+            _0x25604e(_0x7a6b0b);
+            _0x1f1dd4("cpTags").focus();
+          };
+          if (_0x7a6b04) {
+            _0x7a6b0a("Tags can only use letters, numbers and _ (2–40 characters each)");
+            return;
+          }
+          if (!_0x7a6b03.length && !_0x7a6b02.length) {
+            _0x7a6b0a("Add at least one tag to post — e.g. #mindset");
+            return;
+          }
+          if (_0x7a6b03.length + _0x7a6b02.length > 5 && _0x7a6b03.length) {
+            _0x7a6b0a("Up to 5 tags per post");
+            return;
+          }
+          if (_0x7a6b03.length) {
+            _0x32684c = (_0x32684c ? _0x32684c + "\n\n" : "") + _0x7a6b03.map(_0x7a6b0c => "#" + _0x7a6b0c).join(" ");
+          }
+          if (_0x32684c.length > 2000) {
+            _0x7a6b0a("Your post is a little too long to fit the tags — shorten it a bit");
+            return;
+          }
           let _0x13a59b = _0x1f1dd4("cpFile").files[0] || _0xbe97b;
           let _0x5c7178 = _0x1f1dd4("cpPost");
           _0x5c7178.disabled = true;
@@ -28880,7 +28922,7 @@ ${_}`;
             }
             _0x5c7178.disabled = false;
             _0x5c7178.textContent = "Post";
-            _0x25604e(/exceeded the maximum|too large|payload/i.test(String(_0x330b9d && _0x330b9d.message)) ? "That file is too big — up to 50MB" : /Too many posts|can be up to/.test(String(_0x330b9d && _0x330b9d.message)) ? String(_0x330b9d.message) : "Could not post — try again");
+            _0x25604e(/exceeded the maximum|too large|payload/i.test(String(_0x330b9d && _0x330b9d.message)) ? "That file is too big — up to 50MB" : /Too many posts|can be up to|#tag/.test(String(_0x330b9d && _0x330b9d.message)) ? String(_0x330b9d.message) : "Could not post — try again");
           }
         };
       }
