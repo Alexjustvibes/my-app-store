@@ -24883,7 +24883,7 @@ ${_}`;
           let _0x572e1e = _0x2e6c84().id;
           let _0x5e06a4 = _0x572e1e === _0x49b1fd.creatorId || _0x572e1e === _0x49b1fd.opponentId;
           if (_0x5e06a4 && _0x49b1fd.status !== "ended") {
-            _0x283642 += "<button class=\"btn ghost block\" id=\"dbLeave\" style=\"margin-top:8px\">Leave debate</button>";
+
           }
           if (_0x2e6c84().isAdmin) {
             _0x283642 += "<button class=\"btn ghost block\" id=\"dbEnd\" style=\"margin-top:8px\">End debate (admin)</button>";
@@ -44451,11 +44451,11 @@ ${_}`;
         let _0x25dcc7 = !!_0x27e7fd.pausedAt;
         let _0x5b7e01 = !!_0x27e7fd.readyCreator && !!_0x27e7fd.readyOpponent;
         if (!_0x230ce1) {
-          return "<div class=\"fl-vote\">" + _0x50010e.check + "<div><b>All turns done — final votes</b><span><span data-fl-left>…</span> to vote</span></div></div>";
+          return "<div class=\"fl-vote\">" + _0x50010e.check + "<div><b>All turns done — final votes</b><span><span data-fl-left>…</span> to vote</span></div>" + (_0x27e7fd.status === "active" && (_0x3d1e5a === _0x27e7fd.creatorId || _0x3d1e5a === _0x27e7fd.opponentId) ? "<button class=\"fl-exit\" data-fl-act=\"leave\" title=\"Leave debate\" aria-label=\"Leave debate\">" + _0x50010e.out + "<span>Exit</span></button>" : "") + "</div>";
         }
         let _0x24319a = _0x230ce1 === _0x27e7fd.creatorId ? "a" : _0x230ce1 === _0x27e7fd.opponentId ? "b" : "g";
         let _0x49e70a = _0x5340f0 ? _0x27e7fd.stageReturn : _0x2510b1 + 1 >= _0x1b1047 ? null : _0x230ce1 === _0x27e7fd.creatorId ? _0x27e7fd.opponentId : _0x27e7fd.creatorId;
-        let _0x26fe16 = "<div class=\"fl-now s-" + _0x24319a + (_0x6ab305 ? " mine" : "") + (_0x25dcc7 ? " paused" : "") + "\"><div class=\"fl-ring\"><svg class=\"fl-arc\" viewBox=\"0 0 56 56\" aria-hidden=\"true\"><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"bg\"/><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"fg\" data-fl-arc/></svg>" + _0x19c251(_0x230ce1, 44) + "</div>\n      <div class=\"fl-who\"><em>" + (_0x25dcc7 ? (_0x6ab305 ? "YOUR TURN" : "UP NEXT") : _0x5340f0 ? "ON STAGE" : "HAS THE FLOOR") + (_0x6ab305 && !_0x25dcc7 ? " · YOU" : "") + "</em><b data-user=\"" + _0x203a06(_0x230ce1) + "\">" + _0x546ca5(_0x3704eb(_0x230ce1).name || "member") + "</b><span>" + (_0x25dcc7 ? (_0x6ab305 ? "Press I’m ready to start your turn — your clock starts then" : "Waiting for " + _0x546ca5(String(_0x3704eb(_0x230ce1).name || "them").split(" ")[0]) + " to press I’m ready") : "" + (_0x5340f0 ? "Speaking from the crowd" : "Turn " + Math.min(_0x2510b1 + 1, _0x1b1047) + " of " + _0x1b1047) + (_0x49e70a ? " · next: " + _0x546ca5(String(_0x3704eb(_0x49e70a).name || "").split(" ")[0]) : " · then final votes")) + "</span></div>\n      <div class=\"fl-clock\"><b data-fl-left>…</b><em>" + (_0x25dcc7 ? "held" : "left") + "</em></div></div>";
+        let _0x26fe16 = "<div class=\"fl-now s-" + _0x24319a + (_0x6ab305 ? " mine" : "") + (_0x25dcc7 ? " paused" : "") + "\"><div class=\"fl-ring\"><svg class=\"fl-arc\" viewBox=\"0 0 56 56\" aria-hidden=\"true\"><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"bg\"/><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"fg\" data-fl-arc/></svg>" + _0x19c251(_0x230ce1, 44) + "</div>\n      <div class=\"fl-who\"><em>" + (_0x25dcc7 ? (_0x6ab305 ? "YOUR TURN" : "UP NEXT") : _0x5340f0 ? "ON STAGE" : "HAS THE FLOOR") + (_0x6ab305 && !_0x25dcc7 ? " · YOU" : "") + "</em><b data-user=\"" + _0x203a06(_0x230ce1) + "\">" + _0x546ca5(_0x3704eb(_0x230ce1).name || "member") + "</b><span>" + (_0x25dcc7 ? (_0x6ab305 ? "Press I’m ready to start your turn — your clock starts then" : "Waiting for " + _0x546ca5(String(_0x3704eb(_0x230ce1).name || "them").split(" ")[0]) + " to press I’m ready") : "" + (_0x5340f0 ? "Speaking from the crowd" : "Turn " + Math.min(_0x2510b1 + 1, _0x1b1047) + " of " + _0x1b1047) + (_0x49e70a ? " · next: " + _0x546ca5(String(_0x3704eb(_0x49e70a).name || "").split(" ")[0]) : " · then final votes")) + "</span></div>\n      <div class=\"fl-clock\">" + (_0x27e7fd.status === "active" && (_0x3d1e5a === _0x27e7fd.creatorId || _0x3d1e5a === _0x27e7fd.opponentId) ? "<button class=\"fl-exit\" data-fl-act=\"leave\" title=\"Leave debate\" aria-label=\"Leave debate\">" + _0x50010e.out + "<span>Exit</span></button>" : "") + "<b data-fl-left>…</b><em>" + (_0x25dcc7 ? "held" : "left") + "</em></div></div>";
         _0x26fe16 += "<div class=\"fl-track\">" + Array.from({
           length: _0x1b1047
         }, (_0x2cab98, _0x274979) => "<i class=\"" + (_0x274979 % 2 === 0 ? "a" : "b") + (_0x274979 < _0x2510b1 ? " done" : "") + (_0x274979 === _0x2510b1 && !_0x5340f0 ? " now" : "") + "\"></i>").join("") + "</div>";
@@ -44517,6 +44517,21 @@ ${_}`;
         };
         _0x378755.querySelectorAll("[data-fl-act]").forEach(_0x31ef94 => _0x31ef94.onclick = async () => {
           let _0x523afc = _0x31ef94.dataset.flAct;
+          if (_0x523afc === "leave") {
+            _0x3f85fd("Are you sure you want to leave the debate? Leaving ends it and counts as a loss for you" + (_0x548741.ranked ? " — and you lose ELO." : "."), async () => {
+              try {
+                let { error: _0x6b1e11 } = await _0x34bcfe.rpc("leave_debate", { d_id: _0x548741.id });
+                if (_0x6b1e11) {
+                  throw _0x6b1e11;
+                }
+                _0x25604e("You left the debate — it counts as a loss");
+                await _0x168da7();
+              } catch (_0x6b1e12) {
+                _0x25604e(_0x6b1e12 && _0x6b1e12.message || "Could not leave the debate");
+              }
+            });
+            return;
+          }
           _0x31ef94.disabled = true;
           try {
             if (_0x523afc === "done") {
