@@ -24838,7 +24838,7 @@ ${_}`;
         _0x283642 += "<div class=\"debate-vs\">\n      <div class=\"debate-side\" data-user=\"" + _0x203a06(_0x49b1fd.creatorId) + "\">" + _0x30cd9e(_0x49b1fd.creatorId, 44) + "<span>" + _0x546ca5(_0x7f07ce.name) + "</span>" + _0x2a85c7(_0x7f07ce.elo, "sm") + "</div>\n      <div class=\"debate-vs-x\"><span>VS</span></div>\n      <div class=\"debate-side\"" + (_0x4512e5 ? " data-user=\"" + _0x203a06(_0x49b1fd.opponentId) + "\"" : "") + ">" + (_0x4512e5 ? _0x30cd9e(_0x49b1fd.opponentId, 44) : "<div class=\"av deb-av-empty\" style=\"width:44px;height:44px\">?</div>") + "<span>" + (_0x4512e5 ? _0x546ca5(_0x4512e5.name) : "waiting…") + "</span>" + (_0x4512e5 ? _0x2a85c7(_0x4512e5.elo, "sm") : "") + "</div>\n    </div>";
         _0x283642 += _0x4988f0(_0x49b1fd);
         _0x283642 += "<div id=\"debateTally\"></div>";
-        _0x283642 += "<div class=\"db-actions\">" + (_0x49b1fd.status !== "ended" ? "<button class=\"btn block db-voice\" id=\"dbVoiceBtn\">" + _0x50010e.mic + " " + (_0x58d4b5() && _0x2e6c84() && (_0x2e6c84().id === _0x49b1fd.creatorId || _0x2e6c84().id === _0x49b1fd.opponentId || _0x49b1fd.stageGuest === _0x2e6c84().id && _0x49b1fd.turnHolder === _0x2e6c84().id) ? "Take the podium" : "Listen live") + "</button>" : "") + "<button class=\"btn ghost block\" id=\"dbChatBtn\">" + _0x50010e.chat + " Spectator chat</button></div>";
+        _0x283642 += "<div class=\"db-actions\">" + (_0x49b1fd.status !== "ended" ? "<button class=\"btn block db-voice\" id=\"dbVoiceBtn\">" + _0x50010e.mic + " " + (_0x58d4b5() && _0x2e6c84() && (_0x2e6c84().id === _0x49b1fd.creatorId || _0x2e6c84().id === _0x49b1fd.opponentId || _0x49b1fd.stageGuest === _0x2e6c84().id && _0x49b1fd.turnHolder === _0x2e6c84().id) ? "Take the podium" : "Listen live") + "</button>" : "") + "<button class=\"btn ghost block\" id=\"dbChatBtn\">" + _0x50010e.chat + " Spectator chat</button></div>" + (_0x49b1fd.status !== "ended" ? _0x7f3a01(_0x49b1fd) : "");
         if (_0x49b1fd.status === "active") {
           let _0x572e1e = _0x2e6c84().id;
           let _0x5e06a4 = _0x572e1e === _0x49b1fd.creatorId || _0x572e1e === _0x49b1fd.opponentId;
@@ -26842,6 +26842,16 @@ ${_}`;
             await _0x120f76([_0x3901af.creatorId, _0x3901af.opponentId]);
             _0x90b9d6(_0x3901af);
           };
+          _0x5f230b.autoEnter = _0x5f230b.autoEnter || {};
+          if (!_0x5f230b.autoEnter[_0x1d3761.id]) {
+            _0x5f230b.autoEnter[_0x1d3761.id] = true;
+            setTimeout(() => {
+              let _0x7f3a02 = _0x1f1dd4("rkEnter");
+              if (_0x7f3a02) {
+                _0x7f3a02.click();
+              }
+            }, 400);
+          }
           return;
         }
         _0x511548 += "<div class=\"rk-stage\"><div class=\"rk-q\">Match ended</div><div class=\"rk-sub\">" + _0x546ca5(_0x1d3761.ended_reason || "This match is over.") + "</div><button class=\"btn block\" id=\"rkAgain\">" + _0x50010e.radar + " Find another opponent</button></div>";
@@ -36159,6 +36169,13 @@ ${_}`;
           _0x25604e("Could not open room");
         }
       }
+      function _0x7f3a01(_0x7f3a03) {
+        let _0x7f3a04 = [_0x7f3a03.creatorId, _0x7f3a03.opponentId, _0x7f3a03.stageGuest].filter((_0x7f3a05, _0x7f3a06, _0x7f3a07) => _0x7f3a05 && _0x7f3a07.indexOf(_0x7f3a05) === _0x7f3a06);
+        if (!_0x7f3a04.length) {
+          return "";
+        }
+        return "<div class=\"db-podium\"><div class=\"db-podium-k\">On the podium</div><div class=\"db-podium-row\">" + _0x7f3a04.map(_0x7f3a08 => "<div class=\"db-podium-u" + (_0x7f3a03.turnHolder === _0x7f3a08 ? " speaking" : "") + "\" data-user=\"" + _0x203a06(_0x7f3a08) + "\">" + _0x30cd9e(_0x7f3a08, 40) + "<span>" + _0x546ca5(_0x3704eb(_0x7f3a08).name || "") + "</span>" + (_0x7f3a03.turnHolder === _0x7f3a08 ? "<em>speaking</em>" : _0x7f3a08 === _0x7f3a03.stageGuest ? "<em>guest</em>" : "") + "</div>").join("") + "</div></div>";
+      }
       function _0x5d0e01(_0x5d0e1a) {
         if (!_0x5d0e1a || !_0x58d4b5()) {
           return;
@@ -43907,7 +43924,7 @@ ${_}`;
         }, (_0x2cab98, _0x274979) => "<i class=\"" + (_0x274979 % 2 === 0 ? "a" : "b") + (_0x274979 < _0x2510b1 ? " done" : "") + (_0x274979 === _0x2510b1 && !_0x5340f0 ? " now" : "") + "\"></i>").join("") + "</div>";
         let _0x3a78ee = [];
         if (_0x293159) {
-          _0x3a78ee.push(_0x25dcc7 ? "<button class=\"btn fl-pause on\" data-fl-act=\"resume\">" + _0x50010e.play + " Start the clock</button>" : "<button class=\"btn ghost fl-pause\" data-fl-act=\"pause\"" + (_0x5340f0 ? " disabled title=\"Wait for the guest to finish\"" : "") + ">" + _0x50010e.pause + " Pause</button>");
+          _0x3a78ee.push(_0x25dcc7 ? "<button class=\"btn fl-pause on\" data-fl-act=\"resume\">" + _0x50010e.play + " Start the clock</button>" : "");
         }
         if (_0x6ab305) {
           _0x3a78ee.push("<button class=\"btn fl-done\" data-fl-act=\"done\">" + _0x50010e.check + " Done talking</button>");
@@ -45834,7 +45851,7 @@ ${_}`;
           }
         } catch {}
       }, 1000);
-      var _0x31b78c = ["You can join servers in the Connect menu!", "You can add or DM people you connect with!", "Posts created from your profile will be sent to the feed", "Long-press any message to reply, react or copy it", "Theme & display has 25 ambience scenes — try Blood Moon", "Swipe a message right to reply to it", "Ranked debates match you with anyone — tap Find an opponent", "Tap someone’s name anywhere to open their profile", "Save your favourite look in Theme & display → Presets", "Turn on live debate alerts from the Debates tab", "Your trophy case lives in Settings — pin up to 3 badges", "Pause the clock in a debate to talk it out together"];
+      var _0x31b78c = ["You can join servers in the Connect menu!", "You can add or DM people you connect with!", "Posts created from your profile will be sent to the feed", "Long-press any message to reply, react or copy it", "Theme & display has 25 ambience scenes — try Blood Moon", "Swipe a message right to reply to it", "Ranked debates match you with anyone — tap Find an opponent", "Tap someone’s name anywhere to open their profile", "Save your favourite look in Theme & display → Presets", "Turn on live debate alerts from the Debates tab", "Your trophy case lives in Settings — pin up to 3 badges"];
       var _0x587e6b = 0;
       var _0x55987f = Date.now();
       var _0x3185b3 = -1;
