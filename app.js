@@ -17552,6 +17552,7 @@ ${_}`;
       }
       let _0x16cdbe = {
         post_new: "posted in the feed",
+        liked_post: "— someone you like — just posted",
         vc_start: "joined the voice chat in the Nexus",
         ranked_queue: "is looking for a ranked debate — jump in the queue",
         debate_turn: "passed you the floor — it’s your turn to talk",
@@ -27097,6 +27098,71 @@ ${_}`;
           }) + "<div class=\"r-main\"><div class=\"r-name\">" + _0x546ca5(_0x13cdc5.name) + "</div><div class=\"r-sub\">" + _0x5cedb5() + " you liked · tap to view</div></div></div>";
         });
         _0x5a8d2d.innerHTML = _0x28ce4e;
+        _0xabb8b1(_0x5a8d2d);
+      }
+      async function _0xabb8b1(_0xabb8b2) {
+        // "New post" tags on people you like: their latest post you haven't opened yet (last 7 days)
+        try {
+          let _0xabb8b3 = _0x13913b.likesGiven.filter(_0xabb8b4 => _0x36110d(_0xabb8b4));
+          if (!_0xabb8b3.length || !_0x58d4b5()) {
+            return;
+          }
+          let { data: _0xabb8b5 } = await _0x34bcfe.from("posts").select("id,author_id,created_at").in("author_id", _0xabb8b3).order("created_at", { ascending: false }).limit(300);
+          let _0xabb8b6 = {};
+          try {
+            _0xabb8b6 = JSON.parse(localStorage.getItem("mx.likedSeen") || "{}") || {};
+          } catch {}
+          let _0xabb8b7 = (_0xabb8b8, _0xabb8b9) => {
+            _0xabb8b6[_0xabb8b8] = Math.max(_0xabb8b6[_0xabb8b8] || 0, _0xabb8b9);
+            try {
+              localStorage.setItem("mx.likedSeen", JSON.stringify(_0xabb8b6));
+            } catch {}
+          };
+          let _0xabb8ba = {};
+          (_0xabb8b5 || []).forEach(_0xabb8bb => {
+            if (!_0xabb8ba[_0xabb8bb.author_id]) {
+              _0xabb8ba[_0xabb8bb.author_id] = _0xabb8bb;
+            }
+          });
+          let _0xabb8bc = _0xabb8bd => {
+            let _0xabb8be = Math.max(0, Date.now() - _0xabb8bd) / 60000;
+            return _0xabb8be < 1 ? "just now" : _0xabb8be < 60 ? Math.floor(_0xabb8be) + "m ago" : _0xabb8be < 1440 ? Math.floor(_0xabb8be / 60) + "h ago" : Math.floor(_0xabb8be / 1440) + "d ago";
+          };
+          if (!_0xabb8b2.isConnected) {
+            return;
+          }
+          let _0xabb8bf = [];
+          _0xabb8b2.querySelectorAll(".row[data-user]").forEach(_0xabb8c0 => {
+            let _0xabb8c1 = _0xabb8c0.dataset.user;
+            let _0xabb8c2 = _0xabb8ba[_0xabb8c1];
+            if (!_0xabb8c2) {
+              return;
+            }
+            let _0xabb8c3 = new Date(_0xabb8c2.created_at).getTime();
+            let _0xabb8c4 = _0xabb8c0.querySelector(".r-sub");
+            if (_0xabb8c4) {
+              _0xabb8c4.innerHTML = _0x5cedb5() + " you liked · posted " + _0xabb8bc(_0xabb8c3);
+            }
+            _0xabb8c0.addEventListener("click", () => _0xabb8b7(_0xabb8c1, _0xabb8c3));
+            if (_0xabb8c3 > (_0xabb8b6[_0xabb8c1] || 0) && Date.now() - _0xabb8c3 < 604800000) {
+              _0xabb8c0.classList.add("lk-new");
+              let _0xabb8c5 = document.createElement("button");
+              _0xabb8c5.type = "button";
+              _0xabb8c5.className = "lk-new-pill";
+              _0xabb8c5.textContent = "New post";
+              _0xabb8c5.onclick = _0xabb8c6 => {
+                _0xabb8c6.stopPropagation();
+                _0xabb8b7(_0xabb8c1, _0xabb8c3);
+                _0xabb8c0.classList.remove("lk-new");
+                _0xabb8c5.remove();
+                _0x116878(_0xabb8c2.id);
+              };
+              _0xabb8c0.appendChild(_0xabb8c5);
+              _0xabb8bf.push([_0xabb8c3, _0xabb8c0]);
+            }
+          });
+          _0xabb8bf.sort((_0xabb8c7, _0xabb8c8) => _0xabb8c7[0] - _0xabb8c8[0]).forEach(_0xabb8c9 => _0xabb8b2.prepend(_0xabb8c9[1]));
+        } catch {}
       }
       function _0x18e123() {
         let _0x219cbb = _0x1f1dd4("frReqList");
@@ -44414,6 +44480,7 @@ ${_}`;
       });
       var _0x30eba9 = {
         post_new: ["feed", "#a78bfa"],
+        liked_post: ["heart", "#ff4f8b"],
         vc_start: ["phone", "#39c97e"],
         ranked_queue: ["swords", "#fb923c"],
         debate_turn: ["mic", "#ff5a6e"],
@@ -44542,7 +44609,7 @@ ${_}`;
           }
         }
       }
-      var _0x238cfa = [["People", [["dms", "Direct messages", "Someone DMs you", "dm"], ["mentions", "Mentions", "Someone @tags you in a room", "reply"], ["replies", "Replies", "Someone replies to your message", "reply"], ["friends", "Friends", "Friend requests and accepts", "people"]]], ["Your posts", [["likes", "Likes", "Likes on you or your posts", "heart"], ["comments", "Comments", "Comments on your posts", "chat"]]], ["Debates", [["debates", "Your debates", "Someone joins yours, and results when it ends", "debates"], ["debate_live", "Live debates & ranked queue", "When someone queues for ranked, or a debate goes live", "live"]]], ["Everyone", [["posts_new", "New posts", "When someone posts in the feed", "feed"], ["voice", "Voice in the Nexus", "When someone joins the voice chat in the Nexus", "phone"]]], ["Maintrix", [["badges", "Badges", "A new badge lands on your profile", "badge"], ["servers", "Servers", "Someone joins a server you own", "grid"], ["updates", "Updates", "When a new update comes out", "notes"]]]];
+      var _0x238cfa = [["People", [["dms", "Direct messages", "Someone DMs you", "dm"], ["mentions", "Mentions", "Someone @tags you in a room", "reply"], ["replies", "Replies", "Someone replies to your message", "reply"], ["friends", "Friends", "Friend requests and accepts", "people"], ["liked_posts", "People I like", "When someone you like makes a post", "heart"]]], ["Your posts", [["likes", "Likes", "Likes on you or your posts", "heart"], ["comments", "Comments", "Comments on your posts", "chat"]]], ["Debates", [["debates", "Your debates", "Someone joins yours, and results when it ends", "debates"], ["debate_live", "Live debates & ranked queue", "When someone queues for ranked, or a debate goes live", "live"]]], ["Everyone", [["posts_new", "New posts", "When someone posts in the feed", "feed"], ["voice", "Voice in the Nexus", "When someone joins the voice chat in the Nexus", "phone"]]], ["Maintrix", [["badges", "Badges", "A new badge lands on your profile", "badge"], ["servers", "Servers", "Someone joins a server you own", "grid"], ["updates", "Updates", "When a new update comes out", "notes"]]]];
       function _0x5b68d4(_0x43ed20, _0x50142d) {
         if (_0x50142d === "debate_live") {
           return _0x43ed20[_0x50142d] !== false;

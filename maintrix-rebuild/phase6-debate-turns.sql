@@ -242,3 +242,22 @@ begin
   returning true into ok;
   return coalesce(ok, false);
 end $function$;
+
+-- New posts: people who like the author get a 'liked_post' alert (own toggle: liked_posts); everyone else 'post_new'.
+CREATE OR REPLACE FUNCTION public.trg_notify_post_new()
+ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+begin
+  insert into notifications (user_id, type, kind, actor_id, entity, body)
+  select p.id, x.t, x.t, new.author_id,
+         jsonb_build_object('post_id', new.id, 'preview', left(coalesce(nullif(new.caption, ''), new.body, ''), 100)),
+         left(coalesce(nullif(new.caption, ''), new.body, ''), 100)
+  from profiles p
+  cross join lateral (
+    select case when exists (select 1 from user_likes ul where ul.liker_id = p.id and ul.liked_id = new.author_id)
+                then 'liked_post' else 'post_new' end as t
+  ) x
+  where p.id <> new.author_id and p.handle is not null and not coalesce(p.banned, false)
+    and coalesce(p.notif_prefs -> (case when x.t = 'liked_post' then 'liked_posts' else 'posts_new' end), 'true'::jsonb) <> 'false'::jsonb;
+  return null;
+end $function$;
