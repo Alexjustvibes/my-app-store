@@ -29482,7 +29482,7 @@ ${_}`;
         let _0x53cdbb = _0x1162e6(_0xa2385f.color) || "#ed2e44";
         let _0x29140e = "<div class=\"sheet-grab\"></div><div style=\"--accent:" + _0x53cdbb + ";--accent-hi:" + _0x53cdbb + ";--accent-soft:" + _0x53cdbb + "26;--accent-press:" + _0x53cdbb + "\">";
         let _0x218959 = _0xa2385f.bannerPath ? "background:#000 url('" + _0x203a06(_0x54dbe2(_0xa2385f.bannerPath) || "") + "') center/cover" : "background:" + (_0x25d220[_0xa2385f.bannerStyle] || _0x25d220.diagonal)(_0x53cdbb);
-        _0x29140e += "<div class=\"prof-banner\" style=\"" + _0x218959 + "\"></div>";
+        _0x29140e += "<div class=\"prof-banner\" style=\"" + _0x218959 + "\">" + (_0x4e256c && _0x58d4b5() ? "<div class=\"pb-tools\">" + (_0x38064e.standalone() ? "<span></span>" : "<button class=\"pb-btn\" id=\"pbInstall\" type=\"button\">" + _0x50010e.download + "<span>Add to Home Screen</span></button>") + "<button class=\"pb-btn pb-bell\" id=\"pbPush\" type=\"button\" aria-label=\"Notifications\"></button></div>" : "") + "</div>";
         _0x29140e += "<div class=\"prof-hero\"><div class=\"p-av\">" + _0x19c251(_0x442b13, 84, {
           dot: true,
           ring: true
@@ -29532,7 +29532,7 @@ ${_}`;
             _0x29140e += "<div class=\"settings-row\" id=\"setBio\"><span class=\"sr-ic\">" + _0x50010e.edit + "</span> Edit bio <span class=\"sr-r\">" + _0x50010e.chev + "</span></div>";
             _0x29140e += "<div class=\"settings-row\" id=\"setLoc\"><span class=\"sr-ic\">" + _0x50010e.people + "</span> Edit location <span class=\"sr-r\">" + (_0x546ca5(_0x444a0c(_0xa2385f)) || "set") + " " + _0x50010e.chev + "</span></div>";
           }
-          _0x29140e += "<div class=\"settings-row\" id=\"setLook\"><span class=\"sr-ic\">" + _0x50010e.spark + "</span> Appearance <span class=\"sr-r\">color · likes</span></div>";
+          _0x29140e += "<div class=\"settings-row\" id=\"setLook\"><span class=\"sr-ic\">" + _0x50010e.spark + "</span> Profile appearance <span class=\"sr-r\">color · likes</span></div>";
           _0x29140e += "<div class=\"settings-row\" id=\"setTrophy\"><span class=\"sr-ic\">" + _0x50010e.trophy + "</span> Trophy case <span class=\"sr-r\">badges · showcase " + _0x50010e.chev + "</span></div>";
           _0x29140e += "<div class=\"settings-row\" id=\"setSaved\"><span class=\"sr-ic\">" + _0x50010e.grid + "</span> Saved posts <span class=\"sr-r\">" + _0x50010e.chev + "</span></div>";
           _0x29140e += "<div class=\"settings-row\" id=\"setSavedMsgs\"><span class=\"sr-ic\">" + _0x50010e.pin + "</span> Saved messages <span class=\"sr-r\">" + (_0x15f0f1().length || "") + " " + _0x50010e.chev + "</span></div>";
@@ -29584,6 +29584,81 @@ ${_}`;
         _0x29140e += "</div>";
         _0x38376d(_0x29140e);
         if (_0x4e256c && _0x58d4b5()) {
+          let _0x9b0a01 = _0x1f1dd4("pbInstall");
+          if (_0x9b0a01) {
+            _0x9b0a01.onclick = () => _0x2a5472({
+              skippable: true,
+              suggested: true
+            });
+          }
+          let _0x9b0a02 = _0x1f1dd4("pbPush");
+          if (_0x9b0a02) {
+            let _0x9b0a03 = "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M18 8a6 6 0 0 0-9.3-5\"/><path d=\"M6.3 6.3A6 6 0 0 0 6 8c0 7-3 9-3 9h14\"/><path d=\"M13.7 21a2 2 0 0 1-3.4 0\"/><path d=\"M2 2l20 20\"/></svg>";
+            let _0x9b0a04 = "off";
+            let _0x9b0a05 = () => _0x9b0a04 === "on" && (_0x2e6c84().notifPrefs || {}).push !== false;
+            let _0x9b0a06 = () => {
+              let _0x9b0a07 = _0x9b0a05();
+              _0x9b0a02.classList.toggle("on", _0x9b0a07);
+              _0x9b0a02.innerHTML = _0x9b0a07 ? _0x50010e.bell : _0x9b0a03;
+              _0x9b0a02.title = _0x9b0a07 ? "Notifications on — tap to turn all off" : "Notifications off — tap to turn all on";
+              _0x9b0a02.setAttribute("aria-pressed", String(_0x9b0a07));
+            };
+            let _0x9b0a08 = async _0x9b0a09 => {
+              let _0x9b0a0a = Object.assign({}, _0x2e6c84().notifPrefs || {}, {
+                push: _0x9b0a09
+              });
+              await _0x5295a4.profiles.update({
+                notif_prefs: _0x9b0a0a
+              });
+              _0x2e6c84().notifPrefs = _0x9b0a0a;
+            };
+            _0x9b0a06();
+            _0x38064e.status().then(_0x9b0a0b => {
+              _0x9b0a04 = _0x9b0a0b;
+              _0x9b0a06();
+            }).catch(() => {});
+            _0x9b0a02.onclick = async () => {
+              if (_0x9b0a02.disabled) {
+                return;
+              }
+              _0x9b0a02.disabled = true;
+              try {
+                if (_0x9b0a05()) {
+                  await _0x9b0a08(false);
+                  try {
+                    await _0x38064e.disable();
+                  } catch {}
+                  _0x9b0a04 = "off";
+                  _0x25604e("All notifications off");
+                } else {
+                  let _0x9b0a0c = "off";
+                  try {
+                    _0x9b0a0c = await _0x38064e.status();
+                  } catch {}
+                  if (_0x9b0a0c === "needs-install") {
+                    _0x25604e("Add Maintrix to your Home Screen first — then turn notifications on");
+                    _0x2a5472({
+                      skippable: true,
+                      suggested: true
+                    });
+                  } else if (_0x9b0a0c === "blocked") {
+                    _0x25604e("Notifications are blocked — allow them for maintrix.online in your browser settings");
+                  } else if (_0x9b0a0c === "unsupported") {
+                    _0x25604e("This browser can’t get push notifications");
+                  } else {
+                    await _0x38064e.enable();
+                    await _0x9b0a08(true);
+                    _0x9b0a04 = "on";
+                    _0x25604e("All notifications on", _0x50010e.bell);
+                  }
+                }
+              } catch (_0x9b0a0d) {
+                _0x25604e(_0x9b0a0d && _0x9b0a0d.message || "Couldn’t change notifications");
+              }
+              _0x9b0a02.disabled = false;
+              _0x9b0a06();
+            };
+          }
           let _0xa7f001 = _0x1f1dd4("sheet").querySelector(".prof-hero .p-av");
           if (_0xa7f001) {
             let _0xa7f0p1 = document.createElement("button");
@@ -29610,7 +29685,7 @@ ${_}`;
               }
               let _0xa7f0p7 = document.createElement("div");
               _0xa7f0p7.className = "p-pen-menu";
-              [["Change picture", () => _0xa7f0pk()], ["Edit bio", "#setBio"], ["Edit location", "#setLoc"], ["Appearance", "#setLook"], ["Theme & display", "#setTheme"]].forEach(([_0xa7f0p8, _0xa7f0p9]) => {
+              [["Change picture", () => _0xa7f0pk()], ["Edit bio", "#setBio"], ["Edit location", "#setLoc"], ["Profile appearance", "#setLook"], ["Theme & display", "#setTheme"]].forEach(([_0xa7f0p8, _0xa7f0p9]) => {
                 if (typeof _0xa7f0p9 === "string" && !_0xa7f0p3.querySelector(_0xa7f0p9)) {
                   return;
                 }
@@ -31176,7 +31251,7 @@ ${_}`;
         };
         let _0x1177ab = null;
         let _0xeb273b = null;
-        let _0x2a7549 = "<div class=\"sheet-grab\"></div><div class=\"pad\"><div class=\"tb-title\" style=\"font-size:20px;margin-bottom:14px\">Appearance</div>";
+        let _0x2a7549 = "<div class=\"sheet-grab\"></div><div class=\"pad\"><div class=\"tb-title\" style=\"font-size:20px;margin-bottom:14px\">Profile appearance</div>";
         if (_0x58d4b5()) {
           _0x2a7549 += "<div style=\"display:flex;align-items:center;gap:12px;margin-bottom:16px\"><div id=\"apPicPrev\" style=\"cursor:pointer\">" + _0x19c251(_0x127070.name, 64) + "</div><div><div style=\"font-weight:600\">Profile picture</div><div style=\"font-size:13px;color:var(--muted)\">Tap to change</div></div><input id=\"apPic\" type=\"file\" accept=\"image/*\" style=\"display:none\"></div>";
           let _0x41d080 = _0x127070.bannerPath ? "background:#000 url('" + _0x203a06(_0x54dbe2(_0x127070.bannerPath) || "") + "') center/cover" : "background:var(--surface-2)";
