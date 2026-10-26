@@ -227,3 +227,18 @@ begin
   end if;
   return to_jsonb(m);
 end $function$;
+
+-- Ranked-queue alerts: once an hour per person (was 5 minutes), matching the note under "Find an opponent".
+CREATE OR REPLACE FUNCTION public._notify_once(p_user uuid, p_actor uuid, p_kind text, p_ref uuid)
+ RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+declare ok boolean;
+        win interval := case p_kind when 'vc_join' then interval '1 hour' when 'rq_join' then interval '1 hour' else interval '24 hours' end;
+begin
+  if p_user is null or p_actor is null or p_user = p_actor then return false; end if;
+  insert into notif_dedupe (user_id, actor_id, kind, ref, last_at) values (p_user, p_actor, p_kind, p_ref, now())
+  on conflict (user_id, actor_id, kind, ref) do update set last_at = now()
+    where notif_dedupe.last_at < now() - win
+  returning true into ok;
+  return coalesce(ok, false);
+end $function$;
