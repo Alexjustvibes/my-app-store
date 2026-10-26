@@ -175,3 +175,33 @@ begin
   end if;
   return new;
 end $$;
+
+-- Nexus voice: every join alerts everyone, with a 1-hour cooldown per person (leave + rejoin doesn't spam)
+create or replace function public._notify_once(p_user uuid, p_actor uuid, p_kind text, p_ref uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare ok boolean; win interval := case when p_kind = 'vc_join' then interval '1 hour' else interval '24 hours' end;
+begin
+  if p_user is null or p_actor is null or p_user = p_actor then return false; end if;
+  insert into notif_dedupe (user_id, actor_id, kind, ref, last_at) values (p_user, p_actor, p_kind, p_ref, now())
+  on conflict (user_id, actor_id, kind, ref) do update set last_at = now()
+    where notif_dedupe.last_at < now() - win
+  returning true into ok;
+  return coalesce(ok, false);
+end $$;
+revoke all on function public._notify_once(uuid, uuid, text, uuid) from public, anon, authenticated;
+
+create or replace function announce_nexus_vc(p_uid uuid) returns int
+language plpgsql security definer set search_path = public as $$
+declare r uuid; n int := 0;
+begin
+  select id into r from rooms where slug = 'world' limit 1;
+  if r is null or p_uid is null then return 0; end if;
+  if not _notify_once(r, p_uid, 'vc_join', r) then return 0; end if;
+  insert into notifications (user_id, type, kind, actor_id, entity, body)
+  select p.id, 'vc_start', 'vc_start', p_uid, jsonb_build_object('room_id', r, 'title', 'The Nexus'), 'Joined the voice chat in the Nexus'
+  from profiles p
+  where p.id <> p_uid and p.handle is not null and not coalesce(p.banned, false)
+    and coalesce(p.notif_prefs -> 'voice', 'true'::jsonb) <> 'false'::jsonb;
+  get diagnostics n = row_count;
+  return n;
+end $$;

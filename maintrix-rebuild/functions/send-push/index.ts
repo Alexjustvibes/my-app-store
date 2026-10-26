@@ -55,7 +55,7 @@ function compose(type: string, who: string, e: Record<string, any>): { title: st
     case "server_join": return { title: clip(e.title || "Your server", 60), body: `${who} joined` };
     case "update": return { title: "Maintrix update", body: clip(e.summary || e.title || "Something new is here", 120) };
     case "post_new": return { title: `${who} posted`, body: prev || "New post in the feed" };
-    case "vc_start": return { title: "Voice chat in the Nexus", body: `${who} started a voice chat — hop in` };
+    case "vc_start": return { title: "Voice chat in the Nexus", body: `${who} joined the voice chat — hop in` };
     case "everyone": return { title: `${who} pinged @everyone`, body: prev };
     default: return { title: "Maintrix", body: clip(e.text || e.preview || "You have a new notification", 140) };
   }
