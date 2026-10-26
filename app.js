@@ -14967,13 +14967,20 @@ ${_}`;
           async signIn(_0x2d05e9, _0xe6ef4e) {
             await _0x1aea05();
             let _0x476657 = await _0x44f618.tokenOnly("signin");
-            return _0x34bcfe.auth.signInWithPassword({
+            let _0x4766a1 = await _0x34bcfe.auth.signInWithPassword({
               email: _0x2d05e9,
               password: _0xe6ef4e,
               options: _0x476657 ? {
                 captchaToken: _0x476657
               } : undefined
             });
+            if (_0x4766a1 && !_0x4766a1.error && _0x4766a1.data && _0x4766a1.data.session) {
+              try {
+                localStorage.setItem("mx.walk", "1");
+                window.dispatchEvent(new Event("mx:signedin"));
+              } catch {}
+            }
+            return _0x4766a1;
           },
           async signUp(_0x297910, _0xeeef36) {
             await _0x1aea05();
@@ -14984,11 +14991,18 @@ ${_}`;
             if (_0x24cfb2) {
               _0x3beeeb.captchaToken = _0x24cfb2;
             }
-            return _0x34bcfe.auth.signUp({
+            let _0x24cfa1 = await _0x34bcfe.auth.signUp({
               email: _0x297910,
               password: _0xeeef36,
               options: _0x3beeeb
             });
+            if (_0x24cfa1 && !_0x24cfa1.error) {
+              try {
+                localStorage.setItem("mx.walk", "1");
+                window.dispatchEvent(new Event("mx:signedin"));
+              } catch {}
+            }
+            return _0x24cfa1;
           },
           async setPassword(_0x5a5e1a) {
             await _0x1aea05();
@@ -35714,39 +35728,126 @@ ${_}`;
       let _0x7e2a00 = null;
       let _0x7e2a12 = false;
       let _0x7e2a13 = "";
+      window.addEventListener("mx:signedin", () => {
+        _0x7e2a00 = null;
+        _0x7e2a12 = false;
+        _0x7e2a13 = "";
+      });
       window.addEventListener("mx:sent", async () => {
         if (_0x7e2a00 !== true) {
           return;
         }
         _0x7e2a00 = false;
         try {
-          localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
+          localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); localStorage.removeItem("mx.walk");
         } catch {}
         try {
           _0x7e2a02();
         } catch {}
-        let _0x7e2a10 = "off";
-        try {
-          _0x7e2a10 = await _0x38064e.status();
-        } catch {}
         setTimeout(() => {
-          try {
-            if (_0x7e2a10 === "off") {
-              _0x2123eb(() => {});
-            } else {
-              _0x2074f8(true);
-            }
-          } catch {}
+          _0x7e2a20().catch(() => {});
         }, 900);
       });
+      // After the first Nexus message: always ask about push notifications, then suggest the Home Screen
+      async function _0x7e2a20() {
+        let _0x7e2a21 = "off";
+        try {
+          _0x7e2a21 = await _0x38064e.status();
+        } catch {}
+        let _0x7e2a22 = () => setTimeout(() => {
+          try {
+            _0x2074f8(true);
+          } catch {}
+        }, 400);
+        if (_0x7e2a21 === "unsupported") {
+          _0x7e2a22();
+          return;
+        }
+        let _0x7e2a23 = _0x7e2a21 === "needs-install" ? "On iPhone, notifications start working once Maintrix is on your Home Screen — we’ll show you how." : _0x7e2a21 === "blocked" ? "They’re blocked in your browser settings right now. Allow notifications for maintrix.online there and they’ll start coming through." : "Get a ping for DMs, replies, live debates and new posts from people you like. You can fine-tune them anytime in Settings.";
+        _0x1f1dd4("sheet").className = "sheet";
+        _0x38376d("<div class=\"sheet-grab\"></div><div class=\"pad install-guide\"><div class=\"ig-icon\">" + _0x50010e.bell + "</div><h3>Turn on push notifications?</h3><p class=\"sub\">" + _0x7e2a23 + "</p><button class=\"btn block\" id=\"fpYes\">" + (_0x7e2a21 === "needs-install" ? "Show me how" : _0x7e2a21 === "blocked" ? "OK" : "Yes, turn them on") + "</button>" + (_0x7e2a21 === "blocked" ? "" : "<button class=\"btn ghost block\" id=\"fpNo\" style=\"margin-top:8px\">Not now</button>") + "<div style=\"height:10px\"></div></div>");
+        let _0x7e2a24 = async _0x7e2a25 => {
+          try {
+            await _0x5295a4.profiles.update({
+              notif_prefs: Object.assign({}, _0x2e6c84().notifPrefs || {}, {
+                push: _0x7e2a25
+              })
+            });
+            _0x2e6c84().notifPrefs = Object.assign({}, _0x2e6c84().notifPrefs || {}, {
+              push: _0x7e2a25
+            });
+          } catch {}
+        };
+        let _0x7e2a26 = _0x1f1dd4("fpYes");
+        _0x7e2a26.onclick = async () => {
+          if (_0x7e2a21 === "needs-install") {
+            await _0x7e2a24(true);
+            _0x13913b.installPromptShown = true;
+            _0x24efc1();
+            _0x2a5472({
+              skippable: true,
+              suggested: true
+            });
+            return;
+          }
+          if (_0x7e2a21 === "blocked") {
+            _0x2f9605();
+            _0x7e2a22();
+            return;
+          }
+          _0x7e2a26.disabled = true;
+          _0x7e2a26.textContent = "Turning on…";
+          try {
+            await _0x38064e.enable();
+            await _0x7e2a24(true);
+            _0x25604e("Notifications are on", _0x50010e.bell);
+          } catch (_0x7e2a27) {
+            _0x25604e(_0x7e2a27 && _0x7e2a27.message || "Couldn’t turn on notifications");
+          }
+          _0x2f9605();
+          _0x7e2a22();
+        };
+        let _0x7e2a28 = _0x1f1dd4("fpNo");
+        if (_0x7e2a28) {
+          _0x7e2a28.onclick = async () => {
+            _0x2f9605();
+            if (_0x7e2a21 === "on") {
+              await _0x7e2a24(false);
+            }
+            _0x7e2a22();
+          };
+        }
+      }
       async function _0x7e2a01() {
         if (_0x7e2a00 !== null || !_0x58d4b5() || !_0x2e6c84() || !_0x36110d(_0x2e6c84().id)) {
           return;
         }
         let _0x7e2a03 = false;
+        let _0x7e2a15 = false;
         try {
-          _0x7e2a03 = localStorage.getItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || "")) === "1";
+          _0x7e2a15 = localStorage.getItem("mx.walk") === "1";
+          if (_0x7e2a15) {
+            localStorage.removeItem("mx.nexusTip." + _0x2e6c84().id);
+            localStorage.removeItem("mx.feedTip." + _0x2e6c84().id);
+          }
+          _0x7e2a03 = !_0x7e2a15 && localStorage.getItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || "")) === "1";
         } catch {}
+        if (_0x7e2a15) {
+          _0x7e2a00 = true;
+          _0x7e2a12 = true;
+          try {
+            localStorage.setItem("mx.feedPending." + _0x2e6c84().id, "1");
+          } catch {}
+          if (_0x13913b.screen !== "nexus") {
+            _0x13913b.screen = "nexus";
+            _0x24efc1();
+            _0x1858d8();
+            _0x19d9b7();
+          } else {
+            _0x5eb37a();
+          }
+          return;
+        }
         if (_0x7e2a03) {
           _0x7e2a00 = false;
           return;
@@ -35761,7 +35862,7 @@ ${_}`;
           let _0x7e2a0f = _0x7e2a0e && _0x7e2a0e.created_at ? Date.now() - new Date(_0x7e2a0e.created_at).getTime() : 0;
           if (_0x7e2a04 > 0 || _0x7e2a0f > 172800000) {
             try {
-              localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
+              localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); localStorage.removeItem("mx.walk");
             } catch {}
             _0x7e2a00 = false;
             return;
@@ -35772,6 +35873,9 @@ ${_}`;
         }
         _0x7e2a00 = true;
         _0x7e2a12 = true;
+        try {
+          localStorage.setItem("mx.feedPending." + _0x2e6c84().id, "1");
+        } catch {}
         if (_0x13913b.screen !== "nexus") {
           _0x13913b.screen = "nexus";
           _0x24efc1();
@@ -35810,7 +35914,7 @@ ${_}`;
           _0x1f1dd4("nexusTipSkip").onclick = () => {
             _0x7e2a00 = false;
             try {
-              localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
+              localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); localStorage.removeItem("mx.walk");
             } catch {}
             _0x7e2a02();
           };
@@ -35819,7 +35923,7 @@ ${_}`;
         }
         let _0x7e2a09 = false;
         try {
-          _0x7e2a09 = localStorage.getItem("mx.feedTip." + (_0x2e6c84() && _0x2e6c84().id || "")) !== "1" && (_0x7e2a12 || localStorage.getItem("mx.feedTip") !== "1");
+          _0x7e2a09 = localStorage.getItem("mx.feedTip." + (_0x2e6c84() && _0x2e6c84().id || "")) !== "1" && (_0x7e2a12 || localStorage.getItem("mx.feedPending." + (_0x2e6c84() && _0x2e6c84().id || "")) === "1" || localStorage.getItem("mx.feedTip") !== "1");
         } catch {}
         let _0x7e2a0a = _0x7e2a09 && _0x58d4b5() && _0x13913b.screen === "feed" && _0x7e2a00 !== true;
         _0x7e2a06.classList.toggle("feed-gated", _0x7e2a0a);
@@ -35832,7 +35936,7 @@ ${_}`;
           _0x1f1dd4("view").appendChild(_0x7e2a0b);
           _0x1f1dd4("feedGateOk").onclick = () => {
             try {
-              localStorage.setItem("mx.feedTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
+              localStorage.setItem("mx.feedTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); localStorage.removeItem("mx.feedPending." + (_0x2e6c84() && _0x2e6c84().id || ""));
             } catch {}
             _0x7e2a06.classList.remove("feed-gated");
             _0x7e2a0b.remove();
@@ -36460,7 +36564,7 @@ ${_}`;
           }
         } catch {}
       }
-      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x8e1a01 = 0; let _0x8e1a0q = 0; let _0x8e1a02 = async () => { if (!_0x58d4b5() || document.hidden) { return; } try { let { count: _0x8e1a03, error: _0x8e1a04 } = await _0x34bcfe.from("debates").select("id", { count: "exact", head: true }).eq("status", "active"); if (!_0x8e1a04) { _0x8e1a01 = _0x8e1a03 || 0; } } catch {} try { let { data: _0x8e1a0p } = await _0x34bcfe.from("posts").select("created_at").neq("author_id", _0x2e6c84().id).order("created_at", { ascending: false }).limit(1); if (_0x8e1a0p && _0x8e1a0p[0]) { _0x8e1a0q = new Date(_0x8e1a0p[0].created_at).getTime(); } } catch {} }; let _0x8e1a05 = () => { let _0x8e1a0n = document.querySelector("#botnav [data-nav=\"nexus\"]"); if (_0x8e1a0n) { _0x8e1a0n.classList.toggle("nx-live", _0x8e1a01 > 0); } let _0x8e1a0r = 0; try { _0x8e1a0r = Number(localStorage.getItem("mx.feedSeen")) || 0; if (!_0x8e1a0r || _0x13913b.screen === "feed") { _0x8e1a0r = Date.now(); localStorage.setItem("mx.feedSeen", String(_0x8e1a0r)); } } catch {} let _0x8e1a0s = document.querySelector("#botnav [data-nav=\"feed\"]"); if (_0x8e1a0s) { let _0x8e1a0t = _0x8e1a0q > _0x8e1a0r && _0x13913b.screen !== "feed"; let _0x8e1a0u = _0x8e1a0s.querySelector(".fd-dot"); if (_0x8e1a0t && !_0x8e1a0u) { _0x8e1a0u = document.createElement("i"); _0x8e1a0u.className = "fd-dot"; _0x8e1a0s.appendChild(_0x8e1a0u); } else if (!_0x8e1a0t && _0x8e1a0u) { _0x8e1a0u.remove(); } } let _0x8e1a0v = document.querySelector("#botnav [data-nav=\"connect\"]"); if (_0x8e1a0v) { let _0x8e1a0w = (_0x13913b.notifications || []).some(_0x8e1a0x => _0x8e1a0x && !_0x8e1a0x.read && (_0x8e1a0x.type === "dm" || _0x8e1a0x.type === "friend_request")); let _0x8e1a0y = _0x8e1a0v.querySelector(".fd-dot"); if (_0x8e1a0w && !_0x8e1a0y) { _0x8e1a0y = document.createElement("i"); _0x8e1a0y.className = "fd-dot"; _0x8e1a0v.appendChild(_0x8e1a0y); } else if (!_0x8e1a0w && _0x8e1a0y) { _0x8e1a0y.remove(); } } let _0x8e1a06 = _0x1f1dd4("thDebates"); if (!_0x8e1a06) { return; } _0x8e1a06.classList.toggle("is-live", _0x8e1a01 > 0); let _0x8e1a07 = _0x8e1a06.querySelector(".dlb-live"); if (_0x8e1a01 > 0) { if (!_0x8e1a07) { _0x8e1a07 = document.createElement("span"); _0x8e1a07.className = "dlb-live"; _0x8e1a06.appendChild(_0x8e1a07); } _0x8e1a07.textContent = _0x8e1a01 > 9 ? "9+" : String(_0x8e1a01); _0x8e1a06.title = _0x8e1a01 + " live debate" + (_0x8e1a01 === 1 ? "" : "s"); } else if (_0x8e1a07) { _0x8e1a07.remove(); _0x8e1a06.title = "Debates"; } }; setInterval(_0x8e1a02, 20000); setInterval(_0x8e1a05, 1500); document.addEventListener("visibilitychange", _0x8e1a02); setTimeout(_0x8e1a02, 2500); } { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
+      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x8e1a01 = 0; let _0x8e1a0q = 0; let _0x8e1a02 = async () => { if (!_0x58d4b5() || document.hidden) { return; } try { let { count: _0x8e1a03, error: _0x8e1a04 } = await _0x34bcfe.from("debates").select("id", { count: "exact", head: true }).eq("status", "active"); if (!_0x8e1a04) { _0x8e1a01 = _0x8e1a03 || 0; } } catch {} try { let { data: _0x8e1a0p } = await _0x34bcfe.from("posts").select("created_at").neq("author_id", _0x2e6c84().id).order("created_at", { ascending: false }).limit(1); if (_0x8e1a0p && _0x8e1a0p[0]) { _0x8e1a0q = new Date(_0x8e1a0p[0].created_at).getTime(); } } catch {} }; let _0x8e1a05 = () => { let _0x8e1a0n = document.querySelector("#botnav [data-nav=\"nexus\"]"); if (_0x8e1a0n) { _0x8e1a0n.classList.toggle("nx-live", _0x8e1a01 > 0); } let _0x8e1a0r = 0; try { _0x8e1a0r = Number(localStorage.getItem("mx.feedSeen")) || 0; if (!_0x8e1a0r || _0x13913b.screen === "feed") { _0x8e1a0r = Date.now(); localStorage.setItem("mx.feedSeen", String(_0x8e1a0r)); } } catch {} let _0x8e1a0s = document.querySelector("#botnav [data-nav=\"feed\"]"); if (_0x8e1a0s) { let _0x8e1a0t = _0x8e1a0q > _0x8e1a0r && _0x13913b.screen !== "feed"; let _0x8e1a0u = _0x8e1a0s.querySelector(".fd-dot"); if (_0x8e1a0t && !_0x8e1a0u) { _0x8e1a0u = document.createElement("i"); _0x8e1a0u.className = "fd-dot"; _0x8e1a0s.appendChild(_0x8e1a0u); } else if (!_0x8e1a0t && _0x8e1a0u) { _0x8e1a0u.remove(); } } let _0x8e1a0v = document.querySelector("#botnav [data-nav=\"connect\"]"); if (_0x8e1a0v) { let _0x8e1a0w = (_0x13913b.notifications || []).some(_0x8e1a0x => _0x8e1a0x && !_0x8e1a0x.read && (_0x8e1a0x.type === "dm" || _0x8e1a0x.type === "friend_request")); let _0x8e1a0y = _0x8e1a0v.querySelector(".fd-dot"); if (_0x8e1a0w && !_0x8e1a0y) { _0x8e1a0y = document.createElement("i"); _0x8e1a0y.className = "fd-dot"; _0x8e1a0v.appendChild(_0x8e1a0y); } else if (!_0x8e1a0w && _0x8e1a0y) { _0x8e1a0y.remove(); } } let _0x8e1a10 = document.querySelector("#s-connect .segmented [data-t=\"dms\"]"); if (_0x8e1a10) { let _0x8e1a11 = (_0x13913b.notifications || []).some(_0x8e1a12 => _0x8e1a12 && !_0x8e1a12.read && _0x8e1a12.type === "dm"); let _0x8e1a13 = _0x8e1a10.querySelector(".dm-tab-dot"); if (_0x8e1a11 && !_0x8e1a13) { _0x8e1a13 = document.createElement("i"); _0x8e1a13.className = "dm-tab-dot"; _0x8e1a10.appendChild(_0x8e1a13); } else if (!_0x8e1a11 && _0x8e1a13) { _0x8e1a13.remove(); } } let _0x8e1a06 = _0x1f1dd4("thDebates"); if (!_0x8e1a06) { return; } _0x8e1a06.classList.toggle("is-live", _0x8e1a01 > 0); let _0x8e1a07 = _0x8e1a06.querySelector(".dlb-live"); if (_0x8e1a01 > 0) { if (!_0x8e1a07) { _0x8e1a07 = document.createElement("span"); _0x8e1a07.className = "dlb-live"; _0x8e1a06.appendChild(_0x8e1a07); } _0x8e1a07.textContent = _0x8e1a01 > 9 ? "9+" : String(_0x8e1a01); _0x8e1a06.title = _0x8e1a01 + " live debate" + (_0x8e1a01 === 1 ? "" : "s"); } else if (_0x8e1a07) { _0x8e1a07.remove(); _0x8e1a06.title = "Debates"; } }; setInterval(_0x8e1a02, 20000); setInterval(_0x8e1a05, 1500); { let _0x8e1a0z = _0x1f1dd4("botnav"); if (_0x8e1a0z && window.MutationObserver) { new MutationObserver(() => { try { _0x8e1a05(); } catch {} }).observe(_0x8e1a0z, { childList: true }); } let _0x8e1a14 = _0x1f1dd4("s-connect"); if (_0x8e1a14 && window.MutationObserver) { new MutationObserver(() => { try { _0x8e1a05(); } catch {} }).observe(_0x8e1a14, { childList: true }); } } document.addEventListener("visibilitychange", _0x8e1a02); setTimeout(_0x8e1a02, 2500); } { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); localStorage.removeItem("mx.walk"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
       _0x1f1dd4("notifBtn").onclick = _0x13348b;
       _0x1f1dd4("msgBarBtn").innerHTML = _0x50010e.dm + "<span>Messages</span>";
       _0x1f1dd4("msgBarBtn").onclick = () => {

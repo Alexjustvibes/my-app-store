@@ -261,3 +261,26 @@ begin
     and coalesce(p.notif_prefs -> (case when x.t = 'liked_post' then 'liked_posts' else 'posts_new' end), 'true'::jsonb) <> 'false'::jsonb;
   return null;
 end $function$;
+
+-- One device = one account: when a phone saves its push subscription, it's removed from any other account.
+-- (Fixes a shared phone getting notifications for accounts that signed out of it.)
+create or replace function public.push_sub_claim() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from push_subscriptions where endpoint = new.endpoint and user_id <> new.user_id;
+  return null;
+end $$;
+create or replace trigger push_sub_claim after insert or update of user_id, endpoint on public.push_subscriptions
+  for each row execute function public.push_sub_claim();
+
+CREATE OR REPLACE FUNCTION public.save_push_subscription(p_endpoint text, p_p256dh text, p_auth text, p_ua text)
+ RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+begin
+  if auth.uid() is null or p_endpoint is null then return; end if;
+  -- touching endpoint fires push_sub_claim, which hands this device to whoever is signed in on it
+  insert into push_subscriptions (user_id, endpoint, p256dh, auth, user_agent, last_seen)
+  values (auth.uid(), p_endpoint, p_p256dh, p_auth, p_ua, now())
+  on conflict (user_id, endpoint) do update
+    set endpoint = excluded.endpoint, p256dh = excluded.p256dh, auth = excluded.auth, user_agent = excluded.user_agent, last_seen = now();
+end $function$;
