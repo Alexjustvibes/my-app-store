@@ -15420,6 +15420,11 @@ ${_}`;
                   message: "Held for review — a moderator checks it before it posts"
                 };
               }
+              if (!_0x3ef06b.system) {
+                try {
+                  window.dispatchEvent(new CustomEvent("mx:sent", { detail: { roomId: _0x4b6bfe } }));
+                } catch {}
+              }
               return _0x450b1e(_0x1d09a9[0]);
             });
           },
@@ -16818,6 +16823,8 @@ ${_}`;
           turnEndsAt: _0x37b5ee.turn_ends_at || null,
           turnNo: Number(_0x37b5ee.turn_no) || 0,
           stageGuest: _0x37b5ee.stage_guest || null,
+          readyCreator: !!_0x37b5ee.ready_creator,
+          readyOpponent: !!_0x37b5ee.ready_opponent,
           stageReturn: _0x37b5ee.stage_return || null,
           pausedAt: _0x37b5ee.paused_at || null,
           pausedLeft: _0x37b5ee.paused_left == null ? null : Number(_0x37b5ee.paused_left),
@@ -17547,6 +17554,7 @@ ${_}`;
         post_new: "posted in the feed",
         vc_start: "joined the voice chat in the Nexus",
         ranked_queue: "is looking for a ranked debate — jump in the queue",
+        debate_turn: "passed you the floor — it’s your turn to talk",
         tag: "tagged you",
         reply: "replied to your message",
         post_like: "liked your post",
@@ -17770,6 +17778,7 @@ ${_}`;
           if (Notification.permission !== "default") {
             return;
           }
+          return;
           let _0x7c1a07 = 0;
           try {
             _0x7c1a07 = Number(localStorage.getItem("mx.pushAsk")) || 0;
@@ -23035,6 +23044,9 @@ ${_}`;
         if (/blocked_content/.test(_0xf6bf00)) {
           return "That message can’t be posted here";
         }
+        if (/not_ready/.test(_0xf6bf00)) {
+          return "The debate hasn’t started — both debaters need to press I’m ready";
+        }
         if (/not_your_turn/.test(_0xf6bf00)) {
           return "Wait for your turn — the other side has the floor";
         }
@@ -23590,6 +23602,8 @@ ${_}`;
         if (!_0x35defc) {
           return;
         }
+        _0x35defc.innerHTML = "";
+        return;
         if (!_0x58d4b5() || !_0x38064e.supported() || _0x437791.has(_0x1dc4fd)) {
           _0x35defc.innerHTML = "";
           return;
@@ -29346,6 +29360,62 @@ ${_}`;
           if (_0xa7f001) {
             _0xa7f001.classList.add("p-av-edit");
             _0xa7f001.title = "Change profile picture";
+            let _0xa7f0p1 = document.createElement("button");
+            _0xa7f0p1.type = "button";
+            _0xa7f0p1.className = "p-av-pen";
+            _0xa7f0p1.title = "Edit profile";
+            _0xa7f0p1.setAttribute("aria-label", "Edit profile");
+            _0xa7f0p1.innerHTML = "<svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z\"/></svg>";
+            _0xa7f001.appendChild(_0xa7f0p1);
+            _0xa7f0p1.onclick = _0xa7f0p2 => {
+              _0xa7f0p2.stopPropagation();
+              let _0xa7f0p3 = _0x1f1dd4("sheet");
+              let _0xa7f0p4 = _0xa7f001.querySelector(".p-pen-menu");
+              let _0xa7f0p5 = () => {
+                let _0xa7f0p6 = _0xa7f001.querySelector(".p-pen-menu");
+                if (_0xa7f0p6) {
+                  _0xa7f0p6.remove();
+                }
+                _0xa7f001.classList.remove("pen-open");
+                document.removeEventListener("click", _0xa7f0p5.c, true);
+              };
+              if (_0xa7f0p4) {
+                return _0xa7f0p5();
+              }
+              let _0xa7f0p7 = document.createElement("div");
+              _0xa7f0p7.className = "p-pen-menu";
+              [["Change picture", () => _0xa7f001.click()], ["Edit bio", "#setBio"], ["Edit location", "#setLoc"], ["Appearance", "#setLook"], ["Theme & display", "#setTheme"]].forEach(([_0xa7f0p8, _0xa7f0p9]) => {
+                if (typeof _0xa7f0p9 === "string" && !_0xa7f0p3.querySelector(_0xa7f0p9)) {
+                  return;
+                }
+                let _0xa7f0pa = document.createElement("button");
+                _0xa7f0pa.type = "button";
+                _0xa7f0pa.textContent = _0xa7f0p8;
+                _0xa7f0pa.onclick = _0xa7f0pb => {
+                  _0xa7f0pb.stopPropagation();
+                  _0xa7f0p5();
+                  if (typeof _0xa7f0p9 === "string") {
+                    let _0xa7f0pc = _0xa7f0p3.querySelector(_0xa7f0p9);
+                    if (_0xa7f0pc) {
+                      _0xa7f0pc.click();
+                    }
+                  } else {
+                    _0xa7f0p9();
+                  }
+                };
+                _0xa7f0p7.appendChild(_0xa7f0pa);
+              });
+              _0xa7f001.appendChild(_0xa7f0p7);
+              _0xa7f001.classList.add("pen-open");
+              _0xa7f0p5.c = _0xa7f0pd => {
+                if (!_0xa7f0p7.contains(_0xa7f0pd.target) && _0xa7f0pd.target !== _0xa7f0p1 && !_0xa7f0p1.contains(_0xa7f0pd.target)) {
+                  _0xa7f0pd.stopPropagation();
+                  _0xa7f0pd.preventDefault();
+                  _0xa7f0p5();
+                }
+              };
+              setTimeout(() => document.addEventListener("click", _0xa7f0p5.c, true), 0);
+            };
             _0xa7f001.onclick = () => {
               let _0xa7f002 = document.createElement("input");
               _0xa7f002.type = "file";
@@ -35573,6 +35643,31 @@ ${_}`;
         }
       }
       let _0x7e2a00 = null;
+      window.addEventListener("mx:sent", async () => {
+        if (_0x7e2a00 !== true) {
+          return;
+        }
+        _0x7e2a00 = false;
+        try {
+          localStorage.setItem("mx.nexusTip", "1");
+        } catch {}
+        try {
+          _0x7e2a02();
+        } catch {}
+        let _0x7e2a10 = "off";
+        try {
+          _0x7e2a10 = await _0x38064e.status();
+        } catch {}
+        setTimeout(() => {
+          try {
+            if (_0x7e2a10 === "off") {
+              _0x2123eb(() => {});
+            } else {
+              _0x2074f8(true);
+            }
+          } catch {}
+        }, 900);
+      });
       async function _0x7e2a01() {
         if (_0x7e2a00 !== null || !_0x58d4b5() || !_0x2e6c84() || !_0x36110d(_0x2e6c84().id)) {
           return;
@@ -36281,7 +36376,7 @@ ${_}`;
           }
         } catch {}
       }
-      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip", "1"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
+      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x8e1a01 = 0; let _0x8e1a02 = async () => { if (!_0x58d4b5() || document.hidden) { return; } try { let { count: _0x8e1a03, error: _0x8e1a04 } = await _0x34bcfe.from("debates").select("id", { count: "exact", head: true }).eq("status", "active"); if (!_0x8e1a04) { _0x8e1a01 = _0x8e1a03 || 0; } } catch {} }; let _0x8e1a05 = () => { let _0x8e1a06 = _0x1f1dd4("thDebates"); if (!_0x8e1a06) { return; } _0x8e1a06.classList.toggle("is-live", _0x8e1a01 > 0); let _0x8e1a07 = _0x8e1a06.querySelector(".dlb-live"); if (_0x8e1a01 > 0) { if (!_0x8e1a07) { _0x8e1a07 = document.createElement("span"); _0x8e1a07.className = "dlb-live"; _0x8e1a06.appendChild(_0x8e1a07); } _0x8e1a07.textContent = _0x8e1a01 > 9 ? "9+" : String(_0x8e1a01); _0x8e1a06.title = _0x8e1a01 + " live debate" + (_0x8e1a01 === 1 ? "" : "s"); } else if (_0x8e1a07) { _0x8e1a07.remove(); _0x8e1a06.title = "Debates"; } }; setInterval(_0x8e1a02, 20000); setInterval(_0x8e1a05, 1500); document.addEventListener("visibilitychange", _0x8e1a02); setTimeout(_0x8e1a02, 2500); } { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip", "1"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
       _0x1f1dd4("notifBtn").onclick = _0x13348b;
       _0x1f1dd4("msgBarBtn").innerHTML = _0x50010e.dm + "<span>Messages</span>";
       _0x1f1dd4("msgBarBtn").onclick = () => {
@@ -37022,7 +37117,7 @@ ${_}`;
         try {
           _0x5379b3();
         } catch {}
-        _0x36281f(() => _0x2123eb(_0x4b4afd));
+        _0x36281f(_0x4b4afd);
       }
       function _0x2074f8(_0x5d65c8) {
         if (!_0x13913b.installPromptShown) {
@@ -39224,7 +39319,7 @@ ${_}`;
                 await _0x27998e.startAudio();
               } catch {}
               let _0x4abcc9 = _0x192abe === "debate" && _0x1fc950 && _0x1fc950.debate && _0x1fc950.debate.id === _0x11f7ba && _0x1fc950.debate.turnSecs && _0x1fc950.debate.status === "active" ? _0x1fc950.debate : null;
-              _0x2fab61.floorLock = !!_0x4abcc9 && _0x4abcc9.turnHolder !== _0x2e6c84().id && (!_0x4abcc9.pausedAt || _0x4abcc9.creatorId !== _0x2e6c84().id && _0x4abcc9.opponentId !== _0x2e6c84().id);
+              _0x2fab61.floorLock = !!_0x4abcc9 && (_0x4abcc9.turnHolder !== _0x2e6c84().id || !!_0x4abcc9.pausedAt);
               if (_0x67dc6d.role === "speaker" && !_0x2fab61.floorLock) {
                 try {
                   await _0x27998e.localParticipant.setMicrophoneEnabled(true, _0x1ceb6e());
@@ -43913,18 +44008,19 @@ ${_}`;
         let _0x5340f0 = !!_0x4af558 && _0x230ce1 === _0x4af558;
         let _0x6ab305 = !!_0x230ce1 && _0x230ce1 === _0x3d1e5a;
         let _0x25dcc7 = !!_0x27e7fd.pausedAt;
+        let _0x5b7e01 = !!_0x27e7fd.readyCreator && !!_0x27e7fd.readyOpponent;
         if (!_0x230ce1) {
           return "<div class=\"fl-vote\">" + _0x50010e.check + "<div><b>All turns done — final votes</b><span><span data-fl-left>…</span> to vote</span></div></div>";
         }
         let _0x24319a = _0x230ce1 === _0x27e7fd.creatorId ? "a" : _0x230ce1 === _0x27e7fd.opponentId ? "b" : "g";
         let _0x49e70a = _0x5340f0 ? _0x27e7fd.stageReturn : _0x2510b1 + 1 >= _0x1b1047 ? null : _0x230ce1 === _0x27e7fd.creatorId ? _0x27e7fd.opponentId : _0x27e7fd.creatorId;
-        let _0x26fe16 = "<div class=\"fl-now s-" + _0x24319a + (_0x6ab305 ? " mine" : "") + (_0x25dcc7 ? " paused" : "") + "\"><div class=\"fl-ring\"><svg class=\"fl-arc\" viewBox=\"0 0 56 56\" aria-hidden=\"true\"><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"bg\"/><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"fg\" data-fl-arc/></svg>" + _0x19c251(_0x230ce1, 44) + "</div>\n      <div class=\"fl-who\"><em>" + (_0x25dcc7 ? "PAUSED · OPEN FLOOR" : _0x5340f0 ? "ON STAGE" : "HAS THE FLOOR") + (_0x6ab305 && !_0x25dcc7 ? " · YOU" : "") + "</em><b data-user=\"" + _0x203a06(_0x230ce1) + "\">" + _0x546ca5(_0x3704eb(_0x230ce1).name || "member") + "</b><span>" + (_0x25dcc7 ? "Both can talk · clock back in <span data-fl-auto>5:00</span>" : "" + (_0x5340f0 ? "Speaking from the crowd" : "Turn " + Math.min(_0x2510b1 + 1, _0x1b1047) + " of " + _0x1b1047) + (_0x49e70a ? " · next: " + _0x546ca5(String(_0x3704eb(_0x49e70a).name || "").split(" ")[0]) : " · then final votes")) + "</span></div>\n      <div class=\"fl-clock\"><b data-fl-left>…</b><em>" + (_0x25dcc7 ? "held" : "left") + "</em></div></div>";
+        let _0x26fe16 = "<div class=\"fl-now s-" + _0x24319a + (_0x6ab305 ? " mine" : "") + (_0x25dcc7 ? " paused" : "") + "\"><div class=\"fl-ring\"><svg class=\"fl-arc\" viewBox=\"0 0 56 56\" aria-hidden=\"true\"><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"bg\"/><circle cx=\"28\" cy=\"28\" r=\"26\" pathLength=\"100\" class=\"fg\" data-fl-arc/></svg>" + _0x19c251(_0x230ce1, 44) + "</div>\n      <div class=\"fl-who\"><em>" + (_0x25dcc7 ? (_0x5b7e01 ? "UP NEXT" : "WAITING TO START") : _0x5340f0 ? "ON STAGE" : "HAS THE FLOOR") + (_0x6ab305 && !_0x25dcc7 ? " · YOU" : "") + "</em><b data-user=\"" + _0x203a06(_0x230ce1) + "\">" + _0x546ca5(_0x3704eb(_0x230ce1).name || "member") + "</b><span>" + (_0x25dcc7 ? (_0x5b7e01 ? (_0x6ab305 ? "Press I’m ready to start your turn" : "Waiting for them to press I’m ready") : "Starts when both debaters press I’m ready") : "" + (_0x5340f0 ? "Speaking from the crowd" : "Turn " + Math.min(_0x2510b1 + 1, _0x1b1047) + " of " + _0x1b1047) + (_0x49e70a ? " · next: " + _0x546ca5(String(_0x3704eb(_0x49e70a).name || "").split(" ")[0]) : " · then final votes")) + "</span></div>\n      <div class=\"fl-clock\"><b data-fl-left>…</b><em>" + (_0x25dcc7 ? "held" : "left") + "</em></div></div>";
         _0x26fe16 += "<div class=\"fl-track\">" + Array.from({
           length: _0x1b1047
         }, (_0x2cab98, _0x274979) => "<i class=\"" + (_0x274979 % 2 === 0 ? "a" : "b") + (_0x274979 < _0x2510b1 ? " done" : "") + (_0x274979 === _0x2510b1 && !_0x5340f0 ? " now" : "") + "\"></i>").join("") + "</div>";
         let _0x3a78ee = [];
         if (_0x293159) {
-          _0x3a78ee.push(_0x25dcc7 ? "<button class=\"btn fl-pause on\" data-fl-act=\"resume\">" + _0x50010e.play + " Start the clock</button>" : "");
+          _0x3a78ee.push(_0x25dcc7 && _0x5b7e01 ? (_0x6ab305 ? "<button class=\"btn fl-pause on\" data-fl-act=\"resume\">" + _0x50010e.check + " I’m ready</button>" : "") : _0x25dcc7 ? (_0x3d1e5a === _0x27e7fd.creatorId ? _0x27e7fd.readyCreator : _0x27e7fd.readyOpponent) ? "<button class=\"btn ghost fl-pause\" disabled>Ready — waiting for your opponent…</button>" : "<button class=\"btn fl-pause on\" data-fl-act=\"resume\">" + _0x50010e.check + " I’m ready</button>" : "");
         }
         if (_0x6ab305) {
           _0x3a78ee.push("<button class=\"btn fl-done\" data-fl-act=\"done\">" + _0x50010e.check + " Done talking</button>");
@@ -43933,7 +44029,7 @@ ${_}`;
           _0x26fe16 += "<div class=\"fl-acts\">" + _0x3a78ee.join("") + "</div>";
         }
         if (_0x25dcc7 && _0x293159) {
-          _0x26fe16 += "<div class=\"fl-note fl-open\">" + _0x50010e.mic + " The clock is held. You can both talk and type — start it again when you’re ready.</div>";
+          _0x26fe16 += "<div class=\"fl-note fl-open\">" + _0x50010e.mic + (_0x5b7e01 ? " Nobody can talk or type until the next speaker presses I’m ready." : " Nobody can talk or type until both debaters press I’m ready.") + "</div>";
         } else if (_0x5340f0 && _0x6ab305) {
           _0x26fe16 += "<div class=\"fl-note fl-guest\">" + _0x50010e.mic + " You’re on stage — " + (_0x33dca9 === "call" ? "talk now" : "type below or talk in the call") + ". Tap Done talking when you’ve made your point.</div>";
         }
@@ -43992,6 +44088,7 @@ ${_}`;
             } else if (_0x523afc === "resume") {
               await _0x5295a4.debates.resume(_0x548741.id);
               _0x33994b.play("tap");
+              _0x25604e(_0x548741.readyCreator && _0x548741.readyOpponent ? "You have the floor — go" : "You’re ready — it starts when your opponent is too");
             } else if (_0x523afc === "hand") {
               let _0x448260 = !_0x31ef94.classList.contains("on");
               await _0x5295a4.debates.raiseHand(_0x548741.id, _0x448260);
@@ -44212,7 +44309,7 @@ ${_}`;
           _0x55e518();
           return;
         }
-        let _0x14a7cb = _0x4003f7.turnHolder === _0x27d542 || !!_0x4003f7.pausedAt && _0x245399(_0x4003f7);
+        let _0x14a7cb = _0x4003f7.turnHolder === _0x27d542 && !_0x4003f7.pausedAt;
         if (_0x2fab61.role === "speaker" && _0x2fab61.room) {
           if (_0x14a7cb) {
             let _0x2e6e10 = _0x2fab61.floorLock;
@@ -44316,6 +44413,7 @@ ${_}`;
         post_new: ["feed", "#a78bfa"],
         vc_start: ["phone", "#39c97e"],
         ranked_queue: ["swords", "#fb923c"],
+        debate_turn: ["mic", "#ff5a6e"],
         dm: ["dm", "#60a5fa"],
         tag: ["reply", "#ff5a6e"],
         reply: ["reply", "#ff5a6e"],

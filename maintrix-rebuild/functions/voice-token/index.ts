@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
   if (!me || me.banned) return json({ error: "not allowed" }, 403);
 
   let speaker = true;
+  let canPublish = true;
   if (kind === "room") {
     if (!(await canReadRoom(id, uid))) return json({ error: "not allowed" }, 403);
     // first person into Nexus voice tells everyone (the database rate-limits this to once per 20 min)
@@ -77,13 +78,17 @@ Deno.serve(async (req) => {
     const { data: ch } = await admin.from("voice_channels").select("room_id").eq("id", id).maybeSingle();
     if (!ch || !(await canReadRoom(ch.room_id, uid))) return json({ error: "not allowed" }, 403);
   } else if (kind === "debate") {
-    const { data: d } = await admin.from("debates").select("creator_id,opponent_id,stage_guest,status").eq("id", id).maybeSingle();
+    const { data: d } = await admin.from("debates").select("creator_id,opponent_id,stage_guest,status,turn_holder,paused_at").eq("id", id).maybeSingle();
     if (!d) return json({ error: "not found" }, 404);
     speaker = [d.creator_id, d.opponent_id, d.stage_guest].includes(uid) && d.status !== "ended";
+    // the floor decides who can actually transmit: nobody while held, only the floor holder during a turn,
+    // both debaters during final votes (debate-floor keeps this in sync as the floor changes)
+    canPublish = speaker && (d.status !== "active" ||
+      (!d.paused_at && (d.turn_holder ? d.turn_holder === uid : uid === d.creator_id || uid === d.opponent_id)));
   } else {
     return json({ error: "bad kind" }, 400);
   }
 
-  const token = await livekitToken(uid, String(me.name || me.handle || "Member").slice(0, 60), `${kind}:${id}`, speaker);
+  const token = await livekitToken(uid, String(me.name || me.handle || "Member").slice(0, 60), `${kind}:${id}`, speaker && canPublish);
   return json({ token, url: LK_URL, role: speaker ? "speaker" : "listener" });
 });
