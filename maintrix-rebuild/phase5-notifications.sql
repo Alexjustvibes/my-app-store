@@ -205,3 +205,46 @@ begin
   get diagnostics n = row_count;
   return n;
 end $$;
+
+-- Ranked: global "X is looking for a ranked debate" when someone waits in the queue (5-min cooldown per person,
+-- no alert when matched instantly); every ranked alert carries match_id so tapping opens the match.
+create or replace function public._notify_once(p_user uuid, p_actor uuid, p_kind text, p_ref uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare ok boolean;
+        win interval := case p_kind when 'vc_join' then interval '1 hour' when 'rq_join' then interval '5 minutes' else interval '24 hours' end;
+begin
+  if p_user is null or p_actor is null or p_user = p_actor then return false; end if;
+  insert into notif_dedupe (user_id, actor_id, kind, ref, last_at) values (p_user, p_actor, p_kind, p_ref, now())
+  on conflict (user_id, actor_id, kind, ref) do update set last_at = now()
+    where notif_dedupe.last_at < now() - win
+  returning true into ok;
+  return coalesce(ok, false);
+end $$;
+revoke all on function public._notify_once(uuid, uuid, text, uuid) from public, anon, authenticated;
+
+create or replace function public.ranked_join() returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me uuid := auth.uid(); opp uuid; mid uuid; qref uuid := '00000000-0000-0000-0000-00000000a001';
+begin
+  if me is null then raise exception 'Sign in first'; end if;
+  if exists (select 1 from ranked_matches where me in (a, b) and status not in ('ended', 'cancelled')) then return ranked_state(); end if;
+  select user_id into opp from ranked_queue where user_id <> me order by joined_at limit 1 for update skip locked;
+  if opp is null then
+    insert into ranked_queue (user_id) values (me) on conflict do nothing;
+    if _notify_once(qref, me, 'rq_join', qref) then
+      insert into notifications (user_id, type, kind, actor_id, entity, body)
+      select p.id, 'ranked_queue', 'ranked_queue', me, '{}'::jsonb, 'Looking for a ranked debate'
+      from profiles p
+      where p.id <> me and p.handle is not null and not coalesce(p.banned, false)
+        and coalesce(p.notif_prefs -> 'debate_live', 'true'::jsonb) <> 'false'::jsonb
+        and not exists (select 1 from ranked_matches m where p.id in (m.a, m.b) and m.status not in ('ended', 'cancelled'));
+    end if;
+  else
+    delete from ranked_queue where user_id in (me, opp);
+    insert into ranked_matches (a, b, status) values (opp, me, 'coinflip') returning id into mid;
+    perform notify_user(opp, 'ranked_match', me, jsonb_build_object('match_id', mid));
+  end if;
+  return ranked_state();
+end $$;
+-- ranked_call / ranked_propose / ranked_respond: same as phase1, with match_id (and debate_id on accept)
+-- added to their notify_user entities. See the live definitions applied 2026-10-26.

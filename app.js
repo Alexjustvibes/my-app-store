@@ -17546,6 +17546,7 @@ ${_}`;
       let _0x16cdbe = {
         post_new: "posted in the feed",
         vc_start: "joined the voice chat in the Nexus",
+        ranked_queue: "is looking for a ranked debate — jump in the queue",
         tag: "tagged you",
         reply: "replied to your message",
         post_like: "liked your post",
@@ -44297,6 +44298,7 @@ ${_}`;
       var _0x30eba9 = {
         post_new: ["feed", "#a78bfa"],
         vc_start: ["phone", "#39c97e"],
+        ranked_queue: ["swords", "#fb923c"],
         dm: ["dm", "#60a5fa"],
         tag: ["reply", "#ff5a6e"],
         reply: ["reply", "#ff5a6e"],
@@ -44422,7 +44424,7 @@ ${_}`;
           }
         }
       }
-      var _0x238cfa = [["People", [["dms", "Direct messages", "Someone DMs you", "dm"], ["mentions", "Mentions", "Someone @tags you in a room", "reply"], ["replies", "Replies", "Someone replies to your message", "reply"], ["friends", "Friends", "Friend requests and accepts", "people"]]], ["Your posts", [["likes", "Likes", "Likes on you or your posts", "heart"], ["comments", "Comments", "Comments on your posts", "chat"]]], ["Debates", [["debates", "Your debates", "Someone joins yours, and results when it ends", "debates"], ["debate_live", "Live debates", "When a debate or ranked match goes live on Maintrix", "live"]]], ["Everyone", [["posts_new", "New posts", "When someone posts in the feed", "feed"], ["voice", "Voice in the Nexus", "When someone joins the voice chat in the Nexus", "phone"]]], ["Maintrix", [["badges", "Badges", "A new badge lands on your profile", "badge"], ["servers", "Servers", "Someone joins a server you own", "grid"], ["updates", "Updates", "When a new update comes out", "notes"]]]];
+      var _0x238cfa = [["People", [["dms", "Direct messages", "Someone DMs you", "dm"], ["mentions", "Mentions", "Someone @tags you in a room", "reply"], ["replies", "Replies", "Someone replies to your message", "reply"], ["friends", "Friends", "Friend requests and accepts", "people"]]], ["Your posts", [["likes", "Likes", "Likes on you or your posts", "heart"], ["comments", "Comments", "Comments on your posts", "chat"]]], ["Debates", [["debates", "Your debates", "Someone joins yours, and results when it ends", "debates"], ["debate_live", "Live debates & ranked queue", "When someone queues for ranked, or a debate goes live", "live"]]], ["Everyone", [["posts_new", "New posts", "When someone posts in the feed", "feed"], ["voice", "Voice in the Nexus", "When someone joins the voice chat in the Nexus", "phone"]]], ["Maintrix", [["badges", "Badges", "A new badge lands on your profile", "badge"], ["servers", "Servers", "Someone joins a server you own", "grid"], ["updates", "Updates", "When a new update comes out", "notes"]]]];
       function _0x5b68d4(_0x43ed20, _0x50142d) {
         if (_0x50142d === "debate_live") {
           return _0x43ed20[_0x50142d] !== false;
