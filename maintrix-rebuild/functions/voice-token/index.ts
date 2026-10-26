@@ -74,6 +74,8 @@ Deno.serve(async (req) => {
     // first person into Nexus voice tells everyone (the database rate-limits this to once per 20 min)
     const { data: rm } = await admin.from("rooms").select("slug").eq("id", id).maybeSingle();
     if (rm?.slug === "world") await admin.rpc("announce_nexus_vc", { p_uid: uid });
+    // DMs and groups: the others in the chat get "X is calling" (the database holds repeats back for 2 min)
+    else await admin.rpc("announce_room_call", { p_uid: uid, p_room: id });
   } else if (kind === "channel") {
     const { data: ch } = await admin.from("voice_channels").select("room_id").eq("id", id).maybeSingle();
     if (!ch || !(await canReadRoom(ch.room_id, uid))) return json({ error: "not allowed" }, 403);

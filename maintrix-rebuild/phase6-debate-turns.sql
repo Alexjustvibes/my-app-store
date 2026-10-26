@@ -296,3 +296,44 @@ begin
 end $b$;
 create or replace trigger b_require_post_tag before insert on public.posts
   for each row execute function public.require_post_tag();
+
+-- DM / group calls: the others in the chat get a 'call' alert (voice-token calls this; repeats held back 2 min).
+CREATE OR REPLACE FUNCTION public._notify_once(p_user uuid, p_actor uuid, p_kind text, p_ref uuid)
+ RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+declare ok boolean;
+        win interval := case p_kind when 'vc_join' then interval '1 hour' when 'rq_join' then interval '1 hour'
+                                    when 'call' then interval '2 minutes' else interval '24 hours' end;
+begin
+  if p_user is null or p_actor is null or p_user = p_actor then return false; end if;
+  insert into notif_dedupe (user_id, actor_id, kind, ref, last_at) values (p_user, p_actor, p_kind, p_ref, now())
+  on conflict (user_id, actor_id, kind, ref) do update set last_at = now()
+    where notif_dedupe.last_at < now() - win
+  returning true into ok;
+  return coalesce(ok, false);
+end $function$;
+
+create or replace function public.announce_room_call(p_uid uuid, p_room uuid) returns integer
+language plpgsql security definer set search_path = public as $$
+declare k text; t text; n int := 0;
+begin
+  select kind, title into k, t from rooms where id = p_room;
+  if k is null or k not in ('dm', 'group') or p_uid is null then return 0; end if;
+  if not exists (select 1 from room_members where room_id = p_room and user_id = p_uid) then return 0; end if;
+  insert into notifications (user_id, type, kind, actor_id, entity, body)
+  select m.user_id, 'call', 'call', p_uid,
+         jsonb_build_object('room_id', p_room, 'group', k = 'group', 'title', case when k = 'group' then coalesce(t, 'Group') end),
+         'Started a call'
+  from room_members m
+  join profiles p on p.id = m.user_id
+  where m.room_id = p_room and m.user_id <> p_uid and not coalesce(p.banned, false)
+    and not exists (select 1 from blocks b where b.blocker_id = m.user_id and b.blocked_id = p_uid)
+    and coalesce(p.notif_prefs -> 'dms', 'true'::jsonb) <> 'false'::jsonb
+    and _notify_once(m.user_id, p_uid, 'call', p_room);
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke execute on function public.announce_room_call(uuid, uuid) from public, anon, authenticated;
+
+-- No more "a debate went live" alerts (ranked queue alerts stay, under the same 'debate_live' setting).
+alter table public.debates disable trigger notify_debate_live;
