@@ -29585,8 +29585,6 @@ ${_}`;
         if (_0x4e256c && _0x58d4b5()) {
           let _0xa7f001 = _0x1f1dd4("sheet").querySelector(".prof-hero .p-av");
           if (_0xa7f001) {
-            _0xa7f001.classList.add("p-av-edit");
-            _0xa7f001.title = "Change profile picture";
             let _0xa7f0p1 = document.createElement("button");
             _0xa7f0p1.type = "button";
             _0xa7f0p1.className = "p-av-pen";
@@ -29611,7 +29609,7 @@ ${_}`;
               }
               let _0xa7f0p7 = document.createElement("div");
               _0xa7f0p7.className = "p-pen-menu";
-              [["Change picture", () => _0xa7f001.click()], ["Edit bio", "#setBio"], ["Edit location", "#setLoc"], ["Appearance", "#setLook"], ["Theme & display", "#setTheme"]].forEach(([_0xa7f0p8, _0xa7f0p9]) => {
+              [["Change picture", () => _0xa7f0pk()], ["Edit bio", "#setBio"], ["Edit location", "#setLoc"], ["Appearance", "#setLook"], ["Theme & display", "#setTheme"]].forEach(([_0xa7f0p8, _0xa7f0p9]) => {
                 if (typeof _0xa7f0p9 === "string" && !_0xa7f0p3.querySelector(_0xa7f0p9)) {
                   return;
                 }
@@ -29643,7 +29641,7 @@ ${_}`;
               };
               setTimeout(() => document.addEventListener("click", _0xa7f0p5.c, true), 0);
             };
-            _0xa7f001.onclick = () => {
+            let _0xa7f0pk = () => {
               let _0xa7f002 = document.createElement("input");
               _0xa7f002.type = "file";
               _0xa7f002.accept = "image/*";
