@@ -337,3 +337,41 @@ revoke execute on function public.announce_room_call(uuid, uuid) from public, an
 
 -- No more "a debate went live" alerts (ranked queue alerts stay, under the same 'debate_live' setting).
 alter table public.debates disable trigger notify_debate_live;
+
+-- Debate rules v2: only the person whose turn it is presses I'm ready (start and between turns);
+-- the first speaker gets 'debate_start', after that the next speaker gets 'debate_turn' when the other finishes.
+CREATE OR REPLACE FUNCTION public.debate_resume(p_debate uuid)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+declare d debates; me uuid := auth.uid();
+begin
+  select * into d from debates where id = p_debate for update;
+  if not found then raise exception 'Debate not found'; end if;
+  if d.paused_at is null or d.status <> 'active' then return to_jsonb(d); end if;
+  if me is distinct from d.turn_holder
+     and not (d.turn_holder is null and me in (d.creator_id, d.opponent_id))
+     and not (is_admin() and me not in (d.creator_id, d.opponent_id)) then
+    raise exception 'It''s not your turn yet';
+  end if;
+  update debates set ready_creator = true, ready_opponent = true,
+    turn_ends_at = case when d.paused_left is null then null else now() + make_interval(secs => d.paused_left) end,
+    turn_started_at = now(), paused_at = null, paused_by = null, paused_left = null
+  where id = p_debate returning * into d;
+  return to_jsonb(d);
+end $function$;
+
+CREATE OR REPLACE FUNCTION public.trg_notify_debate_turn()
+ RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $function$
+declare other uuid; starting boolean;
+begin
+  if new.status <> 'active' or new.turn_holder is null then return null; end if;
+  starting := tg_op = 'INSERT' or old.status is distinct from 'active';
+  if not starting and old.turn_holder is not distinct from new.turn_holder then return null; end if;
+  other := case when new.turn_holder = new.creator_id then new.opponent_id else new.creator_id end;
+  perform notify_user(new.turn_holder, case when starting then 'debate_start' else 'debate_turn' end, other,
+    jsonb_build_object('debate_id', new.id, 'room_id', new.room_id, 'title', new.title));
+  return null;
+end $function$;
+create or replace trigger notify_debate_turn AFTER INSERT OR UPDATE OF turn_holder, paused_at, status ON public.debates
+  FOR EACH ROW EXECUTE FUNCTION trg_notify_debate_turn();

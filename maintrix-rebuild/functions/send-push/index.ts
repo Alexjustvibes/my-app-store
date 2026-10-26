@@ -23,7 +23,7 @@ const PREF: Record<string, string> = {
   ranked_match: "debates", ranked_turn: "debates", ranked_live: "debates", ranked_cancel: "debates",
   debate_live: "debate_live", badge: "badges", server_join: "servers", update: "updates",
   post_new: "posts_new", vc_start: "voice", ranked_queue: "debate_live", debate_turn: "debates",
-  liked_post: "liked_posts", call: "dms",
+  liked_post: "liked_posts", call: "dms", debate_start: "debates",
 };
 
 function prefOn(prefs: Record<string, unknown>, key: string) {
@@ -51,7 +51,8 @@ function compose(type: string, who: string, e: Record<string, any>): { title: st
     case "ranked_match": return { title: "Your ranked match is ready", body: `You're matched with ${who} — come back to start` };
     case "ranked_queue": return { title: "Ranked queue", body: `${who} is looking for a ranked debate — jump in` };
     case "ranked_turn": return { title: "Ranked", body: `${who} is waiting on you` };
-    case "debate_turn": return { title: "It's your turn to talk", body: clip(e.title, 100) || `${who} passed you the floor` };
+    case "debate_start": return { title: "Your debate is starting", body: `You go first in “${clip(e.title, 70)}” — press I'm ready to start your turn` };
+    case "debate_turn": return { title: "Your turn in the debate", body: `${who} finished their turn — press I'm ready to start yours` };
     case "ranked_live": return { title: "Your ranked debate is starting", body: clip(e.title, 100) || "Come back — it's live" };
     case "ranked_cancel": return { title: "Ranked", body: "Your match was cancelled" };
     case "badge": return { title: "New badge", body: `You earned ${clip(e.label || e.title, 60)}` };
