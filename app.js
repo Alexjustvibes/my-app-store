@@ -35712,13 +35712,15 @@ ${_}`;
         }
       }
       let _0x7e2a00 = null;
+      let _0x7e2a12 = false;
+      let _0x7e2a13 = "";
       window.addEventListener("mx:sent", async () => {
         if (_0x7e2a00 !== true) {
           return;
         }
         _0x7e2a00 = false;
         try {
-          localStorage.setItem("mx.nexusTip", "1");
+          localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
         } catch {}
         try {
           _0x7e2a02();
@@ -35743,7 +35745,7 @@ ${_}`;
         }
         let _0x7e2a03 = false;
         try {
-          _0x7e2a03 = localStorage.getItem("mx.nexusTip") === "1";
+          _0x7e2a03 = localStorage.getItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || "")) === "1";
         } catch {}
         if (_0x7e2a03) {
           _0x7e2a00 = false;
@@ -35759,7 +35761,7 @@ ${_}`;
           let _0x7e2a0f = _0x7e2a0e && _0x7e2a0e.created_at ? Date.now() - new Date(_0x7e2a0e.created_at).getTime() : 0;
           if (_0x7e2a04 > 0 || _0x7e2a0f > 172800000) {
             try {
-              localStorage.setItem("mx.nexusTip", "1");
+              localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
             } catch {}
             _0x7e2a00 = false;
             return;
@@ -35769,6 +35771,7 @@ ${_}`;
           return;
         }
         _0x7e2a00 = true;
+        _0x7e2a12 = true;
         if (_0x13913b.screen !== "nexus") {
           _0x13913b.screen = "nexus";
           _0x24efc1();
@@ -35782,6 +35785,12 @@ ${_}`;
         let _0x7e2a06 = _0x1f1dd4("app");
         if (!_0x7e2a06) {
           return;
+        }
+        let _0x7e2a14 = _0x2e6c84() && _0x2e6c84().id || "";
+        if (_0x7e2a14 !== _0x7e2a13 && _0x7e2a00 !== "checking") {
+          _0x7e2a13 = _0x7e2a14;
+          _0x7e2a00 = null;
+          _0x7e2a12 = false;
         }
         let _0x7e2a07 = _0x7e2a00 === true && _0x13913b.screen === "nexus";
         _0x7e2a06.classList.toggle("nexus-tip", _0x7e2a07);
@@ -35801,7 +35810,7 @@ ${_}`;
           _0x1f1dd4("nexusTipSkip").onclick = () => {
             _0x7e2a00 = false;
             try {
-              localStorage.setItem("mx.nexusTip", "1");
+              localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
             } catch {}
             _0x7e2a02();
           };
@@ -35810,7 +35819,7 @@ ${_}`;
         }
         let _0x7e2a09 = false;
         try {
-          _0x7e2a09 = localStorage.getItem("mx.feedTip") !== "1";
+          _0x7e2a09 = localStorage.getItem("mx.feedTip." + (_0x2e6c84() && _0x2e6c84().id || "")) !== "1" && (_0x7e2a12 || localStorage.getItem("mx.feedTip") !== "1");
         } catch {}
         let _0x7e2a0a = _0x7e2a09 && _0x58d4b5() && _0x13913b.screen === "feed" && _0x7e2a00 !== true;
         _0x7e2a06.classList.toggle("feed-gated", _0x7e2a0a);
@@ -35823,7 +35832,7 @@ ${_}`;
           _0x1f1dd4("view").appendChild(_0x7e2a0b);
           _0x1f1dd4("feedGateOk").onclick = () => {
             try {
-              localStorage.setItem("mx.feedTip", "1");
+              localStorage.setItem("mx.feedTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1");
             } catch {}
             _0x7e2a06.classList.remove("feed-gated");
             _0x7e2a0b.remove();
@@ -35831,7 +35840,7 @@ ${_}`;
         } else if (!_0x7e2a0a && _0x7e2a0b) {
           _0x7e2a0b.remove();
         }
-        if (_0x7e2a00 === null && _0x13913b.screen === "nexus") {
+        if (_0x7e2a00 === null) {
           _0x7e2a01();
         }
       }
@@ -36451,7 +36460,7 @@ ${_}`;
           }
         } catch {}
       }
-      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x8e1a01 = 0; let _0x8e1a0q = 0; let _0x8e1a02 = async () => { if (!_0x58d4b5() || document.hidden) { return; } try { let { count: _0x8e1a03, error: _0x8e1a04 } = await _0x34bcfe.from("debates").select("id", { count: "exact", head: true }).eq("status", "active"); if (!_0x8e1a04) { _0x8e1a01 = _0x8e1a03 || 0; } } catch {} try { let { data: _0x8e1a0p } = await _0x34bcfe.from("posts").select("created_at").neq("author_id", _0x2e6c84().id).order("created_at", { ascending: false }).limit(1); if (_0x8e1a0p && _0x8e1a0p[0]) { _0x8e1a0q = new Date(_0x8e1a0p[0].created_at).getTime(); } } catch {} }; let _0x8e1a05 = () => { let _0x8e1a0n = document.querySelector("#botnav [data-nav=\"nexus\"]"); if (_0x8e1a0n) { _0x8e1a0n.classList.toggle("nx-live", _0x8e1a01 > 0); } let _0x8e1a0r = 0; try { _0x8e1a0r = Number(localStorage.getItem("mx.feedSeen")) || 0; if (!_0x8e1a0r || _0x13913b.screen === "feed") { _0x8e1a0r = Date.now(); localStorage.setItem("mx.feedSeen", String(_0x8e1a0r)); } } catch {} let _0x8e1a0s = document.querySelector("#botnav [data-nav=\"feed\"]"); if (_0x8e1a0s) { let _0x8e1a0t = _0x8e1a0q > _0x8e1a0r && _0x13913b.screen !== "feed"; let _0x8e1a0u = _0x8e1a0s.querySelector(".fd-dot"); if (_0x8e1a0t && !_0x8e1a0u) { _0x8e1a0u = document.createElement("i"); _0x8e1a0u.className = "fd-dot"; _0x8e1a0s.appendChild(_0x8e1a0u); } else if (!_0x8e1a0t && _0x8e1a0u) { _0x8e1a0u.remove(); } } let _0x8e1a0v = document.querySelector("#botnav [data-nav=\"connect\"]"); if (_0x8e1a0v) { let _0x8e1a0w = (_0x13913b.notifications || []).some(_0x8e1a0x => _0x8e1a0x && !_0x8e1a0x.read && (_0x8e1a0x.type === "dm" || _0x8e1a0x.type === "friend_request")); let _0x8e1a0y = _0x8e1a0v.querySelector(".fd-dot"); if (_0x8e1a0w && !_0x8e1a0y) { _0x8e1a0y = document.createElement("i"); _0x8e1a0y.className = "fd-dot"; _0x8e1a0v.appendChild(_0x8e1a0y); } else if (!_0x8e1a0w && _0x8e1a0y) { _0x8e1a0y.remove(); } } let _0x8e1a06 = _0x1f1dd4("thDebates"); if (!_0x8e1a06) { return; } _0x8e1a06.classList.toggle("is-live", _0x8e1a01 > 0); let _0x8e1a07 = _0x8e1a06.querySelector(".dlb-live"); if (_0x8e1a01 > 0) { if (!_0x8e1a07) { _0x8e1a07 = document.createElement("span"); _0x8e1a07.className = "dlb-live"; _0x8e1a06.appendChild(_0x8e1a07); } _0x8e1a07.textContent = _0x8e1a01 > 9 ? "9+" : String(_0x8e1a01); _0x8e1a06.title = _0x8e1a01 + " live debate" + (_0x8e1a01 === 1 ? "" : "s"); } else if (_0x8e1a07) { _0x8e1a07.remove(); _0x8e1a06.title = "Debates"; } }; setInterval(_0x8e1a02, 20000); setInterval(_0x8e1a05, 1500); document.addEventListener("visibilitychange", _0x8e1a02); setTimeout(_0x8e1a02, 2500); } { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip", "1"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
+      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x8e1a01 = 0; let _0x8e1a0q = 0; let _0x8e1a02 = async () => { if (!_0x58d4b5() || document.hidden) { return; } try { let { count: _0x8e1a03, error: _0x8e1a04 } = await _0x34bcfe.from("debates").select("id", { count: "exact", head: true }).eq("status", "active"); if (!_0x8e1a04) { _0x8e1a01 = _0x8e1a03 || 0; } } catch {} try { let { data: _0x8e1a0p } = await _0x34bcfe.from("posts").select("created_at").neq("author_id", _0x2e6c84().id).order("created_at", { ascending: false }).limit(1); if (_0x8e1a0p && _0x8e1a0p[0]) { _0x8e1a0q = new Date(_0x8e1a0p[0].created_at).getTime(); } } catch {} }; let _0x8e1a05 = () => { let _0x8e1a0n = document.querySelector("#botnav [data-nav=\"nexus\"]"); if (_0x8e1a0n) { _0x8e1a0n.classList.toggle("nx-live", _0x8e1a01 > 0); } let _0x8e1a0r = 0; try { _0x8e1a0r = Number(localStorage.getItem("mx.feedSeen")) || 0; if (!_0x8e1a0r || _0x13913b.screen === "feed") { _0x8e1a0r = Date.now(); localStorage.setItem("mx.feedSeen", String(_0x8e1a0r)); } } catch {} let _0x8e1a0s = document.querySelector("#botnav [data-nav=\"feed\"]"); if (_0x8e1a0s) { let _0x8e1a0t = _0x8e1a0q > _0x8e1a0r && _0x13913b.screen !== "feed"; let _0x8e1a0u = _0x8e1a0s.querySelector(".fd-dot"); if (_0x8e1a0t && !_0x8e1a0u) { _0x8e1a0u = document.createElement("i"); _0x8e1a0u.className = "fd-dot"; _0x8e1a0s.appendChild(_0x8e1a0u); } else if (!_0x8e1a0t && _0x8e1a0u) { _0x8e1a0u.remove(); } } let _0x8e1a0v = document.querySelector("#botnav [data-nav=\"connect\"]"); if (_0x8e1a0v) { let _0x8e1a0w = (_0x13913b.notifications || []).some(_0x8e1a0x => _0x8e1a0x && !_0x8e1a0x.read && (_0x8e1a0x.type === "dm" || _0x8e1a0x.type === "friend_request")); let _0x8e1a0y = _0x8e1a0v.querySelector(".fd-dot"); if (_0x8e1a0w && !_0x8e1a0y) { _0x8e1a0y = document.createElement("i"); _0x8e1a0y.className = "fd-dot"; _0x8e1a0v.appendChild(_0x8e1a0y); } else if (!_0x8e1a0w && _0x8e1a0y) { _0x8e1a0y.remove(); } } let _0x8e1a06 = _0x1f1dd4("thDebates"); if (!_0x8e1a06) { return; } _0x8e1a06.classList.toggle("is-live", _0x8e1a01 > 0); let _0x8e1a07 = _0x8e1a06.querySelector(".dlb-live"); if (_0x8e1a01 > 0) { if (!_0x8e1a07) { _0x8e1a07 = document.createElement("span"); _0x8e1a07.className = "dlb-live"; _0x8e1a06.appendChild(_0x8e1a07); } _0x8e1a07.textContent = _0x8e1a01 > 9 ? "9+" : String(_0x8e1a01); _0x8e1a06.title = _0x8e1a01 + " live debate" + (_0x8e1a01 === 1 ? "" : "s"); } else if (_0x8e1a07) { _0x8e1a07.remove(); _0x8e1a06.title = "Debates"; } }; setInterval(_0x8e1a02, 20000); setInterval(_0x8e1a05, 1500); document.addEventListener("visibilitychange", _0x8e1a02); setTimeout(_0x8e1a02, 2500); } { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
       _0x1f1dd4("notifBtn").onclick = _0x13348b;
       _0x1f1dd4("msgBarBtn").innerHTML = _0x50010e.dm + "<span>Messages</span>";
       _0x1f1dd4("msgBarBtn").onclick = () => {
