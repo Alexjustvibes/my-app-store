@@ -35967,7 +35967,30 @@ ${_}`;
         }, 900);
       });
       // After the first Nexus message: always ask about push notifications, then suggest the Home Screen
+      async function _0x7e2a30() {
+        // once per account per device: members who never saw the push question (e.g. stayed signed in) get it on app open
+        try {
+          if (!_0x58d4b5() || !_0x2e6c84() || !_0x36110d(_0x2e6c84().id) || _0x7e2a00 === true || _0x7e2a00 === "checking" || localStorage.getItem("mx.walk") === "1") {
+            return;
+          }
+          if (localStorage.getItem("mx.pushAsked." + _0x2e6c84().id) === "1" || (_0x2e6c84().notifPrefs || {}).push === false) {
+            return;
+          }
+          let _0x7e2a31 = await _0x38064e.status();
+          if (_0x7e2a31 !== "needs-install" && !(_0x7e2a31 === "off" && typeof Notification !== "undefined" && Notification.permission === "default")) {
+            return;
+          }
+          if (_0x1f1dd4("sheetScrim") && _0x1f1dd4("sheetScrim").classList.contains("on")) {
+            setTimeout(_0x7e2a30, 15000);
+            return;
+          }
+          _0x7e2a20();
+        } catch {}
+      }
       async function _0x7e2a20() {
+        try {
+          localStorage.setItem("mx.pushAsked." + _0x2e6c84().id, "1");
+        } catch {}
         let _0x7e2a21 = "off";
         try {
           _0x7e2a21 = await _0x38064e.status();
@@ -39023,6 +39046,9 @@ ${_}`;
             _0x1f4122();
             _0x330871();
             _0x38064e.sync();
+            setTimeout(() => {
+              _0x7e2a30().catch(() => {});
+            }, 5000);
             _0xfc4635(location.search);
             setTimeout(() => _0x2074f8(), 1000);
           } else {
