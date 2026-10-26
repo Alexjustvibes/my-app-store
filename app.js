@@ -23192,6 +23192,8 @@ ${_}`;
         _0x442c80 += "<div id=\"mentionPop\"></div><div id=\"replyBar\"></div>";
         if (_0x5c564e.readOnly) {
           _0x442c80 += "<div class=\"note\">" + _0x546ca5(_0x5c564e.readOnlyNote || "This room is read-only for you.") + "</div>";
+        } else if (_0x5c564e.dmRequest) {
+          _0x442c80 += "<div class=\"dmr-bar\"><div class=\"dmr-t\"><b>" + _0x546ca5(_0x5c564e.title || "They") + "</b> wants to message you. They won’t see that you’ve read this unless you accept.</div><div class=\"dmr-acts\"><button class=\"btn\" id=\"dmrAcc\">Accept</button><button class=\"btn ghost\" id=\"dmrDen\">Deny</button></div></div>";
         } else if (_0x26db4f) {
           _0x442c80 += "<div class=\"note\">Request sent — you can message " + _0x546ca5(_0x5c564e.title) + " again once they accept.</div>";
         } else if (_0x54bf8b && !_0x2f89c6) {
@@ -23876,7 +23878,9 @@ ${_}`;
           _0x13913b.lastRead = _0x13913b.lastRead || {};
           _0x13913b.lastRead[_0x59b07e.key] = new Date().toISOString();
           _0x24efc1();
-          _0x5295a4.rooms.markRead(_0x59b07e.roomId);
+          if (!_0x59b07e.dmRequest) {
+            _0x5295a4.rooms.markRead(_0x59b07e.roomId);
+          }
           if (_0x59b07e.dmKey) {
             _0x59b07e.otherReadAt = await _0x5295a4.rooms.getRead(_0x59b07e.roomId, _0x59b07e.dmKey);
           }
@@ -23968,7 +23972,9 @@ ${_}`;
             if (_0x4a244f.a !== _0x2e6c84().id) {
               _0x33994b.play("receive");
             }
-            _0x5295a4.rooms.markRead(_0x2aaa0f.roomId);
+            if (!_0x2aaa0f.dmRequest) {
+              _0x5295a4.rooms.markRead(_0x2aaa0f.roomId);
+            }
             if (_0x2aaa0f.dmKey) {
               setTimeout(() => _0x1f062f(_0x2aaa0f), 400);
             }
@@ -27504,6 +27510,48 @@ ${_}`;
           back: "connect"
         });
       }
+      document.addEventListener("click", async _0x4d0a01 => {
+        let _0x4d0a02 = _0x4d0a01.target.closest && _0x4d0a01.target.closest("#dmrAcc, #dmrDen");
+        if (!_0x4d0a02 || !_0x1fc950 || !_0x1fc950.dmRequest) {
+          return;
+        }
+        let _0x4d0a03 = _0x1fc950.dmKey;
+        if (_0x4d0a02.id === "dmrAcc") {
+          _0x4d0a02.disabled = true;
+          try {
+            let _0x4d0a04 = await _0x5295a4.social.acceptDm(_0x4d0a03);
+            if (_0x4d0a04 && _0x4d0a04.error) {
+              throw _0x4d0a04.error;
+            }
+          } catch {
+            _0x4d0a02.disabled = false;
+            _0x25604e("Could not accept");
+            return;
+          }
+          _0x13913b.dmRequests = _0x13913b.dmRequests.filter(_0x4d0a05 => _0x4d0a05 !== _0x4d0a03);
+          if (!_0x13913b.dmAccepted.includes(_0x4d0a03)) {
+            _0x13913b.dmAccepted.push(_0x4d0a03);
+          }
+          _0x24efc1();
+          _0x25604e("Accepted @" + _0x3704eb(_0x4d0a03).name);
+          _0x13913b.connectTab = "dms";
+          _0x6283c3(_0x4d0a03);
+          return;
+        }
+        _0x3f85fd("Deny the DM request from @" + _0x3704eb(_0x4d0a03).name + "?", async () => {
+          try {
+            await _0x5295a4.social.denyDm(_0x4d0a03);
+          } catch {}
+          _0x13913b.dmRequests = _0x13913b.dmRequests.filter(_0x4d0a06 => _0x4d0a06 !== _0x4d0a03);
+          _0x24efc1();
+          _0x25604e("Denied");
+          _0x1fc950 = null;
+          _0x1f1dd4("app").classList.remove("thread-open");
+          _0x13913b.screen = "connect";
+          _0x13913b.connectTab = "dms";
+          _0x1858d8();
+        });
+      });
       function _0x4657a8() {
         let _0x4c7540 = "<div class=\"sub-head\"><button class=\"back\" id=\"drBack\">" + _0x50010e.back + "</button><div class=\"st\">DM requests</div></div><div class=\"sub-body\">";
         if (!_0x13913b.dmRequests.length) {
@@ -27511,15 +27559,69 @@ ${_}`;
         }
         _0x13913b.dmRequests.forEach(_0x2d4bb2 => {
           let _0x264729 = _0x3704eb(_0x2d4bb2);
-          _0x4c7540 += "<div class=\"row\"><div data-user=\"" + _0x203a06(_0x2d4bb2) + "\" style=\"display:flex;gap:13px;align-items:center;flex:1;min-width:0\">" + _0x19c251(_0x2d4bb2, 44, {
+          _0x4c7540 += "<div class=\"row dmr-row\"><div data-dmpeek=\"" + _0x203a06(_0x2d4bb2) + "\" style=\"display:flex;gap:13px;align-items:center;flex:1;min-width:0;cursor:pointer\">" + _0x19c251(_0x2d4bb2, 44, {
             dot: true
-          }) + "<div class=\"r-main\"><div class=\"r-name\">" + _0x546ca5(_0x264729.name) + "</div><div class=\"r-sub\">" + _0x546ca5(_0x444a0c(_0x264729)) + " · wants to message you</div></div></div><button class=\"chip on\" data-acc=\"" + _0x2d4bb2 + "\">Accept</button><button class=\"chip\" data-den=\"" + _0x2d4bb2 + "\" style=\"margin-left:6px\">Deny</button></div>";
+          }) + "<div class=\"r-main\"><div class=\"r-name\">" + _0x546ca5(_0x264729.name) + "</div><div class=\"r-sub dmr-peek\" data-peek=\"" + _0x203a06(_0x2d4bb2) + "\">wants to message you · tap to read</div></div></div><button class=\"chip on\" data-acc=\"" + _0x2d4bb2 + "\">Accept</button><button class=\"chip\" data-den=\"" + _0x2d4bb2 + "\" style=\"margin-left:6px\">Deny</button></div>";
         });
         _0x4c7540 += "<div style=\"height:24px\"></div></div>";
         _0x5d0f7f(_0x4c7540);
         _0x1f1dd4("drBack").onclick = () => {
           _0x356689();
         };
+        document.querySelectorAll("#subscreen [data-dmpeek]").forEach(_0x4c75a1 => _0x4c75a1.onclick = () => {
+          let _0x4c75a2 = _0x4c75a1.dataset.dmpeek;
+          _0x356689();
+          _0x161c99({
+            key: "dm-" + _0x4c75a2,
+            dmUser: _0x4c75a2,
+            dmKey: _0x4c75a2,
+            title: _0x3704eb(_0x4c75a2).name,
+            sub: "@" + (_0x3704eb(_0x4c75a2).handle || ""),
+            back: "connect",
+            dmRequest: true
+          });
+        });
+        if (_0x58d4b5() && _0x13913b.dmRequests.length) {
+          (async () => {
+            try {
+              let _0x4c75a3 = _0x2e6c84().id;
+              let _0x4c75a4 = {};
+              _0x13913b.dmRequests.filter(_0x36110d).forEach(_0x4c75a5 => {
+                _0x4c75a4["dm:" + (_0x4c75a3 < _0x4c75a5 ? _0x4c75a3 + ":" + _0x4c75a5 : _0x4c75a5 + ":" + _0x4c75a3)] = _0x4c75a5;
+              });
+              let { data: _0x4c75a6 } = await _0x34bcfe.from("rooms").select("id,slug").in("slug", Object.keys(_0x4c75a4));
+              let _0x4c75a7 = {};
+              (_0x4c75a6 || []).forEach(_0x4c75a8 => {
+                _0x4c75a7[_0x4c75a8.id] = _0x4c75a4[_0x4c75a8.slug];
+              });
+              let _0x4c75a9 = Object.keys(_0x4c75a7);
+              if (!_0x4c75a9.length) {
+                return;
+              }
+              let { data: _0x4c75aa } = await _0x34bcfe.from("messages").select("room_id,author_id,body,media_kind,created_at").in("room_id", _0x4c75a9).order("created_at", { ascending: false }).limit(300);
+              let _0x4c75ab = {};
+              (_0x4c75aa || []).forEach(_0x4c75ac => {
+                let _0x4c75ad = _0x4c75a7[_0x4c75ac.room_id];
+                if (!_0x4c75ad || _0x4c75ac.author_id !== _0x4c75ad) {
+                  return;
+                }
+                (_0x4c75ab[_0x4c75ad] = _0x4c75ab[_0x4c75ad] || []).push(_0x4c75ac);
+              });
+              document.querySelectorAll("#subscreen [data-peek]").forEach(_0x4c75ae => {
+                let _0x4c75af = _0x4c75ab[_0x4c75ae.dataset.peek];
+                if (!_0x4c75af || !_0x4c75af.length) {
+                  _0x4c75ae.textContent = "wants to message you · nothing sent yet";
+                  return;
+                }
+                let _0x4c75b0 = _0x4c75af[0];
+                let _0x4c75b1 = String(_0x4c75b0.body || "").trim() || (_0x4c75b0.media_kind === "audio" ? "🎤 Voice message" : _0x4c75b0.media_kind === "video" ? "🎬 Video" : _0x4c75b0.media_kind ? "📷 Photo" : "Message");
+                let _0x4c75b2 = Math.max(0, Date.now() - new Date(_0x4c75b0.created_at).getTime()) / 60000;
+                let _0x4c75b3 = _0x4c75b2 < 1 ? "now" : _0x4c75b2 < 60 ? Math.floor(_0x4c75b2) + "m" : _0x4c75b2 < 1440 ? Math.floor(_0x4c75b2 / 60) + "h" : Math.floor(_0x4c75b2 / 1440) + "d";
+                _0x4c75ae.innerHTML = "<span class=\"dmr-q\">" + _0x546ca5(_0x4c75b1.length > 70 ? _0x4c75b1.slice(0, 68) + "…" : _0x4c75b1) + "</span><span class=\"dmr-meta\">" + _0x4c75b3 + (_0x4c75af.length > 1 ? " · " + _0x4c75af.length + " messages" : "") + "</span>";
+              });
+            } catch {}
+          })();
+        }
         document.querySelectorAll("#subscreen [data-acc]").forEach(_0x1732b5 => _0x1732b5.onclick = async () => {
           let _0x2dd160 = _0x1732b5.dataset.acc;
           if (_0x58d4b5()) {
