@@ -24874,20 +24874,19 @@ ${_}`;
         let _0x3c5c88 = _0x54e9f8(_0x7f07ce.elo || 1000);
         let _0x1f4138 = _0x4512e5 ? _0x54e9f8(_0x4512e5.elo || 1000) : null;
         let _0x283642 = "<div class=\"debate-head\">";
+        _0x283642 += "<div class=\"db-toprow\"><div class=\"db-admin\">" + (_0x58d4b5() && _0x2e6c84() && _0x2e6c84().isAdmin ? (_0x49b1fd.status === "active" ? "<button class=\"db-chip danger\" id=\"dbEnd\">End debate</button>" : "") + "<button class=\"db-chip\" id=\"dbAdmDel\">" + _0x50010e.trash + "Delete</button>" : "") + "</div><button class=\"db-chip\" id=\"dbChatBtn\">" + _0x50010e.chat + "Spectator chat</button></div>";
         _0x283642 += "<div class=\"debate-desc\">" + _0x76f895(_0x49b1fd.description) + "</div>";
-        _0x283642 += "<div class=\"debate-vs\">\n      <div class=\"debate-side\" data-user=\"" + _0x203a06(_0x49b1fd.creatorId) + "\">" + _0x30cd9e(_0x49b1fd.creatorId, 44) + "<span>" + _0x546ca5(_0x7f07ce.name) + "</span>" + _0x2a85c7(_0x7f07ce.elo, "sm") + "</div>\n      <div class=\"debate-vs-x\"><span>VS</span></div>\n      <div class=\"debate-side\"" + (_0x4512e5 ? " data-user=\"" + _0x203a06(_0x49b1fd.opponentId) + "\"" : "") + ">" + (_0x4512e5 ? _0x30cd9e(_0x49b1fd.opponentId, 44) : "<div class=\"av deb-av-empty\" style=\"width:44px;height:44px\">?</div>") + "<span>" + (_0x4512e5 ? _0x546ca5(_0x4512e5.name) : "waiting…") + "</span>" + (_0x4512e5 ? _0x2a85c7(_0x4512e5.elo, "sm") : "") + "</div>\n    </div>";
+        _0x283642 += "<div class=\"debate-vs\">\n      <div class=\"debate-side\" data-user=\"" + _0x203a06(_0x49b1fd.creatorId) + "\">" + _0x30cd9e(_0x49b1fd.creatorId, 44) + "<span>" + _0x546ca5(_0x7f07ce.name) + "</span>" + _0x2a85c7(_0x7f07ce.elo, "sm") + "</div>\n      <div class=\"debate-vs-x\">" + (_0x49b1fd.status !== "ended" ? "<button class=\"vs-callbtn\" id=\"dbVoiceBtn\" title=\"" + (_0x58d4b5() && _0x2e6c84() && (_0x2e6c84().id === _0x49b1fd.creatorId || _0x2e6c84().id === _0x49b1fd.opponentId || _0x49b1fd.stageGuest === _0x2e6c84().id) ? "Join the debate call" : "Listen to the debate call") + "\" aria-label=\"Debate call\">" + _0x50010e.phone + "</button>" : "") + "<span>VS</span></div>\n      <div class=\"debate-side\"" + (_0x4512e5 ? " data-user=\"" + _0x203a06(_0x49b1fd.opponentId) + "\"" : "") + ">" + (_0x4512e5 ? _0x30cd9e(_0x49b1fd.opponentId, 44) : "<div class=\"av deb-av-empty\" style=\"width:44px;height:44px\">?</div>") + "<span>" + (_0x4512e5 ? _0x546ca5(_0x4512e5.name) : "waiting…") + "</span>" + (_0x4512e5 ? _0x2a85c7(_0x4512e5.elo, "sm") : "") + "</div>\n    </div>";
         _0x283642 += _0x4988f0(_0x49b1fd);
         _0x283642 += "<div id=\"debateTally\"></div>";
-        _0x283642 += "<div class=\"db-actions\">" + (_0x49b1fd.status !== "ended" ? "<button class=\"btn block db-voice\" id=\"dbVoiceBtn\">" + _0x50010e.mic + " " + (_0x58d4b5() && _0x2e6c84() && (_0x2e6c84().id === _0x49b1fd.creatorId || _0x2e6c84().id === _0x49b1fd.opponentId || _0x49b1fd.stageGuest === _0x2e6c84().id && _0x49b1fd.turnHolder === _0x2e6c84().id) ? "Take the podium" : "Listen live") + "</button>" : "") + "<button class=\"btn ghost block\" id=\"dbChatBtn\">" + _0x50010e.chat + " Spectator chat</button></div>" + (_0x49b1fd.status !== "ended" ? _0x7f3a01(_0x49b1fd) : "");
+        _0x283642 += _0x49b1fd.status !== "ended" ? _0x7f3a01(_0x49b1fd) : "";
         if (_0x49b1fd.status === "active") {
           let _0x572e1e = _0x2e6c84().id;
           let _0x5e06a4 = _0x572e1e === _0x49b1fd.creatorId || _0x572e1e === _0x49b1fd.opponentId;
           if (_0x5e06a4 && _0x49b1fd.status !== "ended") {
 
           }
-          if (_0x2e6c84().isAdmin) {
-            _0x283642 += "<button class=\"btn ghost block\" id=\"dbEnd\" style=\"margin-top:8px\">End debate (admin)</button>";
-          } else if (!_0x5e06a4) {
+          if (_0x2e6c84().isAdmin) {} else if (!_0x5e06a4) {
             _0x283642 += "<div class=\"dbend-wrap\" id=\"dbEndVoteWrap\"><button class=\"btn ghost block\" id=\"dbVoteEnd\">Vote to end debate</button><div class=\"dbend-progress\"><div class=\"dbend-fill\" id=\"dbEndFill\" style=\"width:0%\"></div></div><div class=\"dbend-label\" id=\"dbEndLabel\"></div></div>";
           }
         }
@@ -25163,6 +25162,22 @@ ${_}`;
         }
         if (_0x3d70f3.status === "ended") {
           _0x1176d(_0x3d70f3);
+        }
+        let _0x5d05d1 = _0x1f1dd4("dbAdmDel");
+        if (_0x5d05d1) {
+          _0x5d05d1.onclick = () => _0x3f85fd("Delete this debate for everyone? This can’t be undone.", async () => {
+            try {
+              await _0x5295a4.debates.adminDelete(_0x3d70f3.id);
+              _0x25604e("Debate deleted");
+              _0x1fc950 = null;
+              _0x1f1dd4("app").classList.remove("thread-open");
+              _0x13913b.screen = "debates";
+              _0x24efc1();
+              _0x1858d8();
+            } catch (_0x5d05d2) {
+              _0x25604e(_0x5d05d2 && _0x5d05d2.message || "Could not delete the debate");
+            }
+          });
         }
         let _0x5d0524 = _0x1f1dd4("dbEnd");
         if (_0x5d0524) {
@@ -26512,7 +26527,24 @@ ${_}`;
             }
           };
         }
-        _0xbf849a.innerHTML = _0xadb3b8.match ? _0x50010e.swords + "<span>Ranked match — your move?</span>" : "<span class=\"rk-dot\"></span><span>Searching for a ranked opponent…</span>";
+        let _0xbf84a1 = _0xadb3b8.match ? "m:" + _0xadb3b8.match.id + ":" + (_0xadb3b8.match.status || "") : "q";
+        let _0xbf84a2 = "";
+        try {
+          _0xbf84a2 = localStorage.getItem("mx.rkPillOff") || "";
+        } catch {}
+        if (_0xbf84a2 === _0xbf84a1) {
+          _0xbf849a.remove();
+          return;
+        }
+        _0xbf849a.innerHTML = (_0xadb3b8.match ? _0x50010e.swords + "<span>Ranked match — your move?</span>" : "<span class=\"rk-dot\"></span><span>Searching for a ranked opponent…</span>") + "<span class=\"rk-ok\" role=\"button\" aria-label=\"Hide this reminder\">OK</span>";
+        let _0xbf84a3 = _0xbf849a.querySelector(".rk-ok");
+        _0xbf84a3.onclick = _0xbf84a4 => {
+          _0xbf84a4.stopPropagation();
+          try {
+            localStorage.setItem("mx.rkPillOff", _0xbf84a1);
+          } catch {}
+          _0xbf849a.remove();
+        };
       }
       let _0x3c4cd3 = ["Win by more votes, earn more ELO — the crowd bonus goes up to +60.", "Ranked wins pay 1.25× the ELO of a casual debate.", "Losing costs less than winning pays. Keep swinging.", "Win the coin toss and you pick the topic.", "Hate the topic? Decline it and say why — three declines hands you the pick.", "Top 3 on the leaderboard get a champion crown on their profile."];
       function _0x358bd1(_0xb5b883) {
@@ -36704,8 +36736,8 @@ ${_}`;
         });
         let _0x7f3a11 = _0x7f3a10[_0x7f3a03.id].ids || [];
         let _0x7f3a04 = [_0x7f3a03.creatorId, _0x7f3a03.opponentId, _0x7f3a03.stageGuest].filter((_0x7f3a05, _0x7f3a06, _0x7f3a07) => _0x7f3a05 && _0x7f3a07.indexOf(_0x7f3a05) === _0x7f3a06 && _0x7f3a11.includes(_0x7f3a05));
-        if (!_0x7f3a04.length) {
-          return "<div class=\"db-podium\" data-podium=\"" + _0x203a06(_0x7f3a03.id) + "\"><div class=\"db-podium-k\">On the podium</div><div class=\"db-podium-empty\">" + (_0x7f3a03.status === "ended" ? "The podium is empty" : "Nobody’s on the podium voice yet") + "</div></div>";
+        if (!_0x7f3a04.length || _0x7f3a04.length) {
+          return "<i class=\"db-presence\" data-podium=\"" + _0x203a06(_0x7f3a03.id) + "\" hidden></i>";
         }
         return "<div class=\"db-podium\" data-podium=\"" + _0x203a06(_0x7f3a03.id) + "\"><div class=\"db-podium-k\">On the podium</div><div class=\"db-podium-row\">" + _0x7f3a04.map(_0x7f3a08 => "<div class=\"db-podium-u" + (_0x7f3a03.turnHolder === _0x7f3a08 ? " speaking" : "") + "\" data-user=\"" + _0x203a06(_0x7f3a08) + "\">" + _0x30cd9e(_0x7f3a08, 40) + "<span>" + _0x546ca5(_0x3704eb(_0x7f3a08).name || "") + "</span>" + (_0x7f3a03.turnHolder === _0x7f3a08 ? "<em>speaking</em>" : _0x7f3a08 === _0x7f3a03.stageGuest ? "<em>guest</em>" : "") + "</div>").join("") + "</div></div>";
       }
@@ -38641,13 +38673,13 @@ ${_}`;
       let _0x4304cf = {
         signin: {
           title: "Sign in to your world.",
-          tag: "Your identity, your world — wherever you sign in.",
+          tag: "You’ve climbed over — meet your destination.",
           go: "Sign in",
           toggle: "New here? Create an account"
         },
         signup: {
           title: "Step into your world.",
-          tag: "You’ve climbed the fence — meet your destination.",
+          tag: "You’ve found the fence — will you leave the sleep behind?",
           go: "Create account",
           toggle: "Already have an account? Sign in"
         }
