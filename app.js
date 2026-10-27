@@ -25942,14 +25942,13 @@ ${_}`;
                 _0x4c55be(_0x1f1dd4("thScroll"), _0x32d3e8, _0x4f13dc);
               }
             };
-            _0x5444c9("Message deleted", _0x14f6a1, () => {
-              if (_0x58d4b5() && _0x4f13dc.roomId) {
-                _0x5295a4.messages.remove(_0xc15781.id).catch(_0x14f6a2 => {
-                  _0x14f6a1();
-                  _0x25604e(_0x14f6a2 && _0x14f6a2.friendly ? _0x14f6a2.message : "Couldn’t delete that message — try again");
-                });
-              }
-            });
+            _0x25604e("Message deleted");
+            if (_0x58d4b5() && _0x4f13dc.roomId) {
+              _0x5295a4.messages.remove(_0xc15781.id).catch(_0x14f6a2 => {
+                _0x14f6a1();
+                _0x25604e(_0x14f6a2 && _0x14f6a2.friendly ? _0x14f6a2.message : "Couldn’t delete that message — try again");
+              });
+            }
           }
         });
       }
@@ -37518,7 +37517,7 @@ ${_}`;
               _0x26e1b7.classList.remove("on");
             } else {
               if (_0x2bf969.fears.length >= 2) {
-                _0x25604e("Pick up to 2");
+                _0x25604e("You can pick 2 — tap one to swap it");
                 return;
               }
               _0x2bf969.fears.push(_0x3f1921);
@@ -37688,8 +37687,8 @@ ${_}`;
           _0x25604e("Pick the one thing you’re chasing");
           return;
         }
-        if (_0x2bf969.step === 2 && !_0x2bf969.fears.length) {
-          _0x25604e("Pick at least one");
+        if (_0x2bf969.step === 2 && _0x2bf969.fears.length < 2) {
+          _0x25604e(_0x2bf969.fears.length ? "Pick one more — you need 2 fears" : "Pick 2 fears to continue");
           return;
         }
         if (_0x2bf969.step === 3) {
