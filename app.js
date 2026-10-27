@@ -15456,7 +15456,16 @@ ${_}`;
           },
           async remove(_0x2fcf02) {
             await _0x1aea05();
-            await _0x34bcfe.from("messages").delete().eq("id", _0x2fcf02);
+            let { data: _0x2fcf03, error: _0x2fcf04 } = await _0x34bcfe.from("messages").delete().eq("id", _0x2fcf02).select("id");
+            if (_0x2fcf04) {
+              throw _0x2fcf04;
+            }
+            if (!_0x2fcf03 || !_0x2fcf03.length) {
+              throw {
+                friendly: true,
+                message: "Couldn’t delete that message — try again"
+              };
+            }
           },
           subscribe(_0xa8e27a, _0x29e443) {
             if (_0x34bcfe) {
@@ -16447,10 +16456,14 @@ ${_}`;
             data: _0x2fec25
           } = await _0x34bcfe.from("posts").select("author_id,media_path,thumb_path,media_bucket").eq("id", _0x2c2a06).maybeSingle();
           let {
+            data: _0x580641,
             error: _0x580640
-          } = await _0x34bcfe.from("posts").delete().eq("id", _0x2c2a06);
+          } = await _0x34bcfe.from("posts").delete().eq("id", _0x2c2a06).select("id");
           if (_0x580640) {
             throw _0x580640;
+          }
+          if (!_0x580641 || !_0x580641.length) {
+            throw new Error("not deleted");
           }
           if (_0x2fec25 && _0x2fec25.author_id === _0x2e6c84().id && _0x2fec25.media_path) {
             let _0x125057 = _0x2fec25.media_bucket === "attachments" ? "attachments" : "media";
@@ -19619,6 +19632,33 @@ ${_}`;
       }
       function _0x5444c9(_0xc34d95, _0x39ab46, _0x4de255, _0x10ee7a) {
         _0x10ee7a = _0x10ee7a || 5000;
+        if (_0x5444c9._p) {
+          let _0x5444f1 = _0x5444c9._p;
+          _0x5444c9._p = null;
+          clearTimeout(_0x5444c9._t);
+          try {
+            _0x5444f1();
+          } catch {}
+        }
+        if (!_0x5444c9._hooked) {
+          _0x5444c9._hooked = true;
+          let _0x5444f2 = () => {
+            if (_0x5444c9._p) {
+              let _0x5444f3 = _0x5444c9._p;
+              _0x5444c9._p = null;
+              clearTimeout(_0x5444c9._t);
+              try {
+                _0x5444f3();
+              } catch {}
+            }
+          };
+          window.addEventListener("pagehide", _0x5444f2);
+          document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+              _0x5444f2();
+            }
+          });
+        }
         let _0x26bc1e = _0x1f1dd4("toast");
         clearTimeout(_0x25604e._t);
         clearTimeout(_0x5444c9._t);
@@ -19632,12 +19672,28 @@ ${_}`;
             _0x26bc1e.className = "toast";
           }
         };
+        let _0x5444f4 = false;
+        let _0x5444f5 = () => {
+          if (_0x5444f4) {
+            return;
+          }
+          _0x5444f4 = true;
+          if (_0x5444c9._p === _0x5444f5) {
+            _0x5444c9._p = null;
+          }
+          _0x4de255();
+        };
+        _0x5444c9._p = _0x5444f5;
         _0x5444c9._t = setTimeout(() => {
           _0x3657e1();
-          _0x4de255();
+          _0x5444f5();
         }, _0x10ee7a);
         _0x1f1dd4("tuBtn").onclick = () => {
-          if (!_0x22b14e) {
+          if (!_0x22b14e && !_0x5444f4) {
+            _0x5444f4 = true;
+            if (_0x5444c9._p === _0x5444f5) {
+              _0x5444c9._p = null;
+            }
             clearTimeout(_0x5444c9._t);
             _0x3657e1();
             _0x39ab46();
@@ -23185,7 +23241,7 @@ ${_}`;
         if (_0x4a159e.length && !(_0x13913b.dismissedIcebreakers || []).includes(_0x5c564e.key)) {
           _0x442c80 += "<div class=\"icebreaker\" id=\"iceBanner\"><span>" + _0x50010e.sparkle + " You're both <b>" + _0x546ca5(_0x4a159e[0]) + "</b> — ask them about it.</span><button id=\"iceDismiss\">✕</button></div>";
         }
-        _0x442c80 += "<div id=\"notifOffBanner\"></div>";
+        _0x442c80 += "<div id=\"roomPins\" class=\"room-pins\"></div><div id=\"notifOffBanner\"></div>";
         let _0x3e6902 = _0x13913b.wallpapers && _0x13913b.wallpapers[_0x5c564e.key] ? " style=\"background:" + _0x203a06(_0x13913b.wallpapers[_0x5c564e.key]) + "\"" : "";
         _0x442c80 += "<div class=\"thread-scroll\" id=\"thScroll\"" + _0x3e6902 + ">" + _0x2bee78(_0x458a0b, _0x5c564e) + "</div>";
         _0x442c80 += "<div id=\"typingHint\" class=\"typing-hint\"></div>";
@@ -25740,6 +25796,12 @@ ${_}`;
             let _0x4a75e7 = !_0xc15781.pin;
             _0x5295a4.admin2.pin(_0xc15781.id, _0x4a75e7).then(() => {
               _0xc15781.pin = _0x4a75e7;
+              {
+                let _0x4a75f1 = document.getElementById("roomPins");
+                if (_0x4a75f1) {
+                  _0x4a75f1.dataset.at = "0";
+                }
+              }
               _0x33994b.play("success");
               _0x25604e(_0x4a75e7 ? "Pinned" : "Unpinned", _0x50010e.pin);
               if (_0x1fc950 && _0x1fc950.key === _0x4f13dc.key) {
@@ -25812,18 +25874,24 @@ ${_}`;
             }
             _0x1f1dd4("thScroll").innerHTML = _0x2bee78(_0x32d3e8, _0x4f13dc);
             _0x4c55be(_0x1f1dd4("thScroll"), _0x32d3e8, _0x4f13dc);
-            _0x5444c9("Message deleted", () => {
-              _0x32d3e8.splice(_0x14f694, 0, _0xc15781);
+            let _0x14f6a1 = () => {
+              if (!_0x32d3e8.includes(_0xc15781)) {
+                _0x32d3e8.splice(Math.min(Math.max(_0x14f694, 0), _0x32d3e8.length), 0, _0xc15781);
+              }
               if (!_0x58d4b5()) {
                 _0x24efc1();
               }
-              if (_0x1fc950 && _0x1fc950.key === _0x4f13dc.key) {
+              if (_0x1fc950 && _0x1fc950.key === _0x4f13dc.key && _0x1f1dd4("thScroll")) {
                 _0x1f1dd4("thScroll").innerHTML = _0x2bee78(_0x32d3e8, _0x4f13dc);
                 _0x4c55be(_0x1f1dd4("thScroll"), _0x32d3e8, _0x4f13dc);
               }
-            }, () => {
+            };
+            _0x5444c9("Message deleted", _0x14f6a1, () => {
               if (_0x58d4b5() && _0x4f13dc.roomId) {
-                _0x5295a4.messages.remove(_0xc15781.id);
+                _0x5295a4.messages.remove(_0xc15781.id).catch(_0x14f6a2 => {
+                  _0x14f6a1();
+                  _0x25604e(_0x14f6a2 && _0x14f6a2.friendly ? _0x14f6a2.message : "Couldn’t delete that message — try again");
+                });
               }
             });
           }
@@ -28431,7 +28499,13 @@ ${_}`;
                 _0x32621d();
               }
             } catch {
-              _0x25604e("Could not delete");
+              if (_0x1d9efe) {
+                let _0x54ff5d = _0x1d9efe.closest(".post");
+                if (_0x54ff5d) {
+                  _0x54ff5d.style.display = "";
+                }
+              }
+              _0x25604e("Couldn’t delete that post — try again");
             }
           });
         });
@@ -29754,13 +29828,50 @@ ${_}`;
               let _0xa7f002 = document.createElement("input");
               _0xa7f002.type = "file";
               _0xa7f002.accept = "image/*";
+              // some phones only report the chosen file when the picker is part of the page
+              _0xa7f002.style.cssText = "position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+              document.body.appendChild(_0xa7f002);
               _0xa7f002.onchange = async () => {
                 let _0xa7f003 = _0xa7f002.files && _0xa7f002.files[0];
+                setTimeout(() => _0xa7f002.remove(), 0);
                 if (!_0xa7f003) {
                   return;
                 }
                 _0x25604e("Uploading…");
                 try {
+                  // any photo the browser can open (HEIC, AVIF, huge camera shots…) becomes a ≤1024px JPEG
+                  if (!/^image\/gif$/i.test(_0xa7f003.type || "")) {
+                    try {
+                      let _0xa7f0q1 = await new Promise((_0xa7f0q2, _0xa7f0q3) => {
+                        let _0xa7f0q4 = new Image();
+                        let _0xa7f0q5 = URL.createObjectURL(_0xa7f003);
+                        _0xa7f0q4.onload = () => {
+                          URL.revokeObjectURL(_0xa7f0q5);
+                          _0xa7f0q2(_0xa7f0q4);
+                        };
+                        _0xa7f0q4.onerror = () => {
+                          URL.revokeObjectURL(_0xa7f0q5);
+                          _0xa7f0q3(new Error("decode"));
+                        };
+                        _0xa7f0q4.src = _0xa7f0q5;
+                      });
+                      let _0xa7f0q6 = Math.min(1, 1024 / Math.max(_0xa7f0q1.naturalWidth || 1, _0xa7f0q1.naturalHeight || 1));
+                      let _0xa7f0q7 = document.createElement("canvas");
+                      _0xa7f0q7.width = Math.max(1, Math.round((_0xa7f0q1.naturalWidth || 1) * _0xa7f0q6));
+                      _0xa7f0q7.height = Math.max(1, Math.round((_0xa7f0q1.naturalHeight || 1) * _0xa7f0q6));
+                      _0xa7f0q7.getContext("2d").drawImage(_0xa7f0q1, 0, 0, _0xa7f0q7.width, _0xa7f0q7.height);
+                      let _0xa7f0q8 = await new Promise(_0xa7f0q9 => _0xa7f0q7.toBlob(_0xa7f0q9, "image/jpeg", 0.9));
+                      if (_0xa7f0q8 && _0xa7f0q8.size) {
+                        _0xa7f003 = new File([_0xa7f0q8], "avatar.jpg", {
+                          type: "image/jpeg"
+                        });
+                      }
+                    } catch {
+                      if (!/^image\/(jpeg|png|webp)$/i.test(_0xa7f003.type || "")) {
+                        throw new Error("this photo format can’t be read here — try a JPG or PNG");
+                      }
+                    }
+                  }
                   let _0xa7f004 = await _0x2b241b(_0xa7f003, "image");
                   await _0x5295a4.profiles.update({ avatar_path: _0xa7f004.path });
                   _0x2e6c84().avatarPath = _0xa7f004.path;
@@ -36846,7 +36957,7 @@ ${_}`;
           }
         } catch {}
       }
-      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x8e1a01 = 0; let _0x8e1a0q = 0; let _0x8e1a02 = async () => { if (!_0x58d4b5() || document.hidden) { return; } try { let { count: _0x8e1a03, error: _0x8e1a04 } = await _0x34bcfe.from("debates").select("id", { count: "exact", head: true }).eq("status", "active"); if (!_0x8e1a04) { _0x8e1a01 = _0x8e1a03 || 0; } } catch {} try { let { data: _0x8e1a0p } = await _0x34bcfe.from("posts").select("created_at").neq("author_id", _0x2e6c84().id).order("created_at", { ascending: false }).limit(1); if (_0x8e1a0p && _0x8e1a0p[0]) { _0x8e1a0q = new Date(_0x8e1a0p[0].created_at).getTime(); } } catch {} }; let _0x8e1a05 = () => { let _0x8e1a0n = document.querySelector("#botnav [data-nav=\"nexus\"]"); if (_0x8e1a0n) { _0x8e1a0n.classList.toggle("nx-live", _0x8e1a01 > 0); } let _0x8e1a0r = 0; try { _0x8e1a0r = Number(localStorage.getItem("mx.feedSeen")) || 0; if (!_0x8e1a0r || _0x13913b.screen === "feed") { _0x8e1a0r = Date.now(); localStorage.setItem("mx.feedSeen", String(_0x8e1a0r)); } } catch {} let _0x8e1a0s = document.querySelector("#botnav [data-nav=\"feed\"]"); if (_0x8e1a0s) { let _0x8e1a0t = _0x8e1a0q > _0x8e1a0r && _0x13913b.screen !== "feed"; let _0x8e1a0u = _0x8e1a0s.querySelector(".fd-dot"); if (_0x8e1a0t && !_0x8e1a0u) { _0x8e1a0u = document.createElement("i"); _0x8e1a0u.className = "fd-dot"; _0x8e1a0s.appendChild(_0x8e1a0u); } else if (!_0x8e1a0t && _0x8e1a0u) { _0x8e1a0u.remove(); } } let _0x8e1a0v = document.querySelector("#botnav [data-nav=\"connect\"]"); if (_0x8e1a0v) { let _0x8e1a0w = (_0x13913b.notifications || []).some(_0x8e1a0x => _0x8e1a0x && !_0x8e1a0x.read && (_0x8e1a0x.type === "dm" || _0x8e1a0x.type === "call" || _0x8e1a0x.type === "friend_request")); let _0x8e1a0y = _0x8e1a0v.querySelector(".fd-dot"); if (_0x8e1a0w && !_0x8e1a0y) { _0x8e1a0y = document.createElement("i"); _0x8e1a0y.className = "fd-dot"; _0x8e1a0v.appendChild(_0x8e1a0y); } else if (!_0x8e1a0w && _0x8e1a0y) { _0x8e1a0y.remove(); } } let _0x8e1a10 = document.querySelector("#s-connect .segmented [data-t=\"dms\"]"); if (_0x8e1a10) { let _0x8e1a11 = (_0x13913b.notifications || []).some(_0x8e1a12 => _0x8e1a12 && !_0x8e1a12.read && (_0x8e1a12.type === "dm" || _0x8e1a12.type === "call")); let _0x8e1a13 = _0x8e1a10.querySelector(".dm-tab-dot"); if (_0x8e1a11 && !_0x8e1a13) { _0x8e1a13 = document.createElement("i"); _0x8e1a13.className = "dm-tab-dot"; _0x8e1a10.appendChild(_0x8e1a13); } else if (!_0x8e1a11 && _0x8e1a13) { _0x8e1a13.remove(); } } try { let _0x8e1b01 = document.querySelector("#s-thread .composer.db-composer"); let _0x8e1b02 = _0x1fc950 && _0x1fc950.debate; if (_0x8e1b01 && _0x8e1b02) { let _0x8e1b03 = _0x2e6c84() && _0x2e6c84().id; let _0x8e1b04 = _0x8e1b03 && (_0x8e1b03 === _0x8e1b02.creatorId || _0x8e1b03 === _0x8e1b02.opponentId); let _0x8e1b05 = _0x8e1b04 && _0x8e1b02.status === "active" && _0x8e1b02.turnHolder && (!!_0x8e1b02.pausedAt || _0x8e1b02.turnHolder !== _0x8e1b03); let _0x8e1b06 = String(_0x3704eb(_0x8e1b02.turnHolder).name || "your opponent").split(" ")[0]; let _0x8e1b07 = !_0x8e1b05 ? "" : _0x8e1b02.turnHolder === _0x8e1b03 ? "Press I’m ready to start your turn" : _0x8e1b02.pausedAt ? "Waiting for " + _0x8e1b06 + " to press I’m ready" : "It’s " + _0x8e1b06 + "’s turn — wait for yours"; _0x8e1b01.classList.toggle("db-locked", !!_0x8e1b05); if (_0x8e1b01.dataset.lock !== _0x8e1b07) { _0x8e1b01.dataset.lock = _0x8e1b07; } _0x8e1b01.querySelectorAll("input, textarea").forEach(_0x8e1b08 => { if (_0x8e1b05 && !_0x8e1b08.disabled) { _0x8e1b08.disabled = true; _0x8e1b08.blur(); } else if (!_0x8e1b05 && _0x8e1b08.disabled && _0x8e1b08.dataset.dbLock === "1") { _0x8e1b08.disabled = false; } if (_0x8e1b05) { _0x8e1b08.dataset.dbLock = "1"; } }); } } catch {} try { document.querySelectorAll("[data-podium]").forEach(_0x8e1b09 => { let _0x8e1b0a = _0x8e1b09.dataset.podium; let _0x8e1b0b = _0x7f3a10[_0x8e1b0a]; if (!_0x8e1b0b || !_0x8e1b0b.d || _0x8e1b0b.busy || Date.now() - (_0x8e1b0b.at || 0) < 6000) { return; } _0x8e1b0b.busy = true; _0x34bcfe.functions.invoke("voice-presence", { body: { id: _0x8e1b0a } }).then(_0x8e1b0c => { let _0x8e1b0d = _0x8e1b0c && _0x8e1b0c.data && Array.isArray(_0x8e1b0c.data.ids) ? _0x8e1b0c.data.ids : []; let _0x8e1b0e = (_0x8e1b0b.ids || []).join(","); _0x8e1b0b.ids = _0x8e1b0d; if (_0x8e1b0e !== _0x8e1b0d.join(",") || !_0x8e1b0b.at) { document.querySelectorAll("[data-podium=\"" + _0x8e1b0a + "\"]").forEach(_0x8e1b0f => { _0x8e1b0f.outerHTML = _0x7f3a01(_0x8e1b0b.d); }); } }).catch(() => {}).finally(() => { _0x8e1b0b.busy = false; _0x8e1b0b.at = Date.now(); }); }); } catch {} try { document.querySelectorAll("[data-podium]").forEach(_0x8e1c01 => { let _0x8e1c02 = _0x7f3a10[_0x8e1c01.dataset.podium]; if (!_0x8e1c02 || !_0x8e1c02.d || !_0x8e1c02.at) { return; } let _0x8e1c03 = _0x1fc950 && _0x1fc950.debate && _0x1fc950.debate.id === _0x8e1c02.d.id ? _0x1fc950.debate : _0x8e1c02.d; let _0x8e1c04 = _0x8e1c02.ids || []; let _0x8e1c05 = _0x8e1c01.closest(".thread, .screen, .sheet") || document; _0x8e1c05.querySelectorAll(".debate-vs .debate-side[data-user], .db-podium-u[data-user]").forEach(_0x8e1c06 => { let _0x8e1c07 = _0x8e1c06.dataset.user; let _0x8e1c08 = _0x8e1c06.querySelector(":scope > .vs-call"); if (!_0x8e1c04.includes(_0x8e1c07)) { if (_0x8e1c08) { _0x8e1c08.remove(); } return; } let _0x8e1c09 = _0x8e1c03.status !== "active" ? true : !_0x8e1c03.pausedAt && (_0x8e1c03.turnHolder ? _0x8e1c03.turnHolder === _0x8e1c07 : _0x8e1c07 === _0x8e1c03.creatorId || _0x8e1c07 === _0x8e1c03.opponentId); let _0x8e1c0a = _0x8e1c09 ? "live" : "muted"; if (!_0x8e1c08) { _0x8e1c08 = document.createElement("span"); _0x8e1c06.insertBefore(_0x8e1c08, _0x8e1c06.firstChild); } if (_0x8e1c08.dataset.st !== _0x8e1c0a) { _0x8e1c08.dataset.st = _0x8e1c0a; _0x8e1c08.className = "vs-call " + _0x8e1c0a; _0x8e1c08.innerHTML = _0x8e1c09 ? _0x50010e.phone : _0x50010e.micOff; _0x8e1c08.title = _0x8e1c09 ? "In the call — can speak" : "In the call — muted until it’s their turn"; } }); }); } catch {} let _0x8e1a06 = _0x1f1dd4("thDebates"); if (!_0x8e1a06) { return; } _0x8e1a06.classList.toggle("is-live", _0x8e1a01 > 0); let _0x8e1a07 = _0x8e1a06.querySelector(".dlb-live"); if (_0x8e1a01 > 0) { if (!_0x8e1a07) { _0x8e1a07 = document.createElement("span"); _0x8e1a07.className = "dlb-live"; _0x8e1a06.appendChild(_0x8e1a07); } _0x8e1a07.textContent = _0x8e1a01 > 9 ? "9+" : String(_0x8e1a01); _0x8e1a06.title = _0x8e1a01 + " live debate" + (_0x8e1a01 === 1 ? "" : "s"); } else if (_0x8e1a07) { _0x8e1a07.remove(); _0x8e1a06.title = "Debates"; } }; setInterval(_0x8e1a02, 20000); setInterval(_0x8e1a05, 1500); { let _0x8e1a0z = _0x1f1dd4("botnav"); if (_0x8e1a0z && window.MutationObserver) { new MutationObserver(() => { try { _0x8e1a05(); } catch {} }).observe(_0x8e1a0z, { childList: true }); } let _0x8e1a14 = _0x1f1dd4("s-connect"); if (_0x8e1a14 && window.MutationObserver) { new MutationObserver(() => { try { _0x8e1a05(); } catch {} }).observe(_0x8e1a14, { childList: true }); } } document.addEventListener("visibilitychange", _0x8e1a02); setTimeout(_0x8e1a02, 2500); } { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); localStorage.removeItem("mx.walk"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
+      _0x1f1dd4("profileBtn").onclick = () => _0x1a040a(); { let _0x8e1a01 = 0; let _0x8e1a0q = 0; let _0x8e1a02 = async () => { if (!_0x58d4b5() || document.hidden) { return; } try { let { count: _0x8e1a03, error: _0x8e1a04 } = await _0x34bcfe.from("debates").select("id", { count: "exact", head: true }).eq("status", "active"); if (!_0x8e1a04) { _0x8e1a01 = _0x8e1a03 || 0; } } catch {} try { let { data: _0x8e1a0p } = await _0x34bcfe.from("posts").select("created_at").neq("author_id", _0x2e6c84().id).order("created_at", { ascending: false }).limit(1); if (_0x8e1a0p && _0x8e1a0p[0]) { _0x8e1a0q = new Date(_0x8e1a0p[0].created_at).getTime(); } } catch {} }; let _0x8e1a05 = () => { let _0x8e1a0n = document.querySelector("#botnav [data-nav=\"nexus\"]"); if (_0x8e1a0n) { _0x8e1a0n.classList.toggle("nx-live", _0x8e1a01 > 0); } let _0x8e1a0r = 0; try { _0x8e1a0r = Number(localStorage.getItem("mx.feedSeen")) || 0; if (!_0x8e1a0r || _0x13913b.screen === "feed") { _0x8e1a0r = Date.now(); localStorage.setItem("mx.feedSeen", String(_0x8e1a0r)); } } catch {} let _0x8e1a0s = document.querySelector("#botnav [data-nav=\"feed\"]"); if (_0x8e1a0s) { let _0x8e1a0t = _0x8e1a0q > _0x8e1a0r && _0x13913b.screen !== "feed"; let _0x8e1a0u = _0x8e1a0s.querySelector(".fd-dot"); if (_0x8e1a0t && !_0x8e1a0u) { _0x8e1a0u = document.createElement("i"); _0x8e1a0u.className = "fd-dot"; _0x8e1a0s.appendChild(_0x8e1a0u); } else if (!_0x8e1a0t && _0x8e1a0u) { _0x8e1a0u.remove(); } } let _0x8e1a0v = document.querySelector("#botnav [data-nav=\"connect\"]"); if (_0x8e1a0v) { let _0x8e1a0w = (_0x13913b.notifications || []).some(_0x8e1a0x => _0x8e1a0x && !_0x8e1a0x.read && (_0x8e1a0x.type === "dm" || _0x8e1a0x.type === "call" || _0x8e1a0x.type === "friend_request")); let _0x8e1a0y = _0x8e1a0v.querySelector(".fd-dot"); if (_0x8e1a0w && !_0x8e1a0y) { _0x8e1a0y = document.createElement("i"); _0x8e1a0y.className = "fd-dot"; _0x8e1a0v.appendChild(_0x8e1a0y); } else if (!_0x8e1a0w && _0x8e1a0y) { _0x8e1a0y.remove(); } } let _0x8e1a10 = document.querySelector("#s-connect .segmented [data-t=\"dms\"]"); if (_0x8e1a10) { let _0x8e1a11 = (_0x13913b.notifications || []).some(_0x8e1a12 => _0x8e1a12 && !_0x8e1a12.read && (_0x8e1a12.type === "dm" || _0x8e1a12.type === "call")); let _0x8e1a13 = _0x8e1a10.querySelector(".dm-tab-dot"); if (_0x8e1a11 && !_0x8e1a13) { _0x8e1a13 = document.createElement("i"); _0x8e1a13.className = "dm-tab-dot"; _0x8e1a10.appendChild(_0x8e1a13); } else if (!_0x8e1a11 && _0x8e1a13) { _0x8e1a13.remove(); } } try { let _0x8e1b01 = document.querySelector("#s-thread .composer.db-composer"); let _0x8e1b02 = _0x1fc950 && _0x1fc950.debate; if (_0x8e1b01 && _0x8e1b02) { let _0x8e1b03 = _0x2e6c84() && _0x2e6c84().id; let _0x8e1b04 = _0x8e1b03 && (_0x8e1b03 === _0x8e1b02.creatorId || _0x8e1b03 === _0x8e1b02.opponentId); let _0x8e1b05 = _0x8e1b04 && _0x8e1b02.status === "active" && _0x8e1b02.turnHolder && (!!_0x8e1b02.pausedAt || _0x8e1b02.turnHolder !== _0x8e1b03); let _0x8e1b06 = String(_0x3704eb(_0x8e1b02.turnHolder).name || "your opponent").split(" ")[0]; let _0x8e1b07 = !_0x8e1b05 ? "" : _0x8e1b02.turnHolder === _0x8e1b03 ? "Press I’m ready to start your turn" : _0x8e1b02.pausedAt ? "Waiting for " + _0x8e1b06 + " to press I’m ready" : "It’s " + _0x8e1b06 + "’s turn — wait for yours"; _0x8e1b01.classList.toggle("db-locked", !!_0x8e1b05); if (_0x8e1b01.dataset.lock !== _0x8e1b07) { _0x8e1b01.dataset.lock = _0x8e1b07; } _0x8e1b01.querySelectorAll("input, textarea").forEach(_0x8e1b08 => { if (_0x8e1b05 && !_0x8e1b08.disabled) { _0x8e1b08.disabled = true; _0x8e1b08.blur(); } else if (!_0x8e1b05 && _0x8e1b08.disabled && _0x8e1b08.dataset.dbLock === "1") { _0x8e1b08.disabled = false; } if (_0x8e1b05) { _0x8e1b08.dataset.dbLock = "1"; } }); } } catch {} try { document.querySelectorAll("[data-podium]").forEach(_0x8e1b09 => { let _0x8e1b0a = _0x8e1b09.dataset.podium; let _0x8e1b0b = _0x7f3a10[_0x8e1b0a]; if (!_0x8e1b0b || !_0x8e1b0b.d || _0x8e1b0b.busy || Date.now() - (_0x8e1b0b.at || 0) < 6000) { return; } _0x8e1b0b.busy = true; _0x34bcfe.functions.invoke("voice-presence", { body: { id: _0x8e1b0a } }).then(_0x8e1b0c => { let _0x8e1b0d = _0x8e1b0c && _0x8e1b0c.data && Array.isArray(_0x8e1b0c.data.ids) ? _0x8e1b0c.data.ids : []; let _0x8e1b0e = (_0x8e1b0b.ids || []).join(","); _0x8e1b0b.ids = _0x8e1b0d; if (_0x8e1b0e !== _0x8e1b0d.join(",") || !_0x8e1b0b.at) { document.querySelectorAll("[data-podium=\"" + _0x8e1b0a + "\"]").forEach(_0x8e1b0f => { _0x8e1b0f.outerHTML = _0x7f3a01(_0x8e1b0b.d); }); } }).catch(() => {}).finally(() => { _0x8e1b0b.busy = false; _0x8e1b0b.at = Date.now(); }); }); } catch {} try { document.querySelectorAll("[data-podium]").forEach(_0x8e1c01 => { let _0x8e1c02 = _0x7f3a10[_0x8e1c01.dataset.podium]; if (!_0x8e1c02 || !_0x8e1c02.d || !_0x8e1c02.at) { return; } let _0x8e1c03 = _0x1fc950 && _0x1fc950.debate && _0x1fc950.debate.id === _0x8e1c02.d.id ? _0x1fc950.debate : _0x8e1c02.d; let _0x8e1c04 = _0x8e1c02.ids || []; let _0x8e1c05 = _0x8e1c01.closest(".thread, .screen, .sheet") || document; _0x8e1c05.querySelectorAll(".debate-vs .debate-side[data-user], .db-podium-u[data-user]").forEach(_0x8e1c06 => { let _0x8e1c07 = _0x8e1c06.dataset.user; let _0x8e1c08 = _0x8e1c06.querySelector(":scope > .vs-call"); if (!_0x8e1c04.includes(_0x8e1c07)) { if (_0x8e1c08) { _0x8e1c08.remove(); } return; } let _0x8e1c09 = _0x8e1c03.status !== "active" ? true : !_0x8e1c03.pausedAt && (_0x8e1c03.turnHolder ? _0x8e1c03.turnHolder === _0x8e1c07 : _0x8e1c07 === _0x8e1c03.creatorId || _0x8e1c07 === _0x8e1c03.opponentId); let _0x8e1c0a = _0x8e1c09 ? "live" : "muted"; if (!_0x8e1c08) { _0x8e1c08 = document.createElement("span"); _0x8e1c06.insertBefore(_0x8e1c08, _0x8e1c06.firstChild); } if (_0x8e1c08.dataset.st !== _0x8e1c0a) { _0x8e1c08.dataset.st = _0x8e1c0a; _0x8e1c08.className = "vs-call " + _0x8e1c0a; _0x8e1c08.innerHTML = _0x8e1c09 ? _0x50010e.phone : _0x50010e.micOff; _0x8e1c08.title = _0x8e1c09 ? "In the call — can speak" : "In the call — muted until it’s their turn"; } }); }); } catch {} try { let _0x8e1d01 = document.getElementById("roomPins"); let _0x8e1d02 = _0x1fc950 && _0x1fc950.roomId; if (_0x8e1d01 && _0x8e1d02 && _0x8e1d01.dataset.busy !== "1" && (_0x8e1d01.dataset.room !== _0x8e1d02 || Date.now() - Number(_0x8e1d01.dataset.at || 0) > 20000)) { _0x8e1d01.dataset.busy = "1"; _0x8e1d01.dataset.room = _0x8e1d02; _0x34bcfe.from("messages").select("id,body,created_at").eq("room_id", _0x8e1d02).eq("pinned", true).order("created_at", { ascending: false }).limit(1).then(_0x8e1d03 => { _0x8e1d01.dataset.busy = ""; _0x8e1d01.dataset.at = String(Date.now()); let _0x8e1d04 = _0x8e1d03 && _0x8e1d03.data && _0x8e1d03.data[0]; if (!_0x8e1d04) { _0x8e1d01.innerHTML = ""; _0x8e1d01.dataset.mid = ""; return; } if (_0x8e1d01.dataset.mid === _0x8e1d04.id) { return; } _0x8e1d01.dataset.mid = _0x8e1d04.id; let _0x8e1d05 = _0x2e6c84() && _0x2e6c84().isAdmin; _0x8e1d01.innerHTML = "<div class=\"room-pin\"><span class=\"pin-ic\">" + _0x50010e.pin + "</span><div class=\"rp-main\"><div class=\"pin-k\">Overwatch broadcast</div><div class=\"rp-t\">" + _0x76f895(String(_0x8e1d04.body || "").replace(/^@everyone\s*/i, "")) + "</div></div>" + (_0x8e1d05 ? "<button class=\"rp-x\" title=\"Unpin\" aria-label=\"Unpin\">" + _0x50010e.close + "</button>" : "") + "</div>"; let _0x8e1d06 = _0x8e1d01.querySelector(".rp-main"); if (_0x8e1d06) { _0x8e1d06.onclick = () => _0x8e1d01.querySelector(".room-pin").classList.toggle("open"); } let _0x8e1d07 = _0x8e1d01.querySelector(".rp-x"); if (_0x8e1d07) { _0x8e1d07.onclick = _0x8e1d08 => { _0x8e1d08.stopPropagation(); _0x5295a4.admin2.pin(_0x8e1d04.id, false).then(() => { _0x8e1d01.innerHTML = ""; _0x8e1d01.dataset.mid = ""; _0x8e1d01.dataset.at = "0"; _0x25604e("Unpinned", _0x50010e.pin); }).catch(() => _0x25604e("Could not unpin")); }; } }, () => { _0x8e1d01.dataset.busy = ""; }); } } catch {} let _0x8e1a06 = _0x1f1dd4("thDebates"); if (!_0x8e1a06) { return; } _0x8e1a06.classList.toggle("is-live", _0x8e1a01 > 0); let _0x8e1a07 = _0x8e1a06.querySelector(".dlb-live"); if (_0x8e1a01 > 0) { if (!_0x8e1a07) { _0x8e1a07 = document.createElement("span"); _0x8e1a07.className = "dlb-live"; _0x8e1a06.appendChild(_0x8e1a07); } _0x8e1a07.textContent = _0x8e1a01 > 9 ? "9+" : String(_0x8e1a01); _0x8e1a06.title = _0x8e1a01 + " live debate" + (_0x8e1a01 === 1 ? "" : "s"); } else if (_0x8e1a07) { _0x8e1a07.remove(); _0x8e1a06.title = "Debates"; } }; setInterval(_0x8e1a02, 20000); setInterval(_0x8e1a05, 1500); { let _0x8e1a0z = _0x1f1dd4("botnav"); if (_0x8e1a0z && window.MutationObserver) { new MutationObserver(() => { try { _0x8e1a05(); } catch {} }).observe(_0x8e1a0z, { childList: true }); } let _0x8e1a14 = _0x1f1dd4("s-connect"); if (_0x8e1a14 && window.MutationObserver) { new MutationObserver(() => { try { _0x8e1a05(); } catch {} }).observe(_0x8e1a14, { childList: true }); } } document.addEventListener("visibilitychange", _0x8e1a02); setTimeout(_0x8e1a02, 2500); } { let _0x7e2a0c = _0x5295a4.messages.send; _0x5295a4.messages.send = async function () { let _0x7e2a0d = await _0x7e2a0c.apply(this, arguments); if (_0x7e2a00 === true) { _0x7e2a00 = false; try { localStorage.setItem("mx.nexusTip." + (_0x2e6c84() && _0x2e6c84().id || ""), "1"); localStorage.removeItem("mx.walk"); } catch {} _0x7e2a02(); _0x25604e("You’re in — go explore!"); } return _0x7e2a0d; }; } { let _0x9d4e11 = _0x1f1dd4("nexusBackBtn"); if (_0x9d4e11) { _0x9d4e11.innerHTML = _0x50010e.back; _0x9d4e11.onclick = () => { _0x13913b.screen = "feed"; _0x24efc1(); _0x1858d8(); _0x19d9b7(); }; } } { let _0x9d4e01 = _0x1f1dd4("installBtn"); if (_0x9d4e01) { _0x9d4e01.innerHTML = _0x50010e.download; let _0x9d4e02 = () => { _0x9d4e01.style.display = _0x38064e.standalone() ? "none" : ""; }; _0x9d4e02(); _0x9d4e01.onclick = () => _0x2a5472(); window.addEventListener("appinstalled", () => { _0x9d4e01.style.display = "none"; }); } }
       _0x1f1dd4("notifBtn").onclick = _0x13348b;
       _0x1f1dd4("msgBarBtn").innerHTML = _0x50010e.dm + "<span>Messages</span>";
       _0x1f1dd4("msgBarBtn").onclick = () => {
