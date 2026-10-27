@@ -375,3 +375,14 @@ begin
 end $function$;
 create or replace trigger notify_debate_turn AFTER INSERT OR UPDATE OF turn_holder, paused_at, status ON public.debates
   FOR EACH ROW EXECUTE FUNCTION trg_notify_debate_turn();
+
+-- Other people's profiles show identity traits again: profiles_public carries the public profile fields
+-- (bio, goals, fears, personality types, banner, status) and respects location privacy.
+create or replace view public.profiles_public with (security_invoker = on) as
+select id, handle, name, color, like_icon, avatar_path, tier, elo, debate_wins, debate_losses, debate_ties, is_admin, is_mod, is_owner,
+  bio, status_line, banner_path, banner_style,
+  goals, fears, mbti, enneagram_core, enneagram_wing, enneagram_tritype, temperament_dominant, temperament_secondary,
+  case when loc_visibility = 'hidden' then null else country end as country,
+  case when loc_visibility in ('hidden', 'country') then null else region end as region,
+  loc_visibility, dm_privacy, created_at
+from profiles;

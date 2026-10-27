@@ -24573,9 +24573,65 @@ ${_}`;
           _0x599d15();
           return;
         }
-        _0x1f1dd4("s-debates").innerHTML = _0x221666() + ("<div class=\"pad\" style=\"padding-bottom:0\"><div class=\"db-lede\"><b>Pick a side. Argue it 1-on-1.</b><span>The room votes on who’s winning — win to climb the rank ladder.</span></div>" + _0x197f3f() + _0x48d826() + "<button class=\"btn block casual-btn\" id=\"dbNew\">" + _0x50010e.plus + " Casual debate <span class=\"unr-tag\">Unranked</span></button></div><div class=\"db-filters\" id=\"dbFilters\"></div><div id=\"dbList\" style=\"padding-top:4px\">" + "<div class=\"db-skel\"></div>".repeat(3) + "</div></div>");
+        _0x1f1dd4("s-debates").innerHTML = _0x221666() + ("<div class=\"pad\" style=\"padding-bottom:0\"><div class=\"db-lede\"><div class=\"db-lede-row\"><b>Pick a side. Argue it 1-on-1.</b><button class=\"db-search-btn\" id=\"dbSearchBtn\" aria-label=\"Search debates\" title=\"Search debates\">" + _0x50010e.search + "</button></div><div class=\"db-search\" id=\"dbSearchWrap\" hidden><span class=\"dbs-ic\">" + _0x50010e.search + "</span><input id=\"dbSearch\" type=\"search\" placeholder=\"Search debates — topic, side or debater\" autocomplete=\"off\"><button class=\"dbs-x\" id=\"dbSearchX\" aria-label=\"Close search\">" + _0x50010e.close + "</button></div><span>The room votes on who’s winning — win to climb the rank ladder.</span></div>" + _0x197f3f() + _0x48d826() + "<button class=\"btn block casual-btn\" id=\"dbNew\">" + _0x50010e.plus + " Casual debate <span class=\"unr-tag\">Unranked</span></button></div><div class=\"db-filters\" id=\"dbFilters\"></div><div id=\"dbList\" style=\"padding-top:4px\">" + "<div class=\"db-skel\"></div>".repeat(3) + "</div></div>");
         _0xcbeaba();
         _0x1f1dd4("dbNew").onclick = _0x2bd165;
+        {
+          let _0x5d5501 = _0x1f1dd4("dbSearchWrap");
+          let _0x5d5502 = _0x1f1dd4("dbSearch");
+          let _0x5d5503 = () => {
+            let _0x5d5504 = (_0x5d5502.value || "").trim().toLowerCase();
+            let _0x5d5505 = _0x1f1dd4("dbList");
+            if (!_0x5d5505) {
+              return;
+            }
+            let _0x5d5506 = 0;
+            let _0x5d5507 = [..._0x5d5505.children].filter(_0x5d5508 => !_0x5d5508.classList.contains("dbs-none"));
+            _0x5d5507.forEach(_0x5d5509 => {
+              let _0x5d550a = !_0x5d5504 || (_0x5d5509.textContent || "").toLowerCase().includes(_0x5d5504);
+              _0x5d5509.style.display = _0x5d550a ? "" : "none";
+              if (_0x5d550a) {
+                _0x5d5506++;
+              }
+            });
+            let _0x5d550b = _0x5d5505.querySelector(".dbs-none");
+            if (_0x5d5504 && !_0x5d5506 && _0x5d5507.length) {
+              if (!_0x5d550b) {
+                _0x5d550b = document.createElement("div");
+                _0x5d550b.className = "empty dbs-none";
+                _0x5d5505.appendChild(_0x5d550b);
+              }
+              _0x5d550b.textContent = "No debates match “" + _0x5d5502.value.trim() + "”";
+            } else if (_0x5d550b) {
+              _0x5d550b.remove();
+            }
+          };
+          _0x1f1dd4("dbSearchBtn").onclick = () => {
+            _0x5d5501.hidden = !_0x5d5501.hidden;
+            if (!_0x5d5501.hidden) {
+              _0x5d5502.focus();
+            } else {
+              _0x5d5502.value = "";
+              _0x5d5503();
+            }
+          };
+          _0x1f1dd4("dbSearchX").onclick = () => {
+            _0x5d5502.value = "";
+            _0x5d5501.hidden = true;
+            _0x5d5503();
+          };
+          _0x5d5502.oninput = _0x5d5503;
+          let _0x5d550c = _0x1f1dd4("dbList");
+          if (_0x5d550c && window.MutationObserver) {
+            new MutationObserver(() => {
+              if ((_0x5d5502.value || "").trim()) {
+                _0x5d5503();
+              }
+            }).observe(_0x5d550c, {
+              childList: true
+            });
+          }
+        }
         _0x355e75();
         _0x2940cd();
         _0x3b324e();
